@@ -1,20 +1,38 @@
+app:
+  frontend-url: http://localhost:5173
+
 spring:
-    application:
-        name: auth-service
-    security:
-        oauth2:
-            client:
-                provider:
-                    strava:
-                        authorization-uri: https://www.strava.com/oauth/authorize
-                        token-uri: https://www.strava.com/oauth/token
-                        user-info-uri: https://www.strava.com/api/v3/athlete
-                        user-name-attribute: id
-                registration:
-                    strava:
-                        authorization-grant-type: authorization_code
-                        client-id: 138564
-                        client-name: Strava
-                        client-secret: 537398e794f5f2ac1515c141818a1bd361b873c4
-                        redirect-uri: '{baseUrl}/login/oauth2/code/strava'
-                        scope: read,activity:read_all
+  application:
+    name: auth-service
+  security:
+    oauth2:
+      client:
+        provider:
+          strava:
+            authorization-uri: https://www.strava.com/oauth/authorize
+            token-uri: https://www.strava.com/oauth/token
+            user-info-uri: https://www.strava.com/api/v3/athlete
+            user-name-attribute: id
+        registration:
+          strava:
+            authorization-grant-type: authorization_code
+            client-id: 138564
+            client-name: Strava
+            client-secret: 537398e794f5f2ac1515c141818a1bd361b873c4
+            redirect-uri: '{baseUrl}/login/oauth2/code/strava'
+            scope: read,activity:read_all
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+  forward-headers-strategy: native
+
+jwt:
+  secret-key: x+WKfYKOmTxSAJ2aj89QjJn1gl3YluKK5zpUEvouBc8=
+  expiration-time: 900000
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG

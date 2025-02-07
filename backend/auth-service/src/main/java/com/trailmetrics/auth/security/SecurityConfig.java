@@ -1,6 +1,10 @@
 package com.trailmetrics.auth.security;
 
+import jakarta.servlet.http.Cookie;
+import java.io.IOException;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,6 +13,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
@@ -21,8 +26,11 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+
 @Configuration
 public class SecurityConfig {
+
+  private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
   @Value("${spring.security.oauth2.client.registration.strava.client-id}")
   private String clientId;
@@ -42,24 +50,56 @@ public class SecurityConfig {
   private String redirectUri;
   @Value("${spring.security.oauth2.client.registration.strava.scope}")
   private String scope;
+  @Value("${app.frontend-url}")
+  private String frontendUrl;
 
+  private final JwtUtils jwtUtils;
+
+  
+  public SecurityConfig(JwtUtils jwtUtils) {
+    this.jwtUtils = jwtUtils;
+  }
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http,
-      ClientRegistrationRepository clientRegistrationRepository) throws Exception {
+      ClientRegistrationRepository clientRegistrationRepository,
+      OAuth2AuthorizedClientService authorizedClientService) throws Exception {
     http
-        .cors(cors -> {
-        }) // Enable CORS
-        .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**",
-            "/kafka/**")) // Disable CSRF only for API
+        .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
+        .csrf(csrf -> csrf.disable()) // Disable CSRF
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/", "/oauth2/**", "/login/oauth2/**").permitAll() //Allow public login
+            .requestMatchers("/", "/oauth2/**", "/login/oauth2/**", "/api/auth/user")
+            .permitAll() //Allow public login
             .anyRequest().authenticated()
         )
         .oauth2Login(oauth2 -> oauth2
             .tokenEndpoint(token -> token
                 .accessTokenResponseClient(new StravaOAuth2AccessTokenResponseClient())
             )
+            .successHandler(((request, response, authentication) -> {
+              try {
+                OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+                String userId = authentication.getName(); // This is the Strava user ID
+                logger.info("OAuth Success: UserId={}", userId);
+
+                // Generate JWT for frontend authentication
+                String jwtToken = jwtUtils.generateToken(userId);
+
+                // Send JWT in HTTP-only Cookie
+                Cookie jwtCookie = new Cookie("TRAILMETRICS-JWT-TOKEN", jwtToken);
+                jwtCookie.setHttpOnly(true);
+                jwtCookie.setSecure(true);
+                jwtCookie.setPath("/");
+                response.addCookie(jwtCookie);
+
+                response.sendRedirect(frontendUrl + "/dashboard");
+              } catch (IOException e) {
+                logger.error("Error generating JWT: {}", e.getMessage(), e);
+                response.sendRedirect(frontendUrl + "/login?error=jwt_generation_failed");
+              }
+
+            }))
+
         );
 
     return http.build();
@@ -107,11 +147,11 @@ public class SecurityConfig {
     return new InMemoryClientRegistrationRepository(List.of(stravaRegistration));
   }
 
+
   @Bean
   public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    configuration.setAllowedOrigins(
-        List.of("http://localhost:5173")); // Allow requests from React frontend
+    configuration.setAllowedOrigins(List.of(frontendUrl)); // Allow frontend
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
