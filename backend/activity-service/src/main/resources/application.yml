@@ -1,6 +1,6 @@
-
 server:
     port: 8081
+
 spring:
     application:
         name: activity-service
@@ -28,3 +28,7 @@ spring:
         producer:
             retries: 3
             acks: all
+
+auth-service:
+    url: http://localhost:8080
+    api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
