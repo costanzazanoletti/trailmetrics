@@ -1,5 +1,16 @@
 app:
   frontend-url: http://localhost:5173
+auth-service:
+  api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
+  
+server:
+  port: 8080
+
+  servlet:
+    session:
+      cookie:
+        secure: false
+  forward-headers-strategy: native
 
 spring:
   application:
@@ -21,12 +32,6 @@ spring:
             client-secret: 537398e794f5f2ac1515c141818a1bd361b873c4
             redirect-uri: '{baseUrl}/login/oauth2/code/strava'
             scope: read,activity:read_all
-server:
-  servlet:
-    session:
-      cookie:
-        secure: false
-  forward-headers-strategy: native
 
 jwt:
   secret-key: x+WKfYKOmTxSAJ2aj89QjJn1gl3YluKK5zpUEvouBc8=

@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
@@ -22,6 +23,7 @@ import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedCli
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -55,9 +57,11 @@ public class SecurityConfig {
 
   private final JwtUtils jwtUtils;
 
-  
-  public SecurityConfig(JwtUtils jwtUtils) {
+  private final ApiKeyAuthFilter apiKeyAuthFilter;
+
+  public SecurityConfig(JwtUtils jwtUtils, ApiKeyAuthFilter apiKeyAuthFilter) {
     this.jwtUtils = jwtUtils;
+    this.apiKeyAuthFilter = apiKeyAuthFilter;
   }
 
   @Bean
@@ -70,7 +74,25 @@ public class SecurityConfig {
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/", "/oauth2/**", "/login/oauth2/**", "/api/auth/user")
             .permitAll() //Allow public login
-            .anyRequest().authenticated()
+            .requestMatchers("/internal/**")
+            .permitAll() // Allow API Key authenticated requests without OAuth2
+            .anyRequest().authenticated() // Require authentication for other endpoints
+        )
+        .addFilterBefore(apiKeyAuthFilter,
+            UsernamePasswordAuthenticationFilter.class) // Apply API Key filter
+        // Custom authentication entry point to return 401 for `/internal/**` instead of redirecting
+        .exceptionHandling(ex -> ex
+            .authenticationEntryPoint((request, response, authenticationException) -> {
+              String requestUri = request.getRequestURI();
+
+              if (requestUri.startsWith("/internal/")) {
+                response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                response.getWriter().write("Unauthorized: API key required");
+              } else {
+                response.sendRedirect("oauth2/authorization/strava");
+
+              }
+            })
         )
         .oauth2Login(oauth2 -> oauth2
             .tokenEndpoint(token -> token
