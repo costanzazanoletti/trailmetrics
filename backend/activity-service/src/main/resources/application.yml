@@ -1,0 +1,30 @@
+
+server:
+    port: 8081
+spring:
+    application:
+        name: activity-service
+
+    datasource:
+        url: jdbc:postgresql://localhost:5432/trailmetrics
+        username: postgres
+        password: postgres
+        driver-class-name: org.postgresql.Driver
+
+    jpa:
+        database-platform: org.hibernate.dialect.PostgreSQLDialect
+        hibernate:
+            ddl-auto: update
+        show-sql: true
+        properties:
+            hibernate:
+                format_sql: true
+
+    kafka:
+        bootstrap-servers: localhost:9092
+        consumer:
+            group-id: trailmetrics-group
+            auto-offset-reset: earliest
+        producer:
+            retries: 3
+            acks: all
