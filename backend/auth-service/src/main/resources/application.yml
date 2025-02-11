@@ -2,7 +2,7 @@ app:
   frontend-url: http://localhost:5173
 auth-service:
   api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
-  
+
 server:
   port: 8080
 
@@ -34,7 +34,8 @@ spring:
             scope: read,activity:read_all
 
 jwt:
-  secret-key: x+WKfYKOmTxSAJ2aj89QjJn1gl3YluKK5zpUEvouBc8=
+  private-key-path: classpath:keys/private.pem
+  public-key-path: classpath:keys/public.pem
   expiration-time: 900000
 
 logging:

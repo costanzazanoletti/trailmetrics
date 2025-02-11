@@ -1,0 +1,4 @@
+jwt:
+  private-key-path: keys/private.pem
+  public-key-path: keys/public.pem
+  expiration-time: 2 # token expires in 2 seconds for testing
