@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/internal")
-public class PublicKeyController {  // 👈 Renamed from AuthController to PublicKeyController
+public class PublicKeyController {
 
   private final JwtUtils jwtUtils;
 
