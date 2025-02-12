@@ -5,12 +5,14 @@ auth-service:
 
 server:
   port: 8080
+  error:
+    whitelabel:
+      enabled: false # Disables default Spring Boot error page
+    include-message: always # Ensures errors return meaningful messages
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: true
 
-  servlet:
-    session:
-      cookie:
-        secure: false
-  forward-headers-strategy: native
 
 spring:
   application:

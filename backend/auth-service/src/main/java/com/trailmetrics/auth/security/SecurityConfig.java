@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
@@ -24,6 +23,8 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepo
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -59,9 +60,27 @@ public class SecurityConfig {
 
   private final ApiKeyAuthFilter apiKeyAuthFilter;
 
-  public SecurityConfig(JwtUtils jwtUtils, ApiKeyAuthFilter apiKeyAuthFilter) {
+  private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+  private final CustomAccessDeniedHandler accessDeniedHandler;
+
+  private static final List<String> PROTECTED_ENDPOINTS = List.of(
+      "/api/**",      // All API endpoints
+      "/internal/**"  // Internal microservice routes
+  );
+
+  private static final RequestMatcher PROTECTED_ENDPOINT_MATCHER =
+      request -> PROTECTED_ENDPOINTS.stream().anyMatch(path ->
+          new AntPathRequestMatcher(path).matches(request)
+      );
+
+
+  public SecurityConfig(JwtUtils jwtUtils, ApiKeyAuthFilter apiKeyAuthFilter,
+      CustomAuthenticationEntryPoint authenticationEntryPoint,
+      CustomAccessDeniedHandler accessDeniedHandler) {
     this.jwtUtils = jwtUtils;
     this.apiKeyAuthFilter = apiKeyAuthFilter;
+    this.authenticationEntryPoint = authenticationEntryPoint;
+    this.accessDeniedHandler = accessDeniedHandler;
   }
 
   @Bean
@@ -76,24 +95,16 @@ public class SecurityConfig {
             .permitAll() //Allow public login
             .requestMatchers("/internal/**")
             .permitAll() // Allow API Key authenticated requests without OAuth2
-            .anyRequest().authenticated() // Require authentication for other endpoints
+            .requestMatchers(PROTECTED_ENDPOINT_MATCHER)
+            .authenticated() // Require authentication for other endpoints
+            .anyRequest().permitAll()
         )
         .addFilterBefore(apiKeyAuthFilter,
             UsernamePasswordAuthenticationFilter.class) // Apply API Key filter
-        // Custom authentication entry point to return 401 for `/internal/**` instead of redirecting
-        .exceptionHandling(ex -> ex
-            .authenticationEntryPoint((request, response, authenticationException) -> {
-              String requestUri = request.getRequestURI();
-
-              if (requestUri.startsWith("/internal/")) {
-                response.setStatus(HttpStatus.UNAUTHORIZED.value());
-                response.getWriter().write("Unauthorized: API key required");
-              } else {
-                response.sendRedirect("oauth2/authorization/strava");
-
-              }
-            })
-        )
+        .sessionManagement(session -> session.disable())
+        .exceptionHandling(
+            ex -> ex.authenticationEntryPoint(authenticationEntryPoint)
+                .accessDeniedHandler(accessDeniedHandler))
         .oauth2Login(oauth2 -> oauth2
             .tokenEndpoint(token -> token
                 .accessTokenResponseClient(new StravaOAuth2AccessTokenResponseClient())
