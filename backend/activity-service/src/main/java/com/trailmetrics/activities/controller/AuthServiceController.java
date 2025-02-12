@@ -17,6 +17,6 @@ public class AuthServiceController {
 
   @GetMapping("/test")
   public String testAuthServiceConnection() {
-    return authServiceClient.testAuthService();
+    return authServiceClient.getPublicKey();
   }
 }

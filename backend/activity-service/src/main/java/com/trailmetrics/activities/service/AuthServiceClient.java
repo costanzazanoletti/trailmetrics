@@ -15,7 +15,8 @@ public class AuthServiceClient {
     this.authServiceUrl = authServiceUrl;
   }
 
-  public String testAuthService() {
-    return restTemplate.getForObject(authServiceUrl + "/test", String.class);
+
+  public String getPublicKey(){
+    return restTemplate.getForObject(authServiceUrl + "/internal/public-key", String.class);
   }
 }
