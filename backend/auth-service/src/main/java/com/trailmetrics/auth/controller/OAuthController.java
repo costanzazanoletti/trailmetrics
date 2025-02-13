@@ -19,8 +19,10 @@ public class OAuthController {
 
   private final OAuth2AuthorizedClientService authorizedClientService;
 
+
   public OAuthController(OAuth2AuthorizedClientService authorizedClientService) {
     this.authorizedClientService = authorizedClientService;
+
   }
 
 

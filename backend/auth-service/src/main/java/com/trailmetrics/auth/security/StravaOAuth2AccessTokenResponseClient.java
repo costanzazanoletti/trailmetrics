@@ -2,6 +2,7 @@ package com.trailmetrics.auth.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.trailmetrics.auth.service.UserAuthService;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -18,9 +19,14 @@ import org.springframework.web.client.RestTemplate;
 public class StravaOAuth2AccessTokenResponseClient
     implements OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest> {
 
-  
+
   private final RestTemplate restTemplate = new RestTemplate();
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final UserAuthService userAuthService;
+
+  public StravaOAuth2AccessTokenResponseClient(UserAuthService userAuthService) {
+    this.userAuthService = userAuthService;
+  }
 
   @Override
   public OAuth2AccessTokenResponse getTokenResponse(
@@ -63,6 +69,10 @@ public class StravaOAuth2AccessTokenResponseClient
       String accessToken = jsonNode.get("access_token").asText();
       long expiresIn = jsonNode.get("expires_in").asLong();
       String refreshToken = jsonNode.get("refresh_token").asText();
+      String userId = jsonNode.get("athlete").get("id").asText();
+
+      // Store the Strava access token in UserAuthService
+      userAuthService.storeStravaAccessToken(userId, accessToken);
 
       return OAuth2AccessTokenResponse.withToken(accessToken)
           .tokenType(tokenType)

@@ -1,5 +1,6 @@
 package com.trailmetrics.auth.security;
 
+import com.trailmetrics.auth.service.UserAuthService;
 import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.util.List;
@@ -65,6 +66,8 @@ public class SecurityConfig {
   private final CustomAuthenticationEntryPoint authenticationEntryPoint;
   private final CustomAccessDeniedHandler accessDeniedHandler;
 
+  private final UserAuthService userAuthService;
+
   private static final List<String> PROTECTED_ENDPOINTS = List.of(
       "/api/**",      // All API endpoints
       "/internal/**"  // Internal microservice routes
@@ -78,11 +81,12 @@ public class SecurityConfig {
 
   public SecurityConfig(JwtUtils jwtUtils, ApiKeyAuthFilter apiKeyAuthFilter,
       CustomAuthenticationEntryPoint authenticationEntryPoint,
-      CustomAccessDeniedHandler accessDeniedHandler) {
+      CustomAccessDeniedHandler accessDeniedHandler, UserAuthService userAuthService) {
     this.jwtUtils = jwtUtils;
     this.apiKeyAuthFilter = apiKeyAuthFilter;
     this.authenticationEntryPoint = authenticationEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
+    this.userAuthService = userAuthService;
   }
 
   @Bean
@@ -109,7 +113,8 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler))
         .oauth2Login(oauth2 -> oauth2
             .tokenEndpoint(token -> token
-                .accessTokenResponseClient(new StravaOAuth2AccessTokenResponseClient())
+                .accessTokenResponseClient(
+                    new StravaOAuth2AccessTokenResponseClient(userAuthService))
             )
             .successHandler(((request, response, authentication) -> {
               try {
