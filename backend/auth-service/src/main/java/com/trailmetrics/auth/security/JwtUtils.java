@@ -79,7 +79,6 @@ public class JwtUtils {
   public Claims parseToken(String token) {
     return Jwts.parser()
         .setSigningKey(publicKey)
-        .setAllowedClockSkewSeconds(1)
         .build()
         .parseClaimsJws(token)
         .getBody();
