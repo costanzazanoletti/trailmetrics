@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useAuthStore } from '../store/useAuthStore';
+import { fetchActivities } from '../services/activityService';
 
 const Dashboard = () => {
   const { user, isAuthenticated, checkAuth } = useAuthStore();
@@ -7,6 +8,10 @@ const Dashboard = () => {
   useEffect(() => {
     if (!isAuthenticated) {
       checkAuth();
+    } else {
+      fetchActivities()
+        .then((data) => console.log(data))
+        .catch((error) => console.log(error));
     }
   }, [isAuthenticated, checkAuth]);
 

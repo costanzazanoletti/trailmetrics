@@ -1,5 +1,7 @@
 app:
   frontend-url: http://localhost:5173
+  jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
+
 auth-service:
   api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
 

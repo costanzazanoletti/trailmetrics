@@ -55,6 +55,8 @@ public class SecurityConfig {
   private String scope;
   @Value("${app.frontend-url}")
   private String frontendUrl;
+  @Value("${app.jwt-cookie-name}")
+  private String jwtCookieName;
 
   private final JwtUtils jwtUtils;
 
@@ -119,7 +121,7 @@ public class SecurityConfig {
                 String jwtToken = jwtUtils.generateToken(userId);
 
                 // Send JWT in HTTP-only Cookie
-                Cookie jwtCookie = new Cookie("TRAILMETRICS-JWT-TOKEN", jwtToken);
+                Cookie jwtCookie = new Cookie(jwtCookieName, jwtToken);
                 jwtCookie.setHttpOnly(true);
                 jwtCookie.setSecure(true);
                 jwtCookie.setPath("/");

@@ -39,4 +39,9 @@ public class JwtUtils {
       return false;
     }
   }
+
+  public String extractUsername(String token) {
+    Claims claims = parseToken(token);
+    return claims.getSubject();
+  }
 }

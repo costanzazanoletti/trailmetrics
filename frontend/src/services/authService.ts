@@ -1,9 +1,9 @@
 import axios from 'axios';
-import { API_BASE_URL } from '../config/apiConfig';
+import { API_AUTH_BASE_URL } from '../config/apiConfig';
 
 // Create an axios instance with default settings
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: API_AUTH_BASE_URL,
   withCredentials: true, // Ensures cookies (JWT) are sent with requests
 });
 
@@ -20,7 +20,7 @@ export const checkAuth = async () => {
 
 // Function to start Strava authentication
 export const loginWithStrava = () => {
-  window.location.href = `${API_BASE_URL}/oauth2/authorization/strava`;
+  window.location.href = `${API_AUTH_BASE_URL}/oauth2/authorization/strava`;
 };
 
 // Function to log out

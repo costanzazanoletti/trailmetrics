@@ -2,7 +2,9 @@ package com.trailmetrics.activities.controller;
 
 import com.trailmetrics.activities.client.StravaClient;
 import com.trailmetrics.activities.security.JwtUtils;
+import com.trailmetrics.activities.service.ActivityService;
 import io.jsonwebtoken.Claims;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,21 +17,19 @@ public class ActivityController {
 
   private final StravaClient stravaClient;
   private final JwtUtils jwtUtils;
+  private final ActivityService activityService;
 
-  public ActivityController(StravaClient stravaClient, JwtUtils jwtUtils) {
+  public ActivityController(StravaClient stravaClient, JwtUtils jwtUtils, ActivityService activityService) {
     this.stravaClient = stravaClient;
     this.jwtUtils = jwtUtils;
+    this.activityService = activityService;
   }
 
   @GetMapping
-  public ResponseEntity<List<Map<String, Object>>> getActivities(@RequestHeader("Authorization") String authHeader) {
-    String token = authHeader.replace("Bearer ", "");
-    Claims claims = jwtUtils.parseToken(token);
+  public ResponseEntity<?> getUserActivities(HttpServletRequest request) {
 
-    String userId = claims.getSubject(); // Get Strava user ID from JWT
-    String accessToken = ""; // TODO: Retrieve access token for this user from database
 
-    List<Map<String, Object>> activities = stravaClient.fetchUserActivities(accessToken);
-    return ResponseEntity.ok(activities);
+    //List<Activity> activities = activityService.getActivitiesByUserId(userId);
+    return ResponseEntity.ok("List of activities");
   }
 }

@@ -38,7 +38,9 @@ auth-service:
     url: http://localhost:8080
     api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
     public-key-url: http://localhost:8080/internal/public-key
-
+app:
+    frontend-url: http://localhost:5173
+    jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
 strava:
     api:
         base-url: https://www.strava.com/api/v3
