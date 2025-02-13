@@ -1,3 +1,9 @@
+logging:
+    level:
+        org.springframework.web.client.RestTemplate: DEBUG
+        org.springframework.http.client: DEBUG
+        org.apache.http: DEBUG
+
 server:
     port: 8081
 
@@ -12,7 +18,6 @@ spring:
         driver-class-name: org.postgresql.Driver
 
     jpa:
-        database-platform: org.hibernate.dialect.PostgreSQLDialect
         hibernate:
             ddl-auto: update
         show-sql: true
@@ -32,3 +37,8 @@ spring:
 auth-service:
     url: http://localhost:8080
     api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
+    public-key-url: http://localhost:8080/internal/public-key
+
+strava:
+    api:
+        base-url: https://www.strava.com/api/v3

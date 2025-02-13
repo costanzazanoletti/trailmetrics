@@ -10,8 +10,8 @@ public class AuthServiceClient {
   private final RestTemplate restTemplate;
   private final String authServiceUrl;
 
-  public AuthServiceClient(RestTemplate restTemplate, @Value("${auth-service.url}") String authServiceUrl) {
-    this.restTemplate = restTemplate;
+  public AuthServiceClient(RestTemplate internalRestTemplate, @Value("${auth-service.url}") String authServiceUrl) {
+    this.restTemplate = internalRestTemplate;
     this.authServiceUrl = authServiceUrl;
   }
 
