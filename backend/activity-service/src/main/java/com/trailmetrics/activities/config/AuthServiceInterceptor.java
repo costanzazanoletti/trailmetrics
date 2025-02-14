@@ -1,24 +1,22 @@
 package com.trailmetrics.activities.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.client.ClientHttpRequestInterceptor;
+import java.io.IOException;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.InterceptingClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.IOException;
-import java.util.List;
-
+@Slf4j
 public class AuthServiceInterceptor implements ClientHttpRequestInterceptor {
 
-  private static final Logger logger = LoggerFactory.getLogger(AuthServiceInterceptor.class);
 
   private final String apiKey;
 
-  public AuthServiceInterceptor(String apiKey){
+  public AuthServiceInterceptor(String apiKey) {
     this.apiKey = apiKey;
   }
 
@@ -31,8 +29,8 @@ public class AuthServiceInterceptor implements ClientHttpRequestInterceptor {
     request.getHeaders().add("X-API-KEY", apiKey);
 
     // Log request details
-    logger.info("Outgoing request to: {}", request.getURI());
-    logger.info("Request Headers: {}", request.getHeaders());
+    log.info("Outgoing request to: {}", request.getURI());
+    log.info("Request Headers: {}", request.getHeaders());
 
     return execution.execute(request, body);
   }

@@ -1,51 +1,51 @@
 app:
-    frontend-url: http://localhost:5173
-    jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
-    encryption:
-        secret-key: YNLyUVdaoQ
-        salt: ee729f61
+  frontend-url: http://localhost:5173
+  jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
+  encryption:
+    secret-key: YNLyUVdaoQ
+    salt: ee729f61
 
 auth-service:
-    url: http://localhost:8080
-    api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
-    public-key-url: http://localhost:8080/internal/public-key
+  url: http://localhost:8080
+  api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
+  public-key-url: http://localhost:8080/internal/public-key
 
 server:
-    port: 8081
+  port: 8081
 
 spring:
-    application:
-        name: activity-service
+  application:
+    name: activity-service
 
-    datasource:
-        url: jdbc:postgresql://localhost:5432/trailmetrics
-        username: postgres
-        password: postgres
-        driver-class-name: org.postgresql.Driver
+  datasource:
+    url: jdbc:postgresql://localhost:5432/trailmetrics
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
 
-    jpa:
-        hibernate:
-            ddl-auto: update
-        show-sql: true
-        properties:
-            hibernate:
-                format_sql: true
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
 
-    kafka:
-        bootstrap-servers: localhost:9092
-        consumer:
-            group-id: trailmetrics-group
-            auto-offset-reset: earliest
-        producer:
-            retries: 3
-            acks: all
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: trailmetrics-group
+      auto-offset-reset: earliest
+    producer:
+      retries: 3
+      acks: all
 
 logging:
-    level:
-        org.springframework.web.client.RestTemplate: DEBUG
-        org.springframework.http.client: DEBUG
-        org.apache.http: DEBUG
+  level:
+    root: INFO
+    com.trailmetrics: DEBUG
+
 
 strava:
-    api:
-        base-url: https://www.strava.com/api/v3
+  api:
+    base-url: https://www.strava.com/api/v3

@@ -4,8 +4,7 @@ import com.trailmetrics.auth.service.UserAuthService;
 import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,11 +29,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-
+@Slf4j
 @Configuration
 public class SecurityConfig {
 
-  private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
 
   @Value("${spring.security.oauth2.client.registration.strava.client-id}")
   private String clientId;
@@ -120,7 +118,7 @@ public class SecurityConfig {
               try {
                 OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
                 String userId = authentication.getName(); // This is the Strava user ID
-                logger.info("OAuth Success: UserId={}", userId);
+                log.info("OAuth Success: UserId={}", userId);
 
                 // Generate JWT for frontend authentication
                 String jwtToken = jwtUtils.generateToken(userId);
@@ -134,7 +132,7 @@ public class SecurityConfig {
 
                 response.sendRedirect(frontendUrl + "/dashboard");
               } catch (IOException e) {
-                logger.error("Error generating JWT: {}", e.getMessage(), e);
+                log.error("Error generating JWT: {}", e.getMessage(), e);
                 response.sendRedirect(frontendUrl + "/login?error=jwt_generation_failed");
               }
 

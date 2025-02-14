@@ -50,5 +50,5 @@ jwt:
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
+    root: INFO
+    com.trailmetrics: DEBUG

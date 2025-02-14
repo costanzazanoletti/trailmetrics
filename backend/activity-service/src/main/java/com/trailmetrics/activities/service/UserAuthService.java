@@ -1,8 +1,7 @@
 package com.trailmetrics.activities.service;
 
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.encrypt.Encryptors;
 import org.springframework.security.crypto.encrypt.TextEncryptor;
@@ -13,9 +12,9 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Service
+@Slf4j
 public class UserAuthService {
 
-  private final Logger LOGGER = LoggerFactory.getLogger(UserAuthService.class);
 
   @Value("${auth-service.url}")
   private String authServiceUrl;
@@ -41,13 +40,13 @@ public class UserAuthService {
       return Optional.ofNullable(encryptedToken).map(textEncryptor::decrypt)
           .orElseThrow(() -> new RuntimeException("Received null token from Auth Service"));
     } catch (HttpClientErrorException.Unauthorized e) {
-      LOGGER.error("Unauthorized: Invalid user credentials or token expired for userId={}", userId);
+      log.error("Unauthorized: Invalid user credentials or token expired for userId={}", userId);
       throw new RuntimeException("Unauthorized request: Access token is invalid or expired.");
     } catch (ResourceAccessException e) {
-      LOGGER.error("Auth Service is unreachable: {}", e.getMessage());
+      log.error("Auth Service is unreachable: {}", e.getMessage());
       throw new RuntimeException("Auth Service is unavailable. Please try again later.");
     } catch (Exception e) {
-      LOGGER.error("Unexpected error while fetching token: {}", e.getMessage());
+      log.error("Unexpected error while fetching token: {}", e.getMessage());
       throw new RuntimeException("Failed to retrieve valid Strava access token");
     }
   }

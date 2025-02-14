@@ -10,7 +10,6 @@ public class ActivityService {
 
 
   private final StravaClient stravaClient;
-
   private final UserAuthService userAuthService;
 
   public ActivityService(StravaClient stravaClient, UserAuthService userAuthService) {
