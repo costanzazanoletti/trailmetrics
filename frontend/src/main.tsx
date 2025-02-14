@@ -3,8 +3,4 @@ import { StrictMode } from 'react';
 import './styles/index.css';
 import App from './App.tsx';
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>
-);
+createRoot(document.getElementById('root')!).render(<App />);
