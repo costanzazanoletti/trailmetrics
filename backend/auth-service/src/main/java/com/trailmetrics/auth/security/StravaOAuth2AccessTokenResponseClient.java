@@ -71,8 +71,8 @@ public class StravaOAuth2AccessTokenResponseClient
       String refreshToken = jsonNode.get("refresh_token").asText();
       String userId = jsonNode.get("athlete").get("id").asText();
 
-      // Store the Strava access token in UserAuthService
-      userAuthService.storeStravaAccessToken(userId, accessToken);
+      // Store the Strava access token, refresh token and expires-in in UserAuthService
+      userAuthService.storeStravaAccessToken(userId, accessToken, refreshToken, expiresIn);
 
       return OAuth2AccessTokenResponse.withToken(accessToken)
           .tokenType(tokenType)

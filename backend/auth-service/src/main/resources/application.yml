@@ -18,6 +18,9 @@ server:
     include-stacktrace: never
     include-exception: true
 
+external-api:
+  strava:
+    refresh-token-url: "https://www.strava.com/api/v3/oauth/token"
 
 spring:
   application:
