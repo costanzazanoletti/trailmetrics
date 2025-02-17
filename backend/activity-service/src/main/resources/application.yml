@@ -49,3 +49,11 @@ logging:
 strava:
   api:
     base-url: https://www.strava.com/api/v3
+    rate-limit-sleep-ms: 15000
+    rate-limit-threshold: 100
+    max-per-page: 200
+    allowed-sport-types: "Run,Trail Run,Walk,Hike"
+
+sync:
+  default-sync-years: 6
+  default-zone: "Europe/Rome"
