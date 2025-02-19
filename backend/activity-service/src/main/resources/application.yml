@@ -31,28 +31,41 @@ spring:
       hibernate:
         format_sql: true
 
+
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: trailmetrics-group
+      group-id: activity-group
       auto-offset-reset: earliest
+      max-poll-records: 1  # Process one activity at a time (avoids API overload)
+      enable-auto-commit: false  # Manually commit after processing
+    listener:
+      ack-mode: manual  # Only commit messages after successful processing
+      missing-topics-fatal: false  # Prevent startup errors if topic is missing
     producer:
-      retries: 3
-      acks: all
+      retries: 5  # Retries for failed message publishing
+      acks: all  # Ensures message delivery is confirmed
+
+
 
 logging:
   level:
     root: INFO
     com.trailmetrics: DEBUG
+    #org.springframework: DEBUG
+    #org.apache.kafka: DEBUG
 
 
 strava:
   api:
     base-url: https://www.strava.com/api/v3
-    rate-limit-sleep-ms: 15000
-    rate-limit-threshold: 100
-    max-per-page: 200
-    allowed-sport-types: "Run,Trail Run,Walk,Hike"
+    max-per-page: 200 # Pagination setting
+    allowed-sport-types: "Run,Trail Run,Walk,Hike" # Only foot sports are considered
+    instant-sync-limit: 10 # Max number of activities instantly synchronized
+    rate-limit-short-window: 100  # Max 100 requests per 15 minutes
+    rate-limit-daily: 1000  # Max 1000 requests per day
+    rate-limit-sleep-minutes: 15  # Sleep for 15 minutes if short-term limit is reached
+
 
 sync:
   default-sync-years: 6

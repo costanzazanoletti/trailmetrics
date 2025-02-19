@@ -1,6 +1,7 @@
 package com.trailmetrics.activities.client;
 
 import com.trailmetrics.activities.dto.ActivityDTO;
+import com.trailmetrics.activities.dto.ActivityStreamDTO;
 import java.time.Instant;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +37,7 @@ public class StravaClient {
         .queryParam("page", page)
         .queryParam("per_page", maxPerPage);
 
-    HttpHeaders headers = new HttpHeaders();
-    headers.setBearerAuth(accessToken);
-
-    HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
-
-    log.info("Sending Request: [Method: GET] {}", uriBuilder.toUriString());
-    log.info("Headers: {}", headers);
+    HttpEntity<Void> requestEntity = getVoidHttpEntity(accessToken, uriBuilder);
 
     ResponseEntity<List<ActivityDTO>> response = restTemplate.exchange(
         uriBuilder.toUriString(),
@@ -53,5 +48,51 @@ public class StravaClient {
     );
 
     return response.getBody();
+  }
+
+  public ActivityDTO fetchActivityDetails(String accessToken, Long activityId) {
+    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(
+        stravaBaseUrl + "/activities/" + activityId);
+
+    HttpEntity<Void> requestEntity = getVoidHttpEntity(accessToken, uriBuilder);
+
+    ResponseEntity<ActivityDTO> response = restTemplate.exchange(
+        uriBuilder.toUriString(),
+        HttpMethod.GET,
+        requestEntity,
+        ActivityDTO.class
+    );
+    return response.getBody();
+  }
+
+  public ActivityStreamDTO fetchActivityStream(String accessToken, Long activityId) {
+    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(
+            stravaBaseUrl + "/activities/" + activityId + "/streams")
+        .queryParam("keys",
+            "time,distance,latlng,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth")
+        .queryParam("key_by_type", "true");
+
+    HttpEntity<Void> requestEntity = getVoidHttpEntity(accessToken, uriBuilder);
+
+    ResponseEntity<ActivityStreamDTO> response = restTemplate.exchange(
+        uriBuilder.toUriString(),
+        HttpMethod.GET,
+        requestEntity,
+        ActivityStreamDTO.class
+    );
+
+    return response.getBody();
+  }
+
+  private static HttpEntity<Void> getVoidHttpEntity(String accessToken,
+      UriComponentsBuilder uriBuilder) {
+    HttpHeaders headers = new HttpHeaders();
+    headers.setBearerAuth(accessToken);
+
+    HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+    log.info("Sending Request: [Method: GET] {}", uriBuilder.toUriString());
+    log.info("Headers: {}", headers);
+    return requestEntity;
   }
 }

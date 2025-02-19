@@ -2,10 +2,10 @@ package com.trailmetrics.activities.service;
 
 import com.trailmetrics.activities.client.StravaClient;
 import com.trailmetrics.activities.dto.ActivityDTO;
+import com.trailmetrics.activities.mapper.ActivityMapper;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.model.UserPreference;
 import com.trailmetrics.activities.repository.ActivityRepository;
-import com.trailmetrics.activities.repository.UserPreferenceRepository;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -23,138 +23,128 @@ import org.springframework.web.client.HttpClientErrorException;
 @Slf4j
 public class ActivitySyncService {
 
-  private final UserPreferenceRepository userPreferenceRepository;
+  private final UserPreferenceService userPreferenceService;
   private final StravaClient stravaClient;
   private final ActivityRepository activityRepository;
+  private final ActivityMapper activityService;
   private final KafkaProducerService kafkaProducerService;
+  private final KafkaRetryService kafkaRetryService;
+  private final ActivityMapper activityMapper;
 
-
-  @Value("${sync.default-sync-years}")
-  private Integer defaultSyncYears;
-
-  @Value("${sync.default-zone}")
-  private String defaultTimeZone;
 
   @Value("${strava.api.max-per-page}")
   private int maxPerPage;
 
-  @Value("${strava.api.rate-limit-sleep-ms}")
-  private int rateLimitSleepMs;
-
-  @Value("${strava.api.rate-limit-threshold}")
-  private int rateLimitThreshold;
+  @Value("${strava.api.instant-sync-limit}")
+  private int instantSyncLimit;
 
   @Value("#{'${strava.api.allowed-sport-types}'.split(',')}")
   private List<String> allowedSportTypes;
 
-  private Instant lastRequestTime = Instant.now();
-  private int requestCount = 0;
-
+  /**
+   * Fetches activities for a user from Strava, saves them in the database, processes the latest
+   * ones instantly, and queues the rest for background processing.
+   */
   @Transactional
   public void syncUserActivities(@NonNull String userIdString, @NonNull String accessToken) {
 
     Long userId = Long.parseLong(userIdString);
+    UserPreference preference = userPreferenceService.getUserPreference(userId);
 
-    if (accessToken != null) {
+    // Define the sync time range based on user preference
+    ZoneId zoneId = ZoneId.of(preference.getTimezone());
+    ZonedDateTime beforeDate = ZonedDateTime.now(zoneId);
+    ZonedDateTime afterDate = beforeDate.minusYears(preference.getSyncYears());
+    Instant beforeInstant = beforeDate.toInstant();
+    Instant afterInstant = afterDate.toInstant();
 
-      UserPreference preference = userPreferenceRepository.findById(userId)
-          .orElseGet(() -> {
-            UserPreference newPreference = new UserPreference();
-            newPreference.setUserId(userId);
-            newPreference.setSyncYears(defaultSyncYears);
-            newPreference.setTimezone(defaultTimeZone);
-            return userPreferenceRepository.save(newPreference);
-          });
+    int page = 1;
+    boolean hasMore = true;
+    int processedCount = 0;
 
-      // Start and end date with user's time zone
-      ZoneId zoneId = ZoneId.of(preference.getTimezone());
-      ZonedDateTime beforeDate = ZonedDateTime.now(zoneId);
-      ZonedDateTime afterDate = beforeDate.minusYears(preference.getSyncYears());
+    while (hasMore) {
+      try {
+        List<ActivityDTO> activities = stravaClient.fetchUserActivities(accessToken,
+            beforeInstant,
+            afterInstant,
+            page, maxPerPage);
 
-      // Convert to Instant (UTC-based timestamp)
-      Instant beforeInstant = beforeDate.toInstant();
-      Instant afterInstant = afterDate.toInstant();
+        if (activities.isEmpty()) {
+          hasMore = false;
+        } else {
 
-      log.info("Before: {}", beforeInstant);
-      log.info("After: {}", afterDate);
+          for (ActivityDTO activity : activities) {
+            if (!isAllowedActivity(activity)) {
+              log.info("Skipping activity ID {} ({}) as it's not in allowed sport types",
+                  activity.getId(), activity.getSport_type());
+              continue;
+            }
+            // Save basic metadata for all activities
+            saveBasicActivity(userId, activity);
 
-      int page = 1;
-      boolean hasMore = true;
-
-      while (hasMore) {
-        handleRateLimiting();
-        try {
-          List<ActivityDTO> activities = stravaClient.fetchUserActivities(accessToken,
-              beforeInstant,
-              afterInstant,
-              page, maxPerPage);
-          if (activities.isEmpty()) {
-            hasMore = false;
-          } else {
-            saveAndPublishActivities(userId, activities);
-            page++;
+            if (processedCount < instantSyncLimit) {
+              log.info("Processing activity ID {} instantly", activity.getId());
+              fetchAndUpdateStreams(userIdString, activity.getId(), accessToken);
+            } else {
+              log.info("Queuing activity ID {} for background sync", activity.getId());
+              kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
+            }
+            processedCount++;
           }
-        } catch (HttpClientErrorException.TooManyRequests e) {
-          log.warn("Strava API rate limit reached. Pausing sync...");
-          sleep(rateLimitSleepMs);
+          page++;
         }
+      } catch (HttpClientErrorException.TooManyRequests e) {
+        log.warn("Rate limit reached for user {}. Requeueing full sync.", userId);
+
+        kafkaRetryService.scheduleUserSyncRetry(userIdString, e);
+
+        return;
       }
-    } else {
-      throw new RuntimeException("Failed to retrieve Strava access token");
     }
   }
 
-  private void handleRateLimiting() {
-    if (requestCount >= rateLimitThreshold) {
-      log.info("Rate limit threshold reached, sleeping for cooldown...");
-      sleep(rateLimitSleepMs);
-      requestCount = 0;
+
+  /**
+   * Checks if an activity should be processed based on its sport type.
+   */
+  private boolean isAllowedActivity(ActivityDTO activity) {
+    return allowedSportTypes.contains(activity.getType()) || allowedSportTypes.contains(
+        activity.getSport_type());
+  }
+
+  /**
+   * Saves basic metadata for an activity.
+   */
+  private void saveBasicActivity(Long userId, ActivityDTO activity) {
+    if (activityRepository.existsById(activity.getId())) {
+      log.debug("Activity ID {} already exists, skipping save.", activity.getId());
+      return;
     }
-    requestCount++;
-    lastRequestTime = Instant.now();
+
+    Activity entity = ActivityMapper.convertToEntity(activity);
+    entity.setAthleteId(userId);
+    activityRepository.save(entity);
+    log.info("Saved basic activity ID {} for user {}", activity.getId(), userId);
   }
 
-  private void saveAndPublishActivities(Long userId, List<ActivityDTO> activities) {
-    activities.stream()
-        .filter(a -> allowedSportTypes.contains(a.getType()) || allowedSportTypes.contains(
-            a.getSport_type()))
-        .map(this::convertToEntity)
-        .forEach(activity -> {
-          if (!activityRepository.existsById(activity.getId())) {
-            activity.setAthleteId(userId);
-            activityRepository.save(activity);
-            kafkaProducerService.publishActivityImport(activity.getId(), userId);
-          }
-        });
-  }
-
-  private void sleep(int durationMs) {
+  /**
+   * Fetches streams (latlng, elevation, cadence, heart rate, etc.) and updates the activity.
+   */
+  private void fetchAndUpdateStreams(String userId, Long activityId, String accessToken) {
     try {
-      Thread.sleep(durationMs);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+      Activity activity = activityRepository.findById(activityId)
+          .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
+
+      log.info("Fetching streams for activity ID {}", activityId);
+      // Fetch and save streams from Strava
+      stravaClient.fetchActivityStream(accessToken, activityId);
+
+      log.info("Updated activity ID {} with stream data", activityId);
+
+    } catch (HttpClientErrorException.TooManyRequests e) {
+      log.warn("Rate limit hit while fetching streams. Queuing activity {} instead.", activityId);
+      kafkaProducerService.publishActivityImport(activityId, userId);
     }
   }
 
-  private Activity convertToEntity(ActivityDTO dto) {
-    Activity activity = new Activity();
-    activity.setId(dto.getId());
-    activity.setName(dto.getName());
-    activity.setDistance(dto.getDistance());
-    activity.setMovingTime(dto.getMoving_time());
-    activity.setTotalElevationGain(dto.getTotal_elevation_gain());
-    activity.setAthleteId(dto.getAthlete_id());
-    activity.setType(dto.getType());
-    activity.setSportType(dto.getSport_type());
-    activity.setStartDate(dto.getStart_date());
-    activity.setMapPolyline(dto.getMap_polyline());
-    activity.setAverageSpeed(dto.getAverage_speed());
-    activity.setMaxSpeed(dto.getMax_speed());
-    activity.setAverageCadence(dto.getAverage_cadence());
-    activity.setAverageTemp(dto.getAverage_temp());
-    activity.setAverageWatts(dto.getAverage_watts());
-    activity.setWeightedAverageWatts(dto.getWeighted_average_watts());
-    activity.setHasHeartrate(dto.getHas_heartrate());
-    return activity;
-  }
 }
