@@ -84,13 +84,5 @@ public class KafkaRetryService {
     return (int) Duration.between(now, resetTime).toSeconds();
   }
 
-/*
-  @PostConstruct
-  public void logConfigValues() {
-    log.info("Loaded rateLimitSleepMinutes: {}", rateLimitSleepMinutes);
-    log.info("Loaded rateLimitShortWindow: {}", rateLimitShortWindow);
-    log.info("Loaded rateLimitDaily: {}", rateLimitDaily);
-  }
 
- */
 }

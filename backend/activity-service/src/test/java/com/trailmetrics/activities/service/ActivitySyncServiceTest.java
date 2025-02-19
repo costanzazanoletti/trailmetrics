@@ -15,16 +15,20 @@ import com.trailmetrics.activities.dto.ActivityDTO;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.model.UserPreference;
 import com.trailmetrics.activities.repository.ActivityRepository;
-import java.time.Instant;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.web.client.HttpClientErrorException;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -45,6 +49,9 @@ class ActivitySyncServiceTest {
   @MockitoBean
   private UserPreferenceService userPreferenceService;
 
+  @MockitoBean
+  private KafkaRetryService kafkaRetryService;
+
 
   private static final int INSTANT_SYNC_LIMIT = 10;
 
@@ -64,21 +71,16 @@ class ActivitySyncServiceTest {
     // Given
     String userId = "123";
     String accessToken = "mockAccessToken";
-    Instant beforeInstant = Instant.now();
 
     ActivityDTO activity1 = new ActivityDTO();
     activity1.setId(1L);
     activity1.setName("Activity1");
     activity1.setType("Run");
-    activity1.setSport_type("Trail Run");
-    activity1.setStart_date(beforeInstant);
 
     ActivityDTO activity2 = new ActivityDTO();
     activity2.setId(2L);
     activity2.setName("Activity2");
     activity2.setType("Walk");
-    activity2.setSport_type("Walk");
-    activity2.setStart_date(beforeInstant);
 
     List<ActivityDTO> mockActivities = Arrays.asList(activity1, activity2);
 
@@ -117,8 +119,94 @@ class ActivitySyncServiceTest {
   }
 
   @Test
-  void shouldNotSendRealKafkaMessages() {
+  void shouldHandleEmptyActivityList() {
+    // Given
+    String userId = "123";
+    String accessToken = "mockAccessToken";
+
+    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
+        .thenReturn(List.of()); // No activities returned
+
+    // When
+    activitySyncService.syncUserActivities(userId, accessToken);
+
+    // Then
+    verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
   }
+
+  @Test
+  void shouldNotSaveExistingActivities() {
+    // Given
+    String userId = "123";
+    String accessToken = "mockAccessToken";
+
+    ActivityDTO activity1 = new ActivityDTO();
+    activity1.setId(1L);
+    activity1.setType("Run");
+
+    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
+        .thenReturn(List.of(activity1))
+        .thenReturn(List.of()); // Pagination ends
+
+    when(activityRepository.existsById(1L)).thenReturn(true); // Simulate existing activity
+
+    Activity existingActivity = new Activity();
+    existingActivity.setId(1L);
+    when(activityRepository.findById(1L)).thenReturn(Optional.of(existingActivity));
+
+    // When
+    activitySyncService.syncUserActivities(userId, accessToken);
+
+    // Then
+    verify(activityRepository, never()).save(any(Activity.class)); // No save should happen
+    verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
+  }
+
+  @Test
+  void shouldSkipActivitiesWithInvalidSportType() {
+    // Given
+    String userId = "123";
+    String accessToken = "mockAccessToken";
+
+    ActivityDTO activity1 = new ActivityDTO();
+    activity1.setId(1L);
+    activity1.setType("Cycling"); // Not in allowed sports
+
+    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
+        .thenReturn(List.of(activity1))
+        .thenReturn(List.of()); // Pagination ends
+
+    // When
+    activitySyncService.syncUserActivities(userId, accessToken);
+
+    // Then
+    verify(activityRepository, never()).save(any(Activity.class));
+    verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
+  }
+
+  @Test
+  void shouldHandleRateLimitAndRetrySync() {
+    // Given
+    String userId = "123";
+    String accessToken = "mockAccessToken";
+    HttpHeaders headers = new HttpHeaders();
+    headers.add("X-RateLimit-Usage", "100,500"); // Short window exceeded
+    HttpClientErrorException tooManyRequestsException = HttpClientErrorException.create(
+        HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", headers, null, StandardCharsets.UTF_8
+    );
+    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
+        .thenThrow(tooManyRequestsException);
+
+    // When
+    activitySyncService.syncUserActivities(userId, accessToken);
+
+    // Then
+    verify(kafkaRetryService, times(1)).scheduleUserSyncRetry(eq(userId), any());
+    verify(kafkaProducerService, never()).publishActivityImport(anyLong(),
+        anyString()); // No Kafka message should be sent
+    verify(activityRepository, never()).save(any(Activity.class)); // No activities should be saved
+  }
+
 
 }
