@@ -47,8 +47,3 @@ jwt:
   private-key-path: classpath:keys/private.pem
   public-key-path: classpath:keys/public.pem
   expiration-time: 900000
-
-logging:
-  level:
-    root: INFO
-    com.trailmetrics: DEBUG

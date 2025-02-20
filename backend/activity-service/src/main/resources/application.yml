@@ -48,14 +48,6 @@ spring:
 
 
 
-logging:
-  level:
-    root: INFO
-    com.trailmetrics: DEBUG
-    #org.springframework: DEBUG
-    #org.apache.kafka: DEBUG
-
-
 strava:
   api:
     base-url: https://www.strava.com/api/v3
