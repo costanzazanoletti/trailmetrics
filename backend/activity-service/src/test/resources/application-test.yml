@@ -4,8 +4,10 @@ strava:
     max-per-page: 200 # Pagination setting
     allowed-sport-types: "Run,Trail Run,Walk,Hike" # Only foot sports are considered
     instant-sync-limit: 1 # Max number of activities instantly synchronized
-    rate-limit-short-window: 100  # Max 100 requests per 15 minutes
-    rate-limit-daily: 1000  # Max 1000 requests per day
+    rate-limit-short-window: 200  # Max 100 requests per 15 minutes
+    read-rate-limit-short-window: 100  # Max 100 requests per 15 minutes
+    rate-limit-daily: 2000  # Max 1000 requests per day
+    read-rate-limit-daily: 1000  # Max 1000 requests per day
     rate-limit-sleep-minutes: 15  # Sleep for 15 minutes if short-term limit is reached
 
 sync:

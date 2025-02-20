@@ -1,5 +1,6 @@
 package com.trailmetrics.activities.config;
 
+import com.trailmetrics.activities.dto.ActivityRetryMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
 import com.trailmetrics.activities.dto.UserSyncRetryMessage;
 import java.util.HashMap;
@@ -91,6 +92,16 @@ public class KafkaConfig {
   @Bean
   public KafkaTemplate<String, UserSyncRetryMessage> userRetrySyncKafkaTemplate() {
     ProducerFactory<String, UserSyncRetryMessage> factory =
+        new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
+    return new KafkaTemplate<>(factory);
+  }
+
+  /**
+   * Creates a strongly-typed KafkaTemplate for ActivityRetryMessage.
+   */
+  @Bean
+  public KafkaTemplate<String, ActivityRetryMessage> activityRetryKafkaTemplate() {
+    ProducerFactory<String, ActivityRetryMessage> factory =
         new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
     return new KafkaTemplate<>(factory);
   }

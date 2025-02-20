@@ -17,7 +17,8 @@ import org.springframework.kafka.core.KafkaTemplate;
 class KafkaProducerServiceTest {
 
   @Mock
-  private KafkaTemplate<String, ActivitySyncMessage> kafkaTemplate;
+  private KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
+
 
   @InjectMocks
   private KafkaProducerService kafkaProducerService;
@@ -36,32 +37,13 @@ class KafkaProducerServiceTest {
 
     ArgumentCaptor<ActivitySyncMessage> messageCaptor = ArgumentCaptor.forClass(
         ActivitySyncMessage.class);
-    verify(kafkaTemplate).send(eq("activity-sync-queue"), messageCaptor.capture());
+    verify(kafkaActivitySyncTemplate).send(eq("activity-sync-queue"), messageCaptor.capture());
 
     ActivitySyncMessage capturedMessage = messageCaptor.getValue();
     assertEquals(userId, capturedMessage.getUserId());
     assertEquals(activityId, capturedMessage.getActivityId());
-    assertEquals(0, capturedMessage.getRetryCount());
     assertNotNull(capturedMessage.getTimestamp());
   }
 
-  @Test
-  void shouldPublishActivityRetry() {
-    String userId = "user-1";
-    Long activityId = 123L;
-    int retryCount = 2;
-
-    kafkaProducerService.publishActivityRetry(userId, activityId, retryCount);
-
-    ArgumentCaptor<ActivitySyncMessage> messageCaptor = ArgumentCaptor.forClass(
-        ActivitySyncMessage.class);
-    verify(kafkaTemplate).send(eq("activity-sync-queue"), messageCaptor.capture());
-
-    ActivitySyncMessage capturedMessage = messageCaptor.getValue();
-    assertEquals(userId, capturedMessage.getUserId());
-    assertEquals(activityId, capturedMessage.getActivityId());
-    assertEquals(retryCount, capturedMessage.getRetryCount());
-    assertNotNull(capturedMessage.getTimestamp());
-  }
 
 }

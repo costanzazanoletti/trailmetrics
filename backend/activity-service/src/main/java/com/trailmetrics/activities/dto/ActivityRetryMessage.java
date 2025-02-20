@@ -8,9 +8,11 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ActivitySyncMessage {
-
+public class ActivityRetryMessage {
   private String userId;
   private Long activityId;
-  private Instant timestamp; // When the message was sent
+  private int retryCount;
+  private Instant scheduledRetryTime;
+  private String errorReason;
+  private Instant sentTimestamp;
 }

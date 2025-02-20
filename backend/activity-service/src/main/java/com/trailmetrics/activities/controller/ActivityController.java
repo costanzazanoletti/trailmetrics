@@ -3,7 +3,6 @@ package com.trailmetrics.activities.controller;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.service.ActivitySyncService;
 import com.trailmetrics.activities.service.UserAuthService;
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -26,16 +25,17 @@ public class ActivityController {
 
 
   @GetMapping
-  public ResponseEntity<List<Activity>> getActivities(HttpServletRequest request) {
+  public ResponseEntity<List<Activity>> getActivities() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    String userId = authentication.getName();
-    List<Activity> activities = new ArrayList<>();
-
     if (authentication == null || !authentication.isAuthenticated()) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
-    String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
 
+    String userId = authentication.getName();
+    List<Activity> activities = new ArrayList<>();
+
+    String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
+    // Synchronize Strava activities
     activitySyncService.syncUserActivities(userId, accessToken);
 
     return ResponseEntity.ok(activities);

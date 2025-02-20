@@ -26,10 +26,8 @@ public class ActivitySyncService {
   private final UserPreferenceService userPreferenceService;
   private final StravaClient stravaClient;
   private final ActivityRepository activityRepository;
-  private final ActivityMapper activityService;
   private final KafkaProducerService kafkaProducerService;
   private final KafkaRetryService kafkaRetryService;
-  private final ActivityMapper activityMapper;
 
 
   @Value("${strava.api.max-per-page}")
@@ -64,6 +62,7 @@ public class ActivitySyncService {
 
     while (hasMore) {
       try {
+        log.info("Fetching page {} of activities for user {}", page, userIdString);
         List<ActivityDTO> activities = stravaClient.fetchUserActivities(accessToken,
             beforeInstant,
             afterInstant,
@@ -82,9 +81,17 @@ public class ActivitySyncService {
             // Save basic metadata for all activities
             saveBasicActivity(userId, activity);
 
+            // process immediately the first activities
             if (processedCount < instantSyncLimit) {
-              log.info("Processing activity ID {} instantly", activity.getId());
-              fetchAndUpdateStreams(userIdString, activity.getId(), accessToken);
+              try {
+                log.info("Processing activity ID {} instantly", activity.getId());
+                fetchAndUpdateStreams(activity.getId(), accessToken);
+              } catch (HttpClientErrorException.TooManyRequests e) {
+                // if the rate limit is hit re-queue the activity
+                log.warn("Rate limit reached for activity ID {}. Re-queueing activity sync.",
+                    activity.getId());
+                kafkaRetryService.scheduleActivityRetry(userIdString, activity.getId(), 0, e);
+              }
             } else {
               log.info("Queuing activity ID {} for background sync", activity.getId());
               kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
@@ -94,7 +101,7 @@ public class ActivitySyncService {
           page++;
         }
       } catch (HttpClientErrorException.TooManyRequests e) {
-        log.warn("Rate limit reached for user {}. Requeueing full sync.", userId);
+        log.warn("Rate limit reached for user {}. Re-queueing full sync.", userId);
 
         kafkaRetryService.scheduleUserSyncRetry(userIdString, e);
 
@@ -130,21 +137,17 @@ public class ActivitySyncService {
   /**
    * Fetches streams (latlng, elevation, cadence, heart rate, etc.) and updates the activity.
    */
-  private void fetchAndUpdateStreams(String userId, Long activityId, String accessToken) {
-    try {
-      Activity activity = activityRepository.findById(activityId)
-          .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
+  private void fetchAndUpdateStreams(Long activityId, String accessToken) {
 
-      log.info("Fetching streams for activity ID {}", activityId);
-      // Fetch and save streams from Strava
-      stravaClient.fetchActivityStream(accessToken, activityId);
+    activityRepository.findById(activityId)
+        .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
 
-      log.info("Updated activity ID {} with stream data", activityId);
+    log.info("Fetching streams for activity ID {}", activityId);
+    // Fetch and save streams from Strava
+    stravaClient.fetchActivityStream(accessToken, activityId);
 
-    } catch (HttpClientErrorException.TooManyRequests e) {
-      log.warn("Rate limit hit while fetching streams. Queuing activity {} instead.", activityId);
-      kafkaProducerService.publishActivityImport(activityId, userId);
-    }
+    log.info("Updated activity ID {} with stream data", activityId);
+
   }
 
 }
