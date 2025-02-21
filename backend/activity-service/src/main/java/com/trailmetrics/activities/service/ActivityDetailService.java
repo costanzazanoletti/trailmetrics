@@ -22,9 +22,10 @@ public class ActivityDetailService {
   private final ActivityRepository activityRepository;
   private final ActivityStreamRepository activityStreamRepository;
   private final KafkaProducerService kafkaProducerService;
+  private final KafkaRetryService kafkaRetryService;
 
 
-  public void processActivity(String accessToken, Long activityId) {
+  public void fetchStreamAndUpdateActivity(String accessToken, Long activityId, String userId) {
     log.info("Fetching streams for activity ID: {}", activityId);
 
     try {
@@ -46,8 +47,10 @@ public class ActivityDetailService {
       kafkaProducerService.publishActivityProcessed(activityId);
 
     } catch (HttpClientErrorException.TooManyRequests e) {
-      log.warn("Strava API rate limit reached. Checking headers for retry logic...");
-      throw e; // Let Kafka retry handling decide the next step
+      // if the rate limit is hit re-queue the activity
+      log.warn("Rate limit reached for activity ID {} user {}. Re-queueing activity sync.",
+          activityId, userId);
+      kafkaRetryService.scheduleActivityRetry(userId, activityId, 0, e);
     }
   }
 

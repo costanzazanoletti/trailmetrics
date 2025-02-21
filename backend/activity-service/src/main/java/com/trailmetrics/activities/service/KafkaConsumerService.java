@@ -55,7 +55,9 @@ public class KafkaConsumerService {
    * Listens for user sync retries from `user-sync-retry-queue`. Retries full user sync after rate
    * limit expires.
    */
-  @KafkaListener(topics = USER_SYNC_RETRY_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
+  @KafkaListener(topics = USER_SYNC_RETRY_TOPIC
+
+      , groupId = KAFKA_ACTIVITY_GROUP)
   public void retryUserSync(UserSyncRetryMessage message, Acknowledgment ack) {
     // Ensure we only process syncs after their scheduled retry time
     if (Instant.now().isBefore(message.getScheduledRetryTime())) {
@@ -92,7 +94,7 @@ public class KafkaConsumerService {
       String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
 
       // Process activity (fetch streams)
-      activityDetailService.processActivity(accessToken, activityId);
+      activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId);
 
       // Successfully processed, acknowledge the Kafka message
       ack.acknowledge();

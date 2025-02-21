@@ -28,6 +28,7 @@ public class ActivitySyncService {
   private final ActivityRepository activityRepository;
   private final KafkaProducerService kafkaProducerService;
   private final KafkaRetryService kafkaRetryService;
+  private final ActivityDetailService activityDetailService;
 
 
   @Value("${strava.api.max-per-page}")
@@ -78,20 +79,20 @@ public class ActivitySyncService {
                   activity.getId(), activity.getSport_type());
               continue;
             }
-            // Save basic metadata for all activities
+            if (activityRepository.existsById(activity.getId())) {
+              log.debug("Activity ID {} already exists, skipping processing.", activity.getId());
+              continue;
+            }
+            // Save basic metadata for activities not processed yet
             saveBasicActivity(userId, activity);
 
             // process immediately the first activities
             if (processedCount < instantSyncLimit) {
-              try {
-                log.info("Processing activity ID {} instantly", activity.getId());
-                fetchAndUpdateStreams(activity.getId(), accessToken);
-              } catch (HttpClientErrorException.TooManyRequests e) {
-                // if the rate limit is hit re-queue the activity
-                log.warn("Rate limit reached for activity ID {}. Re-queueing activity sync.",
-                    activity.getId());
-                kafkaRetryService.scheduleActivityRetry(userIdString, activity.getId(), 0, e);
-              }
+
+              log.info("Processing activity ID {} instantly", activity.getId());
+              activityDetailService.fetchStreamAndUpdateActivity(accessToken, activity.getId(),
+                  userIdString);
+
             } else {
               log.info("Queuing activity ID {} for background sync", activity.getId());
               kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
@@ -123,10 +124,6 @@ public class ActivitySyncService {
    * Saves basic metadata for an activity.
    */
   private void saveBasicActivity(Long userId, ActivityDTO activity) {
-    if (activityRepository.existsById(activity.getId())) {
-      log.debug("Activity ID {} already exists, skipping save.", activity.getId());
-      return;
-    }
 
     Activity entity = ActivityMapper.convertToEntity(activity);
     entity.setAthleteId(userId);
@@ -134,20 +131,5 @@ public class ActivitySyncService {
     log.info("Saved basic activity ID {} for user {}", activity.getId(), userId);
   }
 
-  /**
-   * Fetches streams (latlng, elevation, cadence, heart rate, etc.) and updates the activity.
-   */
-  private void fetchAndUpdateStreams(Long activityId, String accessToken) {
-
-    activityRepository.findById(activityId)
-        .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
-
-    log.info("Fetching streams for activity ID {}", activityId);
-    // Fetch and save streams from Strava
-    stravaClient.fetchActivityStream(accessToken, activityId);
-
-    log.info("Updated activity ID {} with stream data", activityId);
-
-  }
 
 }

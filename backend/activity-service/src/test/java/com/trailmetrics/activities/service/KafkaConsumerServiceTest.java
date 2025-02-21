@@ -69,7 +69,8 @@ class KafkaConsumerServiceTest {
     kafkaConsumerService.consumeActivity(message, ack);
 
     // Then
-    verify(activityDetailService, times(1)).processActivity(anyString(), eq(activityId));
+    verify(activityDetailService, times(1)).fetchStreamAndUpdateActivity(anyString(),
+        eq(activityId), eq(userId));
     verify(ack, times(1)).acknowledge();  // Ensure manual acknowledgment
   }
 
@@ -92,7 +93,8 @@ class KafkaConsumerServiceTest {
         HttpHeaders.EMPTY,
         null,
         StandardCharsets.UTF_8
-    )).when(activityDetailService).processActivity(anyString(), eq(activityId));
+    )).when(activityDetailService)
+        .fetchStreamAndUpdateActivity(anyString(), eq(activityId), eq(userId));
 
     // When
     kafkaConsumerService.consumeActivity(message, ack);
@@ -159,8 +161,8 @@ class KafkaConsumerServiceTest {
     kafkaConsumerService.consumeActivityRetry(message, ack);
 
     // Then
-    verify(activityDetailService, never()).processActivity(anyString(),
-        eq(activityId)); // Should NOT process
+    verify(activityDetailService, never()).fetchStreamAndUpdateActivity(anyString(),
+        eq(activityId), eq(userId)); // Should NOT process
     verify(ack, never()).acknowledge();  // Should NOT acknowledge, as it should be retried later
   }
 

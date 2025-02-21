@@ -2,6 +2,10 @@ package com.trailmetrics.activities.service;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -49,6 +53,9 @@ class ActivityDetailServiceTest {
   @MockitoBean
   private KafkaProducerService kafkaProducerService;
 
+  @MockitoBean
+  private KafkaRetryService kafkaRetryService;
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -59,6 +66,7 @@ class ActivityDetailServiceTest {
     // Given
     String accessToken = "mockAccessToken";
     Long activityId = 123L;
+    String userId = "user-456";
 
     Activity mockActivity = new Activity();
     mockActivity.setId(activityId);
@@ -76,7 +84,7 @@ class ActivityDetailServiceTest {
           .thenReturn(mockStreams);
 
       // When
-      activityDetailService.processActivity(accessToken, activityId);
+      activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId);
 
       // Then
       verify(activityRepository, times(1)).findById(activityId);
@@ -89,6 +97,8 @@ class ActivityDetailServiceTest {
 
       // Ensure KafkaProducerService publishes ActivityProcessed once
       verify(kafkaProducerService, times(1)).publishActivityProcessed(activityId);
+      verify(kafkaRetryService, never()).scheduleActivityRetry(anyString(), anyLong(), anyInt(),
+          any());
     }
   }
 
@@ -97,13 +107,14 @@ class ActivityDetailServiceTest {
     // Given
     String accessToken = "mockAccessToken";
     Long activityId = 456L;
+    String userId = "user-123";
 
     when(activityRepository.findById(activityId)).thenReturn(Optional.empty());
 
     // When & Then
     RuntimeException thrown = assertThrows(
         RuntimeException.class,
-        () -> activityDetailService.processActivity(accessToken, activityId)
+        () -> activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId)
     );
 
     verify(activityRepository, times(1)).findById(activityId);
@@ -113,6 +124,8 @@ class ActivityDetailServiceTest {
 
     verify(kafkaProducerService, never()).publishActivityProcessed(
         activityId); // No kafka publishing
+    verify(kafkaRetryService, never()).scheduleActivityRetry(anyString(), anyLong(), anyInt(),
+        any()); // No rescheduling
   }
 
   @Test
@@ -120,24 +133,23 @@ class ActivityDetailServiceTest {
     // Given
     String accessToken = "mockAccessToken";
     Long activityId = 789L;
+    String userId = "user-987";
 
     HttpHeaders headers = new HttpHeaders();
-    headers.add("X-RateLimit-Usage", "100,500"); // Rate limit exceeded
-
+    headers.add("X-ReadRateLimit-Usage", "110,500"); // Short window exceeded
     HttpClientErrorException tooManyRequestsException = HttpClientErrorException.create(
         HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", headers, null, StandardCharsets.UTF_8
     );
 
+    // When
     when(stravaClient.fetchActivityStream(accessToken, activityId))
         .thenThrow(tooManyRequestsException);
-
-    // When & Then
-    assertThrows(HttpClientErrorException.TooManyRequests.class,
-        () -> activityDetailService.processActivity(accessToken, activityId));
-
-    verify(stravaClient, times(1)).fetchActivityStream(accessToken, activityId);
+    activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId);
+    // Then
     verify(activityStreamRepository, never()).saveAll(any()); // No save should occur
     verify(kafkaProducerService, never()).publishActivityProcessed(
         activityId); // No Kafka publishing
+    verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId), eq(0),
+        eq(tooManyRequestsException)); // Publish activity retry
   }
 }

@@ -58,7 +58,7 @@ public class KafkaRetryService {
     int waitTime = determineWaitTime(e);
     Instant scheduledRetryTime = Instant.now().plusSeconds(waitTime);
 
-    log.warn("Re-queueing activity {} for user {} at {}", activityId, userId, scheduledRetryTime);
+    log.warn("Re-queueing activity ID {} at {}", activityId, scheduledRetryTime);
 
     // Create retry message with scheduled execution time
     ActivityRetryMessage retryMessage = new ActivityRetryMessage(
@@ -73,7 +73,7 @@ public class KafkaRetryService {
     // Send the message to Kafka immediately (KafkaConsumerService will respect the scheduledRetryTime)
     activityRetryKafkaTemplate.send(ACTIVITY_RETRY_TOPIC, retryMessage);
 
-    log.info("Retry for activity {} scheduled at {}", activityId, scheduledRetryTime);
+    log.info("Retry for activity ID {} scheduled at {}", activityId, scheduledRetryTime);
   }
 
   /**

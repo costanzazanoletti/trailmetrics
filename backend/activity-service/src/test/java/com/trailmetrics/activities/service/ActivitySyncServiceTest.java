@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,6 +51,9 @@ class ActivitySyncServiceTest {
 
   @MockitoBean
   private KafkaRetryService kafkaRetryService;
+
+  @MockitoBean
+  private ActivityDetailService activityDetailService;
 
 
   @BeforeEach
@@ -115,6 +117,8 @@ class ActivitySyncServiceTest {
     verify(activityRepository, times(2)).save(any(Activity.class)); // Ensures only two saves
     verify(kafkaProducerService, times(1)).publishActivityImport(anyLong(),
         eq(userId)); // Ensures only one Kafka message is sent because exceeds instantSyncLimit (1)
+    verify(activityDetailService, times(1)).fetchStreamAndUpdateActivity(eq(accessToken), eq(1L),
+        eq(userId));
   }
 
   @Test
@@ -132,6 +136,8 @@ class ActivitySyncServiceTest {
     // Then
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
+    verify(activityDetailService, never()).fetchStreamAndUpdateActivity(anyString(), anyLong(),
+        anyString());
   }
 
   @Test
@@ -160,6 +166,8 @@ class ActivitySyncServiceTest {
     // Then
     verify(activityRepository, never()).save(any(Activity.class)); // No save should happen
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
+    verify(activityDetailService, never()).fetchStreamAndUpdateActivity(anyString(), anyLong(),
+        anyString());
   }
 
   @Test
@@ -182,6 +190,8 @@ class ActivitySyncServiceTest {
     // Then
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
+    verify(activityDetailService, never()).fetchStreamAndUpdateActivity(anyString(), anyLong(),
+        anyString());
   }
 
   @Test
@@ -207,92 +217,9 @@ class ActivitySyncServiceTest {
         any());
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
     verify(activityRepository, never()).save(any(Activity.class));
+    verify(activityDetailService, never()).fetchStreamAndUpdateActivity(anyString(), anyLong(),
+        anyString());
   }
 
-
-  @Test
-  void shouldHandleRateLimitAndRetryActivitySync() {
-    // Given
-    String userId = "123";
-    String accessToken = "mockAccessToken";
-
-    ActivityDTO activity = new ActivityDTO();
-    activity.setId(1L);
-    activity.setType("Run");
-
-    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
-        .thenReturn(List.of(activity)) // Successfully fetch activity
-        .thenReturn(List.of()); // Stop fetching after one page
-
-    when(activityRepository.existsById(1L)).thenReturn(false);
-
-    Activity savedActivity = new Activity();
-    savedActivity.setId(1L);
-    when(activityRepository.findById(1L)).thenReturn(java.util.Optional.of(savedActivity));
-
-    HttpHeaders headers = new HttpHeaders();
-    headers.add("X-ReadRateLimit-Usage", "120,900"); // Read limit exceeded
-    HttpClientErrorException tooManyRequestsException = HttpClientErrorException.create(
-        HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", headers, null, StandardCharsets.UTF_8
-    );
-
-    doThrow(tooManyRequestsException)
-        .when(stravaClient)
-        .fetchActivityStream(anyString(), eq(1L));
-
-    // When
-    activitySyncService.syncUserActivities(userId, accessToken);
-
-    // Then
-    verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(1L), eq(0), any());
-    verify(kafkaRetryService, never()).scheduleUserSyncRetry(anyString(), any());
-    verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-  }
-
-  @Test
-  void shouldQueueBackgroundProcessingForExcessActivities() {
-    // Given
-    String userId = "123";
-    String accessToken = "mockAccessToken";
-
-    ActivityDTO activity1 = new ActivityDTO();
-    activity1.setId(1L);
-    activity1.setType("Run");
-
-    ActivityDTO activity2 = new ActivityDTO();
-    activity2.setId(2L);
-    activity2.setType("Walk");
-
-    List<ActivityDTO> mockActivities = Arrays.asList(activity1, activity2);
-
-    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
-        .thenReturn(mockActivities)
-        .thenReturn(List.of()); // Next page is empty, stopping the loop
-
-    when(activityRepository.existsById(anyLong())).thenReturn(false);
-
-    Activity savedActivity1 = new Activity();
-    savedActivity1.setId(1L);
-    Activity savedActivity2 = new Activity();
-    savedActivity2.setId(2L);
-
-    when(activityRepository.findById(1L)).thenReturn(Optional.of(savedActivity1));
-    when(activityRepository.findById(2L)).thenReturn(Optional.of(savedActivity2));
-
-    when(activityRepository.save(any(Activity.class)))
-        .thenAnswer(invocation -> {
-          Activity savedActivity = invocation.getArgument(0);
-          when(activityRepository.existsById(savedActivity.getId())).thenReturn(true);
-          return savedActivity;
-        });
-
-    // When
-    activitySyncService.syncUserActivities(userId, accessToken);
-
-    // Then
-    verify(activityRepository, times(2)).save(any(Activity.class)); // Two activities saved
-    verify(kafkaProducerService, times(1)).publishActivityImport(anyLong(),
-        eq(userId)); // One activity queued
-  }
 
 }
