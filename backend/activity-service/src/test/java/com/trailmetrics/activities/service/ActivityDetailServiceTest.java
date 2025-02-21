@@ -46,6 +46,9 @@ class ActivityDetailServiceTest {
   @MockitoBean
   private ActivityStreamRepository activityStreamRepository;
 
+  @MockitoBean
+  private KafkaProducerService kafkaProducerService;
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -83,6 +86,9 @@ class ActivityDetailServiceTest {
       // Ensure static method was called
       mockedMapper.verify(
           () -> ActivityStreamMapper.mapStreamsToEntities(mockActivity, mockStreamDTO), times(1));
+
+      // Ensure KafkaProducerService publishes ActivityProcessed once
+      verify(kafkaProducerService, times(1)).publishActivityProcessed(activityId);
     }
   }
 
@@ -104,6 +110,9 @@ class ActivityDetailServiceTest {
     verify(stravaClient, times(1)).fetchActivityStream(accessToken,
         activityId); // API should be called once
     verify(activityStreamRepository, never()).saveAll(any()); // No save should occur
+
+    verify(kafkaProducerService, never()).publishActivityProcessed(
+        activityId); // No kafka publishing
   }
 
   @Test
@@ -128,5 +137,7 @@ class ActivityDetailServiceTest {
 
     verify(stravaClient, times(1)).fetchActivityStream(accessToken, activityId);
     verify(activityStreamRepository, never()).saveAll(any()); // No save should occur
+    verify(kafkaProducerService, never()).publishActivityProcessed(
+        activityId); // No Kafka publishing
   }
 }

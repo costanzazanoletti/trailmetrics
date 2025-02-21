@@ -1,5 +1,6 @@
 package com.trailmetrics.activities.config;
 
+import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivityRetryMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
 import com.trailmetrics.activities.dto.UserSyncRetryMessage;
@@ -105,6 +106,17 @@ public class KafkaConfig {
         new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
     return new KafkaTemplate<>(factory);
   }
+
+  /**
+   * Creates a strongly-typed KafkaTemplate for ActivityProcessedMessage.
+   */
+  @Bean
+  public KafkaTemplate<String, ActivityProcessedMessage> activityProcessedKafkaTemplate() {
+    ProducerFactory<String, ActivityProcessedMessage> factory =
+        new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
+    return new KafkaTemplate<>(factory);
+  }
+
 
   /**
    * Creates a Kafka listener factory with manual acknowledgment and exponential backoff retry.

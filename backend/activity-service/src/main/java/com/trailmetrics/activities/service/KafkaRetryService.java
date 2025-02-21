@@ -17,6 +17,11 @@ import org.springframework.web.client.HttpClientErrorException;
 @RequiredArgsConstructor
 public class KafkaRetryService {
 
+
+  private static final String ACTIVITY_RETRY_TOPIC = "activity-retry-queue";
+  private static final String USER_SYNC_RETRY_TOPIC = "user-sync-retry-queue";
+
+
   private final KafkaTemplate<String, UserSyncRetryMessage> userSyncRetryKafkaTemplate;
   private final KafkaTemplate<String, ActivityRetryMessage> activityRetryKafkaTemplate;
 
@@ -66,7 +71,7 @@ public class KafkaRetryService {
     );
 
     // Send the message to Kafka immediately (KafkaConsumerService will respect the scheduledRetryTime)
-    activityRetryKafkaTemplate.send("activity-retry-queue", retryMessage);
+    activityRetryKafkaTemplate.send(ACTIVITY_RETRY_TOPIC, retryMessage);
 
     log.info("Retry for activity {} scheduled at {}", activityId, scheduledRetryTime);
   }
@@ -84,7 +89,7 @@ public class KafkaRetryService {
     UserSyncRetryMessage retryMessage = new UserSyncRetryMessage(userId, retryTime, Instant.now());
 
     // Send the message to Kafka immediately (KafkaConsumerService will respect the scheduledRetryTime)
-    userSyncRetryKafkaTemplate.send("user-sync-retry-queue", retryMessage);
+    userSyncRetryKafkaTemplate.send(USER_SYNC_RETRY_TOPIC, retryMessage);
 
     log.info("Full sync retry for user {} scheduled at {}", userId, retryTime);
   }

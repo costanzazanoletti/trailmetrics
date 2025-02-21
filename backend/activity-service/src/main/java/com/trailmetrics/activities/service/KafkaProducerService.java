@@ -1,5 +1,6 @@
 package com.trailmetrics.activities.service;
 
+import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +14,9 @@ import org.springframework.stereotype.Service;
 public class KafkaProducerService {
 
   private final KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
-
+  private final KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
+  private static final String ACTIVITY_PROCESSED_TOPIC = "activity-processed-queue";
+  private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
 
   /**
    * Publishes an activity for background processing.
@@ -21,8 +24,16 @@ public class KafkaProducerService {
   public void publishActivityImport(Long activityId, String userId) {
     ActivitySyncMessage message = new ActivitySyncMessage(userId, activityId, Instant.now());
     log.info("Publishing activity import to Kafka: {}", message);
-    kafkaActivitySyncTemplate.send("activity-sync-queue", message);
+    kafkaActivitySyncTemplate.send(ACTIVITY_SYNC_TOPIC, message);
   }
 
+
+  public void publishActivityProcessed(Long activityId) {
+    ActivityProcessedMessage message = new ActivityProcessedMessage(activityId,
+        Instant.now());
+    kafkaActivityProcessedTemplate.send(ACTIVITY_PROCESSED_TOPIC, message);
+    log.info("Sent ActivityProcessedMessage for activity {} to {}", activityId,
+        ACTIVITY_PROCESSED_TOPIC);
+  }
 
 }

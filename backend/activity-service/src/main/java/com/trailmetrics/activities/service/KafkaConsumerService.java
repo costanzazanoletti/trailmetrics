@@ -22,11 +22,15 @@ public class KafkaConsumerService {
   private final ActivitySyncService activitySyncService;
 
   private static final int MAX_RETRY_ATTEMPTS = 5; // Prevents infinite retry loops
+  private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
+  private static final String ACTIVITY_RETRY_TOPIC = "activity-retry-queue";
+  private static final String USER_SYNC_RETRY_TOPIC = "user-sync-retry-queue";
+  private static final String KAFKA_ACTIVITY_GROUP = "activity-group";
 
   /**
    * Listens for activity imports from `activity-sync-queue`. Processes individual activities.
    */
-  @KafkaListener(topics = "activity-sync-queue", groupId = "activity-group")
+  @KafkaListener(topics = ACTIVITY_SYNC_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void consumeActivity(ActivitySyncMessage message, Acknowledgment ack) {
     processActivity(message.getUserId(), message.getActivityId(), 0, ack);
   }
@@ -34,7 +38,7 @@ public class KafkaConsumerService {
   /**
    * Listens for activity retries from `activity-retry-queue`. Retries failed activities.
    */
-  @KafkaListener(topics = "activity-retry-queue", groupId = "activity-group")
+  @KafkaListener(topics = ACTIVITY_RETRY_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void consumeActivityRetry(ActivityRetryMessage message, Acknowledgment ack) {
     // Ensure we only process activities after their scheduled retry time
     if (Instant.now().isBefore(message.getScheduledRetryTime())) {
@@ -51,7 +55,7 @@ public class KafkaConsumerService {
    * Listens for user sync retries from `user-sync-retry-queue`. Retries full user sync after rate
    * limit expires.
    */
-  @KafkaListener(topics = "user-sync-retry-queue", groupId = "activity-group")
+  @KafkaListener(topics = USER_SYNC_RETRY_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void retryUserSync(UserSyncRetryMessage message, Acknowledgment ack) {
     // Ensure we only process syncs after their scheduled retry time
     if (Instant.now().isBefore(message.getScheduledRetryTime())) {

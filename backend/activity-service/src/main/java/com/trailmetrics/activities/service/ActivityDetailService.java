@@ -21,6 +21,7 @@ public class ActivityDetailService {
   private final StravaClient stravaClient;
   private final ActivityRepository activityRepository;
   private final ActivityStreamRepository activityStreamRepository;
+  private final KafkaProducerService kafkaProducerService;
 
 
   public void processActivity(String accessToken, Long activityId) {
@@ -41,6 +42,8 @@ public class ActivityDetailService {
       log.info("Saving {} streams for activity ID: {}", activityStreams.size(), activityId);
       activityStreamRepository.saveAll(activityStreams);
 
+      // Publish to Kafka the activity processed message to enable metrics computation
+      kafkaProducerService.publishActivityProcessed(activityId);
 
     } catch (HttpClientErrorException.TooManyRequests e) {
       log.warn("Strava API rate limit reached. Checking headers for retry logic...");
