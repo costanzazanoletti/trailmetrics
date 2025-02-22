@@ -1,10 +1,9 @@
 package com.trailmetrics.activities.service;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,19 +11,13 @@ import static org.mockito.Mockito.when;
 import com.trailmetrics.activities.dto.ActivityRetryMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
 import com.trailmetrics.activities.dto.UserSyncRetryMessage;
-import com.trailmetrics.activities.model.Activity;
-import com.trailmetrics.activities.repository.ActivityRepository;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.support.Acknowledgment;
-import org.springframework.web.client.HttpClientErrorException;
 
 class KafkaConsumerServiceTest {
 
@@ -40,8 +33,6 @@ class KafkaConsumerServiceTest {
   @Mock
   private KafkaRetryService kafkaRetryService;
 
-  @Mock
-  private ActivityRepository activityRepository;
 
   @Mock
   private Acknowledgment ack;  // Mocking manual Kafka acknowledgment
@@ -62,126 +53,82 @@ class KafkaConsumerServiceTest {
     Instant timestamp = Instant.now();
     ActivitySyncMessage message = new ActivitySyncMessage(userId, activityId, timestamp);
 
-    when(activityRepository.findById(activityId)).thenReturn(java.util.Optional.of(new Activity()));
-    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn("mockAccessToken");
-
     // When
     kafkaConsumerService.consumeActivity(message, ack);
 
     // Then
-    verify(activityDetailService, times(1)).fetchStreamAndUpdateActivity(anyString(),
-        eq(activityId), eq(userId));
+    verify(activityDetailService, times(1)).processActivity(
+        eq(activityId), eq(userId), eq(0));
     verify(ack, times(1)).acknowledge();  // Ensure manual acknowledgment
   }
 
   @Test
-  void shouldRetryActivitySyncOnRateLimit() {
+  void shouldProcessActivityRetryMessageSuccessfully() {
     // Given
     String userId = "user-123";
-    Long activityId = 456L;
-    Instant timestamp = Instant.now();
-
-    ActivitySyncMessage message = new ActivitySyncMessage(userId, activityId, timestamp);
-
-    when(activityRepository.findById(activityId)).thenReturn(java.util.Optional.of(new Activity()));
-    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn("mockAccessToken");
-
-    // Simulate a "429 Too Many Requests" error when processing the activity
-    doThrow(HttpClientErrorException.create(
-        HttpStatus.TOO_MANY_REQUESTS,
-        "Too Many Requests",
-        HttpHeaders.EMPTY,
-        null,
-        StandardCharsets.UTF_8
-    )).when(activityDetailService)
-        .fetchStreamAndUpdateActivity(anyString(), eq(activityId), eq(userId));
-
-    // When
-    kafkaConsumerService.consumeActivity(message, ack);
-
-    // Then
-    verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId), eq(0),
-        any());
-    verify(ack, never()).acknowledge();  // Should NOT acknowledge, letting Kafka retry
-  }
-
-  @Test
-  void shouldConsumeUserSyncRetryMessageSuccessfully() {
-    // Given
-    String userId = "user-123";
-    UserSyncRetryMessage message = new UserSyncRetryMessage(userId, Instant.now(), Instant.now());
-
-    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn("mockAccessToken");
-
-    // When
-    kafkaConsumerService.retryUserSync(message, ack);
-
-    // Then
-    verify(activitySyncService, times(1)).syncUserActivities(eq(userId), anyString());
-    verify(ack, times(1)).acknowledge();
-  }
-
-  @Test
-  void shouldRescheduleUserSyncOnRateLimit() {
-    // Given
-    String userId = "user-123";
-    UserSyncRetryMessage message = new UserSyncRetryMessage(userId, Instant.now(), Instant.now());
-
-    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn("mockAccessToken");
-
-    // Simulate a "429 Too Many Requests" error when retrying full sync
-    doThrow(HttpClientErrorException.create(
-        HttpStatus.TOO_MANY_REQUESTS,
-        "Too Many Requests",
-        HttpHeaders.EMPTY,
-        null,
-        StandardCharsets.UTF_8
-    )).when(activitySyncService).syncUserActivities(anyString(), anyString());
-
-    // When
-    kafkaConsumerService.retryUserSync(message, ack);
-
-    // Then
-    verify(kafkaRetryService, times(1)).scheduleUserSyncRetry(eq(userId), any());
-    verify(ack, never()).acknowledge();  // Should NOT acknowledge, letting it retry later
-  }
-
-  @Test
-  void shouldSkipProcessingIfScheduledRetryTimeNotReached() {
-    // Given
-    String userId = "user-123";
-    Long activityId = 456L;
-    Instant scheduledRetryTime = Instant.now().plusSeconds(600); // 10 minutes in the future
-
-    ActivityRetryMessage message = new ActivityRetryMessage(
-        userId, activityId, 1, scheduledRetryTime, "Rate limit hit", Instant.now()
-    );
+    Long activityId = 789L;
+    int retryCount = 1;
+    Instant scheduledRetryTime = Instant.now().minusSeconds(5); // Already passed
+    ActivityRetryMessage message = new ActivityRetryMessage(userId, activityId, retryCount,
+        scheduledRetryTime, "Retry reason", Instant.now());
 
     // When
     kafkaConsumerService.consumeActivityRetry(message, ack);
 
     // Then
-    verify(activityDetailService, never()).fetchStreamAndUpdateActivity(anyString(),
-        eq(activityId), eq(userId)); // Should NOT process
-    verify(ack, never()).acknowledge();  // Should NOT acknowledge, as it should be retried later
+    verify(activityDetailService, times(1)).processActivity(eq(activityId), eq(userId),
+        eq(retryCount));
+    verify(ack, times(1)).acknowledge();
+
   }
 
   @Test
-  void shouldSkipUserSyncRetryIfScheduledRetryTimeNotReached() {
+  void shouldPauseBeforeProcessingIfScheduledRetryTimeNotReached() {
     // Given
     String userId = "user-123";
-    Instant scheduledRetryTime = Instant.now().plusSeconds(600); // 10 minutes in the future
+    Long activityId = 456L;
+    Instant scheduledRetryTime = Instant.now().plusSeconds(2); // 2 seconds in the future
+
+    ActivityRetryMessage message = new ActivityRetryMessage(userId, activityId, 1,
+        scheduledRetryTime, "Rate limit hit", Instant.now());
+
+    // Mock `Thread.sleep()` to verify execution time
+    KafkaConsumerService spyConsumer = spy(kafkaConsumerService);
+    doReturn(3000L).when(spyConsumer).getWaitTime(scheduledRetryTime);
+
+    // When
+    spyConsumer.consumeActivityRetry(message, ack);
+
+    // Then
+    verify(spyConsumer, times(1)).getWaitTime(eq(scheduledRetryTime));
+    verify(activityDetailService, times(1)).processActivity(eq(activityId), eq(userId), eq(1));
+    verify(ack, times(1)).acknowledge();
+  }
+
+
+  @Test
+  void shouldPauseBeforeProcessingUserSyncRetryIfScheduledTimeNotReached() {
+    // Given
+    String userId = "user-123";
+    String accessToken = "mockAccessToken";
+    Instant scheduledRetryTime = Instant.now().plusSeconds(2); // 2 seconds in the future
 
     UserSyncRetryMessage message = new UserSyncRetryMessage(userId, scheduledRetryTime,
         Instant.now());
 
+    // Spy on KafkaConsumerService to mock `getWaitTime()`
+    KafkaConsumerService spyConsumer = spy(kafkaConsumerService);
+    doReturn(3000L).when(spyConsumer).getWaitTime(scheduledRetryTime);
+
+    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn(accessToken);
+
     // When
-    kafkaConsumerService.retryUserSync(message, ack);
+    spyConsumer.retryUserSync(message, ack);
 
     // Then
-    verify(activitySyncService, never()).syncUserActivities(eq(userId),
-        anyString()); // Should NOT process
-    verify(ack, never()).acknowledge();  // Should NOT acknowledge, as it should be retried later
+    verify(spyConsumer, times(1)).getWaitTime(eq(scheduledRetryTime));
+    verify(activitySyncService, times(1)).syncUserActivities(eq(userId), anyString());
+    verify(ack, times(1)).acknowledge();
   }
 
 }

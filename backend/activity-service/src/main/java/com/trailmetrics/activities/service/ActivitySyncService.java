@@ -90,8 +90,8 @@ public class ActivitySyncService {
             if (processedCount < instantSyncLimit) {
 
               log.info("Processing activity ID {} instantly", activity.getId());
-              activityDetailService.fetchStreamAndUpdateActivity(accessToken, activity.getId(),
-                  userIdString);
+              activityDetailService.processActivity(activity.getId(),
+                  userIdString, 0);
 
             } else {
               log.info("Queuing activity ID {} for background sync", activity.getId());

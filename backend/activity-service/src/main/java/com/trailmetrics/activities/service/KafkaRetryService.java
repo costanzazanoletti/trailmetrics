@@ -98,6 +98,7 @@ public class KafkaRetryService {
    * Determines how long to wait before retrying based on API rate limits.
    */
   private int determineWaitTime(HttpClientErrorException e) {
+
     int shortWindowUsage = extractRateLimitUsage(e, 0);
     int dailyUsage = extractRateLimitUsage(e, 1);
 

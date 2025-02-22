@@ -21,7 +21,6 @@ public class KafkaConsumerService {
   private final KafkaRetryService kafkaRetryService;
   private final ActivitySyncService activitySyncService;
 
-  private static final int MAX_RETRY_ATTEMPTS = 5; // Prevents infinite retry loops
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
   private static final String ACTIVITY_RETRY_TOPIC = "activity-retry-queue";
   private static final String USER_SYNC_RETRY_TOPIC = "user-sync-retry-queue";
@@ -32,7 +31,10 @@ public class KafkaConsumerService {
    */
   @KafkaListener(topics = ACTIVITY_SYNC_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void consumeActivity(ActivitySyncMessage message, Acknowledgment ack) {
-    processActivity(message.getUserId(), message.getActivityId(), 0, ack);
+    log.info("Reading message in queue {} for activity ID {}", ACTIVITY_SYNC_TOPIC,
+        message.getActivityId());
+    activityDetailService.processActivity(message.getActivityId(), message.getUserId(), 0);
+    ack.acknowledge();
   }
 
   /**
@@ -40,14 +42,24 @@ public class KafkaConsumerService {
    */
   @KafkaListener(topics = ACTIVITY_RETRY_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void consumeActivityRetry(ActivityRetryMessage message, Acknowledgment ack) {
+    log.info("Reading message in queue {} for activity ID {}", ACTIVITY_RETRY_TOPIC,
+        message.getActivityId());
     // Ensure we only process activities after their scheduled retry time
     if (Instant.now().isBefore(message.getScheduledRetryTime())) {
-      log.info("Skipping early execution for activity {}. Scheduled for {}",
+      log.info("Pausing execution for activity ID {}. Scheduled for {}",
           message.getActivityId(), message.getScheduledRetryTime());
-      return;
+      try {
+        Thread.sleep(getWaitTime(message.getScheduledRetryTime()));
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while waiting for scheduled retry time", e);
+      }
     }
 
-    processActivity(message.getUserId(), message.getActivityId(), message.getRetryCount(), ack);
+    // Process activity
+    activityDetailService.processActivity(message.getActivityId(), message.getUserId(),
+        message.getRetryCount());
+    ack.acknowledge(); // Explicitly acknowledge after processing
+
   }
 
 
@@ -55,15 +67,19 @@ public class KafkaConsumerService {
    * Listens for user sync retries from `user-sync-retry-queue`. Retries full user sync after rate
    * limit expires.
    */
-  @KafkaListener(topics = USER_SYNC_RETRY_TOPIC
-
-      , groupId = KAFKA_ACTIVITY_GROUP)
+  @KafkaListener(topics = USER_SYNC_RETRY_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void retryUserSync(UserSyncRetryMessage message, Acknowledgment ack) {
+    log.info("Reading message in queue {} for user ID {}", USER_SYNC_RETRY_TOPIC,
+        message.getUserId());
     // Ensure we only process syncs after their scheduled retry time
     if (Instant.now().isBefore(message.getScheduledRetryTime())) {
-      log.info("Skipping early execution for user {} sync. Scheduled for {}", message.getUserId(),
+      log.info("Pausing execution for user {} sync. Scheduled for {}", message.getUserId(),
           message.getScheduledRetryTime());
-      return;
+      try {
+        Thread.sleep(getWaitTime(message.getScheduledRetryTime()));
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while waiting for scheduled retry time", e);
+      }
     }
     String userId = message.getUserId();
     try {
@@ -83,39 +99,8 @@ public class KafkaConsumerService {
     }
   }
 
-  /**
-   * Processes an activity by fetching details from Strava.
-   */
-  private void processActivity(String userId, Long activityId, int retryCount, Acknowledgment ack) {
-    try {
-      log.info("Processing activity ID {} for user {} (Retry: {})", activityId, userId, retryCount);
-
-      // Fetch user access token
-      String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
-
-      // Process activity (fetch streams)
-      activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId);
-
-      // Successfully processed, acknowledge the Kafka message
-      ack.acknowledge();
-      log.info("Successfully processed activity ID: {}", activityId);
-
-    } catch (HttpClientErrorException.TooManyRequests e) {
-      log.warn("Rate limit reached for activity ID {}. Retrying (Attempt: {})", activityId,
-          retryCount);
-
-      if (retryCount < MAX_RETRY_ATTEMPTS) {
-        kafkaRetryService.scheduleActivityRetry(userId, activityId, retryCount, e);
-      } else {
-        log.error("Max retry attempts reached for activity ID {}. Skipping processing.",
-            activityId);
-        ack.acknowledge();
-      }
-
-    } catch (Exception e) {
-      log.error("Error processing activity ID {}", activityId, e);
-      ack.acknowledge(); // Acknowledge to prevent infinite loop on bad messages
-    }
+  protected long getWaitTime(Instant scheduledRetryTime) {
+    return
+        1000 + scheduledRetryTime.toEpochMilli() - Instant.now().toEpochMilli();
   }
-
 }

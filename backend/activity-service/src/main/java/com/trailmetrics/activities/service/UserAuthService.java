@@ -1,5 +1,6 @@
 package com.trailmetrics.activities.service;
 
+import com.trailmetrics.activities.exception.TrailmetricsAuthServiceException;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,13 +42,15 @@ public class UserAuthService {
           .orElseThrow(() -> new RuntimeException("Received null token from Auth Service"));
     } catch (HttpClientErrorException.Unauthorized e) {
       log.error("Unauthorized: Invalid user credentials or token expired for userId={}", userId);
-      throw new RuntimeException("Unauthorized request: Access token is invalid or expired.");
+      throw new TrailmetricsAuthServiceException(
+          "Unauthorized request: Access token is invalid or expired.");
     } catch (ResourceAccessException e) {
       log.error("Auth Service is unreachable: {}", e.getMessage());
-      throw new RuntimeException("Auth Service is unavailable. Please try again later.");
+      throw new TrailmetricsAuthServiceException(
+          "Auth Service is unavailable. Please try again later.");
     } catch (Exception e) {
       log.error("Unexpected error while fetching token: {}", e.getMessage());
-      throw new RuntimeException("Failed to retrieve valid Strava access token");
+      throw new TrailmetricsAuthServiceException("Failed to retrieve valid Strava access token");
     }
   }
 }

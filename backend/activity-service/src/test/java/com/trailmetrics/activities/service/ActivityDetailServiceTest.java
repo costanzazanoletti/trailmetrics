@@ -1,6 +1,5 @@
 package com.trailmetrics.activities.service;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -14,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.trailmetrics.activities.client.StravaClient;
 import com.trailmetrics.activities.dto.ActivityStreamDTO;
+import com.trailmetrics.activities.exception.TrailmetricsAuthServiceException;
 import com.trailmetrics.activities.mapper.ActivityStreamMapper;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.model.ActivityStream;
@@ -56,6 +56,9 @@ class ActivityDetailServiceTest {
   @MockitoBean
   private KafkaRetryService kafkaRetryService;
 
+  @MockitoBean
+  private UserAuthService userAuthService;
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -67,6 +70,7 @@ class ActivityDetailServiceTest {
     String accessToken = "mockAccessToken";
     Long activityId = 123L;
     String userId = "user-456";
+    int retryCount = 0;
 
     Activity mockActivity = new Activity();
     mockActivity.setId(activityId);
@@ -74,6 +78,7 @@ class ActivityDetailServiceTest {
     ActivityStreamDTO mockStreamDTO = new ActivityStreamDTO();
     List<ActivityStream> mockStreams = List.of(new ActivityStream());
 
+    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn(accessToken);
     when(activityRepository.findById(activityId)).thenReturn(Optional.of(mockActivity));
     when(stravaClient.fetchActivityStream(accessToken, activityId)).thenReturn(mockStreamDTO);
 
@@ -84,18 +89,18 @@ class ActivityDetailServiceTest {
           .thenReturn(mockStreams);
 
       // When
-      activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId);
+      activityDetailService.processActivity(activityId, userId, retryCount);
 
       // Then
       verify(activityRepository, times(1)).findById(activityId);
       verify(stravaClient, times(1)).fetchActivityStream(accessToken, activityId);
       verify(activityStreamRepository, times(1)).saveAll(mockStreams);
 
-      // Ensure static method was called
-      mockedMapper.verify(
-          () -> ActivityStreamMapper.mapStreamsToEntities(mockActivity, mockStreamDTO), times(1));
-
-      // Ensure KafkaProducerService publishes ActivityProcessed once
+      // Then
+      verify(userAuthService, times(1)).fetchAccessTokenFromAuthService(userId);
+      verify(activityRepository, times(1)).findById(activityId);
+      verify(stravaClient, times(1)).fetchActivityStream(accessToken, activityId);
+      verify(activityStreamRepository, times(1)).saveAll(mockStreams);
       verify(kafkaProducerService, times(1)).publishActivityProcessed(activityId);
       verify(kafkaRetryService, never()).scheduleActivityRetry(anyString(), anyLong(), anyInt(),
           any());
@@ -108,14 +113,12 @@ class ActivityDetailServiceTest {
     String accessToken = "mockAccessToken";
     Long activityId = 456L;
     String userId = "user-123";
+    int retryCount = 0;
 
     when(activityRepository.findById(activityId)).thenReturn(Optional.empty());
+    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn(accessToken);
 
-    // When & Then
-    RuntimeException thrown = assertThrows(
-        RuntimeException.class,
-        () -> activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId)
-    );
+    activityDetailService.processActivity(activityId, userId, retryCount);
 
     verify(activityRepository, times(1)).findById(activityId);
     verify(stravaClient, times(1)).fetchActivityStream(accessToken,
@@ -124,8 +127,8 @@ class ActivityDetailServiceTest {
 
     verify(kafkaProducerService, never()).publishActivityProcessed(
         activityId); // No kafka publishing
-    verify(kafkaRetryService, never()).scheduleActivityRetry(anyString(), anyLong(), anyInt(),
-        any()); // No rescheduling
+    verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId), eq(0),
+        eq(null)); // Rescheduling
   }
 
   @Test
@@ -134,6 +137,7 @@ class ActivityDetailServiceTest {
     String accessToken = "mockAccessToken";
     Long activityId = 789L;
     String userId = "user-987";
+    int retryCount = 0;
 
     HttpHeaders headers = new HttpHeaders();
     headers.add("X-ReadRateLimit-Usage", "110,500"); // Short window exceeded
@@ -141,15 +145,58 @@ class ActivityDetailServiceTest {
         HttpStatus.TOO_MANY_REQUESTS, "Too Many Requests", headers, null, StandardCharsets.UTF_8
     );
 
+    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn(accessToken);
+    when(stravaClient.fetchActivityStream(accessToken, activityId)).thenThrow(
+        tooManyRequestsException);
+
     // When
-    when(stravaClient.fetchActivityStream(accessToken, activityId))
-        .thenThrow(tooManyRequestsException);
-    activityDetailService.fetchStreamAndUpdateActivity(accessToken, activityId, userId);
+    activityDetailService.processActivity(activityId, userId, retryCount);
+
     // Then
     verify(activityStreamRepository, never()).saveAll(any()); // No save should occur
     verify(kafkaProducerService, never()).publishActivityProcessed(
         activityId); // No Kafka publishing
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId), eq(0),
         eq(tooManyRequestsException)); // Publish activity retry
+  }
+
+  @Test
+  void shouldHandleAuthServiceExceptionAndRetry() {
+    // Given
+    Long activityId = 101L;
+    String userId = "user-111";
+    int retryCount = 0;
+
+    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenThrow(
+        new TrailmetricsAuthServiceException("Failed to retrieve token"));
+
+    // When
+    activityDetailService.processActivity(activityId, userId, retryCount);
+
+    // Then
+    verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
+        eq(retryCount), eq(null));
+    verify(kafkaProducerService, never()).publishActivityProcessed(activityId);
+  }
+
+  @Test
+  void shouldHandleGeneralExceptionAndRetry() {
+    // Given
+    Long activityId = 202L;
+    String userId = "user-222";
+    int retryCount = 0;
+    String accessToken = "mockAccessToken";
+
+    when(userAuthService.fetchAccessTokenFromAuthService(userId)).thenReturn(accessToken);
+    when(stravaClient.fetchActivityStream(accessToken, activityId)).thenThrow(
+        new RuntimeException("Unexpected error"));
+
+    // When
+    activityDetailService.processActivity(activityId, userId, retryCount);
+
+    // Then
+    verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
+        eq(retryCount), eq(null));
+    verify(kafkaProducerService, never()).publishActivityProcessed(activityId);
   }
 }
