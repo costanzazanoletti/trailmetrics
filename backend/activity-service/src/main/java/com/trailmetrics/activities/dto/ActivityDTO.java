@@ -1,26 +1,57 @@
 package com.trailmetrics.activities.dto;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.Instant;
+import lombok.Data;
 
 @Data
 public class ActivityDTO {
+
   private Long id;
+
   private String name;
+
   private double distance;
-  private int moving_time;
-  private double total_elevation_gain;
-  private Long athlete_id;
+
+  @JsonProperty("moving_time")
+  private int movingTime;
+
+  @JsonProperty("total_elevation_gain")
+  private double totalElevationGain;
+
+  @JsonProperty("athlete_id")
+  private Long athleteId;
+
   private String type;
-  private String sport_type;
-  private Instant start_date;
-  private String map_polyline;
-  private double average_speed;
-  private double max_speed;
-  private Double average_cadence;
-  private Integer average_temp;
-  private Double average_watts;
-  private Double weighted_average_watts;
-  private Boolean has_heartrate;
+
+  @JsonProperty("sport_type")
+  private String sportType;
+
+  @JsonProperty("start_date")
+  private Instant startDate;
+
+  @JsonProperty("map_polyline")
+  private String mapPolyline;
+
+  @JsonProperty("average_speed")
+  private double averageSpeed;
+
+  @JsonProperty("max_speed")
+  private double maxSpeed;
+
+  @JsonProperty("average_cadence")
+  private Double averageCadence;
+
+  @JsonProperty("average_temp")
+  private Integer averageTemp;
+
+  @JsonProperty("average_watts")
+  private Double averageWatts;
+
+  @JsonProperty("weighted_average_watts")
+  private Double weightedAverageWatts;
+
+  @JsonProperty("has_heartrate")
+  private Boolean hasHeartrate;
 }
 

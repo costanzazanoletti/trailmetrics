@@ -13,20 +13,20 @@ public class ActivityMapper {
     activity.setId(dto.getId());
     activity.setName(dto.getName());
     activity.setDistance(dto.getDistance());
-    activity.setMovingTime(dto.getMoving_time());
-    activity.setTotalElevationGain(dto.getTotal_elevation_gain());
-    activity.setAthleteId(dto.getAthlete_id());
+    activity.setMovingTime(dto.getMovingTime());
+    activity.setTotalElevationGain(dto.getTotalElevationGain());
+    activity.setAthleteId(dto.getAthleteId());
     activity.setType(dto.getType());
-    activity.setSportType(dto.getSport_type());
-    activity.setStartDate(dto.getStart_date());
-    activity.setMapPolyline(dto.getMap_polyline());
-    activity.setAverageSpeed(dto.getAverage_speed());
-    activity.setMaxSpeed(dto.getMax_speed());
-    activity.setAverageCadence(dto.getAverage_cadence());
-    activity.setAverageTemp(dto.getAverage_temp());
-    activity.setAverageWatts(dto.getAverage_watts());
-    activity.setWeightedAverageWatts(dto.getWeighted_average_watts());
-    activity.setHasHeartrate(dto.getHas_heartrate());
+    activity.setSportType(dto.getSportType());
+    activity.setStartDate(dto.getStartDate());
+    activity.setMapPolyline(dto.getMapPolyline());
+    activity.setAverageSpeed(dto.getAverageSpeed());
+    activity.setMaxSpeed(dto.getMaxSpeed());
+    activity.setAverageCadence(dto.getAverageCadence());
+    activity.setAverageTemp(dto.getAverageTemp());
+    activity.setAverageWatts(dto.getAverageWatts());
+    activity.setWeightedAverageWatts(dto.getWeightedAverageWatts());
+    activity.setHasHeartrate(dto.getHasHeartrate());
     return activity;
   }
 

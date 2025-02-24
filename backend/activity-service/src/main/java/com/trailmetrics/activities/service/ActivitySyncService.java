@@ -76,7 +76,7 @@ public class ActivitySyncService {
           for (ActivityDTO activity : activities) {
             if (!isAllowedActivity(activity)) {
               log.info("Skipping activity ID {} ({}) as it's not in allowed sport types",
-                  activity.getId(), activity.getSport_type());
+                  activity.getId(), activity.getSportType());
               continue;
             }
             if (activityRepository.existsById(activity.getId())) {
@@ -117,7 +117,7 @@ public class ActivitySyncService {
    */
   private boolean isAllowedActivity(ActivityDTO activity) {
     return allowedSportTypes.contains(activity.getType()) || allowedSportTypes.contains(
-        activity.getSport_type());
+        activity.getSportType());
   }
 
   /**
