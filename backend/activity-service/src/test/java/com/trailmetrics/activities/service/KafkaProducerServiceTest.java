@@ -53,7 +53,8 @@ class KafkaProducerServiceTest {
     // Then
     ArgumentCaptor<ActivitySyncMessage> messageCaptor = ArgumentCaptor.forClass(
         ActivitySyncMessage.class);
-    verify(kafkaActivitySyncTemplate).send(eq(ACTIVITY_SYNC_TOPIC), messageCaptor.capture());
+    verify(kafkaActivitySyncTemplate).send(eq(ACTIVITY_SYNC_TOPIC), eq(String.valueOf(activityId)),
+        messageCaptor.capture());
 
     ActivitySyncMessage capturedMessage = messageCaptor.getValue();
     assertEquals(userId, capturedMessage.getUserId());
@@ -73,6 +74,7 @@ class KafkaProducerServiceTest {
     ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(
         ActivityProcessedMessage.class);
     verify(kafkaActivityProcessedTemplate).send(eq(ACTIVITY_PROCESSED_TOPIC),
+        eq(String.valueOf(activityId)),
         messageCaptor.capture());
 
     ActivityProcessedMessage capturedMessage = messageCaptor.getValue();

@@ -71,7 +71,7 @@ public class KafkaRetryService {
     );
 
     // Send the message to Kafka immediately (KafkaConsumerService will respect the scheduledRetryTime)
-    activityRetryKafkaTemplate.send(ACTIVITY_RETRY_TOPIC, retryMessage);
+    activityRetryKafkaTemplate.send(ACTIVITY_RETRY_TOPIC, String.valueOf(activityId), retryMessage);
 
     log.info("Retry for activity ID {} scheduled at {}", activityId, scheduledRetryTime);
   }
@@ -89,7 +89,7 @@ public class KafkaRetryService {
     UserSyncRetryMessage retryMessage = new UserSyncRetryMessage(userId, retryTime, Instant.now());
 
     // Send the message to Kafka immediately (KafkaConsumerService will respect the scheduledRetryTime)
-    userSyncRetryKafkaTemplate.send(USER_SYNC_RETRY_TOPIC, retryMessage);
+    userSyncRetryKafkaTemplate.send(USER_SYNC_RETRY_TOPIC, userId, retryMessage);
 
     log.info("Full sync retry for user {} scheduled at {}", userId, retryTime);
   }

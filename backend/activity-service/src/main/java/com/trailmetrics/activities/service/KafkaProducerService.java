@@ -24,14 +24,15 @@ public class KafkaProducerService {
   public void publishActivityImport(Long activityId, String userId) {
     ActivitySyncMessage message = new ActivitySyncMessage(userId, activityId, Instant.now());
     log.info("Publishing activity import to Kafka: {}", message);
-    kafkaActivitySyncTemplate.send(ACTIVITY_SYNC_TOPIC, message);
+    kafkaActivitySyncTemplate.send(ACTIVITY_SYNC_TOPIC, String.valueOf(activityId), message);
   }
 
 
   public void publishActivityProcessed(Long activityId) {
     ActivityProcessedMessage message = new ActivityProcessedMessage(activityId,
         Instant.now());
-    kafkaActivityProcessedTemplate.send(ACTIVITY_PROCESSED_TOPIC, message);
+    kafkaActivityProcessedTemplate.send(ACTIVITY_PROCESSED_TOPIC, String.valueOf(activityId),
+        message);
     log.info("Sent ActivityProcessedMessage for activity {} to {}", activityId,
         ACTIVITY_PROCESSED_TOPIC);
   }

@@ -84,6 +84,7 @@ class KafkaRetryServiceTest {
     ArgumentCaptor<ActivityRetryMessage> messageCaptor = ArgumentCaptor.forClass(
         ActivityRetryMessage.class);
     verify(activityRetryKafkaTemplate, times(1)).send(eq(ACTIVITY_RETRY_TOPIC),
+        eq(String.valueOf(activityId)),
         messageCaptor.capture());
 
     ActivityRetryMessage capturedMessage = messageCaptor.getValue();
@@ -119,7 +120,7 @@ class KafkaRetryServiceTest {
     // Then
     ArgumentCaptor<UserSyncRetryMessage> messageCaptor = ArgumentCaptor.forClass(
         UserSyncRetryMessage.class);
-    verify(userSyncRetryKafkaTemplate, times(1)).send(eq(USER_SYNC_RETRY_TOPIC),
+    verify(userSyncRetryKafkaTemplate, times(1)).send(eq(USER_SYNC_RETRY_TOPIC), eq(userId),
         messageCaptor.capture());
 
     UserSyncRetryMessage capturedMessage = messageCaptor.getValue();
@@ -149,7 +150,7 @@ class KafkaRetryServiceTest {
     // Then
     ArgumentCaptor<UserSyncRetryMessage> messageCaptor = ArgumentCaptor.forClass(
         UserSyncRetryMessage.class);
-    verify(userSyncRetryKafkaTemplate, times(1)).send(eq(USER_SYNC_RETRY_TOPIC),
+    verify(userSyncRetryKafkaTemplate, times(1)).send(eq(USER_SYNC_RETRY_TOPIC), eq(userId),
         messageCaptor.capture());
 
     UserSyncRetryMessage capturedMessage = messageCaptor.getValue();
@@ -177,6 +178,7 @@ class KafkaRetryServiceTest {
 
     // Then
     verify(activityRetryKafkaTemplate, times(0)).send(eq(ACTIVITY_RETRY_TOPIC),
+        eq(String.valueOf(activityId)),
         any(ActivityRetryMessage.class)); // Ensure no further retries
   }
 }
