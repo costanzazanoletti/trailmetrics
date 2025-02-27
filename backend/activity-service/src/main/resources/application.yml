@@ -35,7 +35,7 @@ spring:
   kafka:
     bootstrap-servers: localhost:9092
     consumer:
-      group-id: activity-group
+      group-id: activity-service-group
       auto-offset-reset: earliest
       max-poll-records: 1  # Process one activity at a time (avoids API overload)
       enable-auto-commit: false  # Manually commit after processing
