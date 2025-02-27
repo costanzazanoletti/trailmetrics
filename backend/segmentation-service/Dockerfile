@@ -10,8 +10,6 @@ COPY . .
 # Installa le dipendenze
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Esponi la porta 5001 per Flask
-EXPOSE 5001
 
 # Comando per avviare Flask
 CMD ["python", "app.py"]
