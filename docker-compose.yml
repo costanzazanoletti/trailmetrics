@@ -52,5 +52,17 @@ services:
     depends_on:
       - broker
 
+  segmentation-service:
+    build: ./backend/segmentation-service
+    ports:
+      - '5001:5001'
+    depends_on:
+      - broker
+      - postgres
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/trailmetrics
+      - KAFKA_BROKER=broker:29092
+
 volumes:
   postgres_data:

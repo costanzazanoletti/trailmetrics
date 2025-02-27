@@ -1,0 +1,8 @@
+flask
+pandas
+numpy
+kafka-python
+psycopg2-binary
+pytest
+python-dotenv
+sqlalchemy
