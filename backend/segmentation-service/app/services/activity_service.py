@@ -28,7 +28,5 @@ def get_activity_streams(activity_id):
     }
 
     structured_data["activity_id"] = [activity_id] * max_length
-    # Rename columns for simplicity
-    structured_data = structured_data.rename(columns={"grade_smooth": "grade","velocity_smooth":"speed"})
 
     return pd.DataFrame(structured_data)
