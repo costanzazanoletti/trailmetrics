@@ -43,3 +43,9 @@ To show the output in terminal
 ```sh
 pytest -s tests/
 ```
+
+# Python run app
+
+```sh
+python app.py
+```
