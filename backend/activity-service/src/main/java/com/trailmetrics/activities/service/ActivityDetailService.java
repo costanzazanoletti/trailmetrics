@@ -12,6 +12,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 @Service
@@ -62,7 +63,8 @@ public class ActivityDetailService {
     }
   }
 
-  private void fetchStreamAndUpdateActivity(String accessToken, Long activityId) {
+  @Transactional
+  protected void fetchStreamAndUpdateActivity(String accessToken, Long activityId) {
     log.info("Fetching streams for activity ID: {}", activityId);
 
     ActivityStreamDTO streamDTO = stravaClient.fetchActivityStream(accessToken, activityId);
