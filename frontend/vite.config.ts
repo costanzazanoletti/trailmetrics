@@ -12,7 +12,7 @@ export default defineConfig({
     sourcemap: 'inline', // Inline source maps to prevent missing files
   },
   server: {
-    port: 5173,
+    port: 3000,
     strictPort: true,
   },
 });

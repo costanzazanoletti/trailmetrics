@@ -1,5 +1,5 @@
 app:
-  frontend-url: http://localhost:5173
+  frontend-url: http://localhost:3000
   jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
   encryption:
     secret-key: YNLyUVdaoQ

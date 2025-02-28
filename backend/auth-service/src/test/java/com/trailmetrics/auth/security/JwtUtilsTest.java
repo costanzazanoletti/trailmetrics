@@ -15,17 +15,20 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "spring.config.location=classpath:/application-test.yml"
+})
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class JwtUtilsTest {
+
 
   @Value("${jwt.expiration-time}")
   private long EXPIRATION_TIME;
 
   @PostConstruct
   public void init() {
-    System.out.println("🔹 Loaded JWT Expiration Time: " + EXPIRATION_TIME);
+    System.out.println("Loaded JWT Expiration Time: " + EXPIRATION_TIME);
   }
 
   @Autowired
