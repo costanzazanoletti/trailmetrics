@@ -1,15 +1,15 @@
 app:
-  frontend-url: http://localhost:3000
-  jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  jwt-cookie-name: ${JWT_COOKIE_NAME:TRAILMETRICS-JWT-TOKEN}
   encryption:
-    secret-key: YNLyUVdaoQ
-    salt: ee729f61
+    secret-key: ${ENCRYPTION_SECRET_KEY}
+    salt: ${ENCRYPTION_SALT}
 
 auth-service:
-  api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
+  api-key: ${AUTH_SERVICE_API_KEY}
 
 server:
-  port: 8080
+  port: ${SERVER_PORT}
   error:
     whitelabel:
       enabled: false # Disables default Spring Boot error page
@@ -20,11 +20,13 @@ server:
 
 external-api:
   strava:
-    refresh-token-url: "https://www.strava.com/api/v3/oauth/token"
+    refresh-token-url: 'https://www.strava.com/api/v3/oauth/token'
 
 spring:
   application:
     name: auth-service
+  config:
+    import: optional:file:.env[.properties]
   security:
     oauth2:
       client:
@@ -37,13 +39,14 @@ spring:
         registration:
           strava:
             authorization-grant-type: authorization_code
-            client-id: 138564
+            client-id: ${STRAVA_CLIENT_ID}
             client-name: Strava
-            client-secret: 537398e794f5f2ac1515c141818a1bd361b873c4
+            client-secret: ${STRAVA_CLIENT_SECRET}
             redirect-uri: '{baseUrl}/login/oauth2/code/strava'
             scope: read,activity:read_all
 
 jwt:
   private-key-path: file:config/keys/private.pem #keys/private.pem
   public-key-path: file:config/keys/public.pem #keys/public.pem
-  expiration-time: 2
+  expiration-time: 2 # Change only for test
+

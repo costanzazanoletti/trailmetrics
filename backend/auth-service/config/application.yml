@@ -44,7 +44,7 @@ spring:
             scope: read,activity:read_all
 
 jwt:
-  private-key-path: file:config/keys/private.pem #keys/private.pem
-  public-key-path: file:config/keys/public.pem #keys/public.pem
+  private-key-path: file:config/keys/private.pem
+  public-key-path: file:config/keys/public.pem
   expiration-time: ${JWT_EXPIRATION:900000}
 
