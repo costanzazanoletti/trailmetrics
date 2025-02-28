@@ -94,6 +94,7 @@ class ActivityDetailServiceTest {
       // Then
       verify(activityRepository, times(1)).findById(activityId);
       verify(stravaClient, times(1)).fetchActivityStream(accessToken, activityId);
+      verify(activityStreamRepository, times(1)).deleteByActivityId(activityId);
       verify(activityStreamRepository, times(1)).saveAll(mockStreams);
 
       // Then
@@ -124,6 +125,7 @@ class ActivityDetailServiceTest {
     verify(stravaClient, times(1)).fetchActivityStream(accessToken,
         activityId); // API should be called once
     verify(activityStreamRepository, never()).saveAll(any()); // No save should occur
+    verify(activityStreamRepository, never()).deleteByActivityId(any()); // No delete should occur
 
     verify(kafkaProducerService, never()).publishActivityProcessed(
         activityId); // No kafka publishing
@@ -154,6 +156,7 @@ class ActivityDetailServiceTest {
 
     // Then
     verify(activityStreamRepository, never()).saveAll(any()); // No save should occur
+    verify(activityStreamRepository, never()).deleteByActivityId(any()); // No delete should occur
     verify(kafkaProducerService, never()).publishActivityProcessed(
         activityId); // No Kafka publishing
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId), eq(0),

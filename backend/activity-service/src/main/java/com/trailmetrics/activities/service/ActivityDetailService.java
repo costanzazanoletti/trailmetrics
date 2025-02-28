@@ -70,6 +70,10 @@ public class ActivityDetailService {
     Activity activity = activityRepository.findById(activityId)
         .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
 
+    // Delete existing activity streams before saving new ones
+    log.info("Deleting existing streams for activity ID: {}", activityId);
+    activityStreamRepository.deleteByActivityId(activityId);
+
     // Convert DTO to List<ActivityStream>
     List<ActivityStream> activityStreams = ActivityStreamMapper.mapStreamsToEntities(activity,
         streamDTO);
