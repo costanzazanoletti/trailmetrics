@@ -1,6 +1,7 @@
 import os
 import psycopg2
 import pandas as pd
+import numpy as np
 from sqlalchemy import create_engine, text
 from dotenv import load_dotenv
 
@@ -8,9 +9,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+# If test mode use test database
+if os.getenv("TEST_MODE"):
+    DATABASE_URL = os.getenv("TEST_DATABASE_URL", DATABASE_URL)
 
 if not DATABASE_URL:
     raise ValueError("DATABASE_URL is not set. Make sure the .env file exists and is configured correctly.")
+
+print(f"Database URL: {DATABASE_URL}")
 
 # Create a SQLAlchemy engine
 engine = create_engine(DATABASE_URL)
@@ -33,38 +39,70 @@ def get_raw_activity_streams(activity_id):
 
 def store_segments(segments_df):
     """
-    Stores segmented data into the 'segments' table.
+    Deletes existing segments for an activity and stores new segmented data into the 'segments' table.
     """
     if segments_df.empty:
         print("No segments to store.")
         return
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    try:
+        cursor = conn.cursor()
 
-    query = """
-    INSERT INTO segments (activity_id, start_distance, end_distance, segment_length, avg_gradient,
-                          avg_cadence, movement_type, type, grade_category)
-    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """
+        # Begin transaction
+        conn.autocommit = False
 
-    for _, row in segments_df.iterrows():
-        cursor.execute(query, (
-            row["activity_id"],
-            row["start_distance"],
-            row["end_distance"],
-            row["segment_length"],
-            row["avg_gradient"],
-            row["avg_cadence"],
-            row["movement_type"],
-            row["type"],
-            row["grade_category"]
-        ))
+        # Convert DataFrame values to Python-native types
+        segments_df = segments_df.astype({
+            "activity_id": "int",
+            "start_distance": "float",
+            "end_distance": "float",
+            "segment_length": "float",
+            "avg_gradient": "float",
+            "avg_cadence": "float",
+            "grade_category": "float"
+        })
 
-    conn.commit()
-    cursor.close()
-    conn.close()
-    print(f"Stored {len(segments_df)} segments in the database.")
+        # Convert NumPy types to native Python types and handle NaN values
+        segments_df = segments_df.astype(object).where(pd.notnull(segments_df), None)
+      
+        
+        # Delete existing segments for the activity
+        delete_query = "DELETE FROM segments WHERE activity_id = %s;"
+        cursor.execute(delete_query, (segments_df.iloc[0]["activity_id"],))
+
+        # Insert new segments
+        insert_query = """
+        INSERT INTO segments (activity_id, start_distance, end_distance, segment_length, avg_gradient,
+                              avg_cadence, movement_type, type, grade_category)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """
+
+        for _, row in segments_df.iterrows():
+            cursor.execute(insert_query, (
+                int(row["activity_id"]),
+                float(row["start_distance"]),
+                float(row["end_distance"]),
+                float(row["segment_length"]),
+                float(row["avg_gradient"]),
+                float(row["avg_cadence"]),
+                str(row["movement_type"]),
+                str(row["type"]),
+                float(row["grade_category"])
+            ))
+
+        # Commit transaction
+        conn.commit()
+        print(f"Stored {len(segments_df)} segments in the database.")
+
+    except Exception as e:
+        conn.rollback()  # Rollback transaction in case of failure
+        print(f"Error storing segments: {e}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
 
 def create_segments_table():
     """
@@ -98,7 +136,7 @@ def create_segments_table():
         table_exists = result.scalar()  # Returns True if the table exists, False otherwise
 
         if not table_exists:
-            print("🔍 Table 'segments' not found. Creating it now...")
+            print("Table 'segments' not found. Creating it now...")
             conn.execute(text(create_query))
             conn.commit()
             print("'segments' table created successfully.")
