@@ -47,20 +47,22 @@ def get_activity_streams(activity_id,retries=3,delay=1):
     return pd.DataFrame
 
 
-def preprocess_streams(df):
+def preprocess_streams(df, activity_id):
     """
     Preprocesses the dataframe before segmenting:
     - Renames columns: 'grade_smooth' -> 'grade', 'velocity_smooth' -> 'speed'.
     - Checks for missing values in essential columns.
     - Fills missing values to ensure lists are of the same length.
     """
-    df = df.rename(columns={"grade_smooth": "grade", "velocity_smooth": "speed"})
-    
-    required_columns = ["distance", "altitude", "latlng", "cadence"]
-    missing_columns = [col for col in required_columns if col in df.columns and df[col].isnull().all()]
-    
+    required_columns = ["distance", "altitude", "latlng", "cadence", "grade_smooth","velocity_smooth", "time"]
+    # Check for missing columns
+    missing_columns = [col for col in required_columns if col not in df.columns or df[col].isnull().all()]
+
     if missing_columns:
-        raise ValueError(f"Cannot process activity: missing all values in {missing_columns}")
+        logger.error(f"Missing required columns for Activity {activity_id}: {missing_columns}. Skipping segmentation.")
+        return None  # Stop processing
+    
+    df = df.rename(columns={"grade_smooth": "grade", "velocity_smooth": "speed"})
     
     numeric_cols = df.select_dtypes(include=["number"]).columns
     df[numeric_cols] = df[numeric_cols].infer_objects(copy=False)

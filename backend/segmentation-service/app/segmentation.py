@@ -11,7 +11,7 @@ def segment_activity(activity_id):
     Retrieves and processes activity data, then segments it using predefined parameters.
     """
     df = get_activity_streams(activity_id)
-    df = preprocess_streams(df)
+    df = preprocess_streams(df, activity_id)
 
     gradient_tolerance = float(os.getenv("GRADIENT_TOLERANCE", 0.5))
     min_segment_length = float(os.getenv("MIN_SEGMENT_LENGTH", 50.0))
