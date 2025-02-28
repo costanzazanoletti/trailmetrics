@@ -52,5 +52,22 @@ services:
     depends_on:
       - broker
 
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      args:
+        JAR_FILE: target/auth-service-*.jar
+    container_name: auth-service
+    restart: always
+    depends_on:
+      - broker
+      - postgres
+    ports:
+      - '8080:8080'
+    env_file:
+      - ./backend/auth-service/.env
+    volumes:
+      - ./backend/auth-service/config/application.yml:/app/config/application.yml
+      - ./backend/auth-service/config/keys:/app/config/keys
 volumes:
   postgres_data:

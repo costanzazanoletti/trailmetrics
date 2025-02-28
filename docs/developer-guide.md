@@ -20,10 +20,23 @@ To shut it down
 docker-compose down
 ```
 
-To build it when changing python requirements.txt or Dockerfile
+To build the images
 
 ```sh
 docker-compose --build
+```
+
+To start and stop a single container (es. auth-service)
+
+```sh
+docker stop auth-service
+docker start auth-service
+```
+
+To enter the container folders (es. read auth-service logs)
+
+```sh
+docker exec -it auth-service cat /app/logs/app.logs
 ```
 
 ## AKHQ UI for Kafka

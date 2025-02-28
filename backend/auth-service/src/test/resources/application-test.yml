@@ -1,4 +1,49 @@
+app:
+  frontend-url: http://localhost:3000
+  jwt-cookie-name: TRAILMETRICS-JWT-TOKEN
+  encryption:
+    secret-key: YNLyUVdaoQ
+    salt: ee729f61
+
+auth-service:
+  api-key: 019d3401-6011-4f50-bffe-6c1dd9ac735f
+
+server:
+  port: 8080
+  error:
+    whitelabel:
+      enabled: false # Disables default Spring Boot error page
+    include-message: always # Ensures errors return meaningful messages
+    include-binding-errors: always
+    include-stacktrace: never
+    include-exception: true
+
+external-api:
+  strava:
+    refresh-token-url: "https://www.strava.com/api/v3/oauth/token"
+
+spring:
+  application:
+    name: auth-service
+  security:
+    oauth2:
+      client:
+        provider:
+          strava:
+            authorization-uri: https://www.strava.com/oauth/authorize
+            token-uri: https://www.strava.com/oauth/token
+            user-info-uri: https://www.strava.com/api/v3/athlete
+            user-name-attribute: id
+        registration:
+          strava:
+            authorization-grant-type: authorization_code
+            client-id: 138564
+            client-name: Strava
+            client-secret: 537398e794f5f2ac1515c141818a1bd361b873c4
+            redirect-uri: '{baseUrl}/login/oauth2/code/strava'
+            scope: read,activity:read_all
+
 jwt:
-  private-key-path: keys/private.pem
-  public-key-path: keys/public.pem
-  expiration-time: 2 # token expires in 2 seconds for testing
+  private-key-path: file:config/keys/private.pem #keys/private.pem
+  public-key-path: file:config/keys/public.pem #keys/public.pem
+  expiration-time: 2

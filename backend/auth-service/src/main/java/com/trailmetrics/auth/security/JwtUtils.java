@@ -4,6 +4,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -13,7 +16,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -22,14 +24,20 @@ public class JwtUtils {
   @Value("${jwt.expiration-time}")
   private long EXPIRATION_TIME;
 
+  @Value("${jwt.private-key-path}")
+  private String PRIVATE_KEY_PATH;
+
+  @Value("${jwt.public-key-path}")
+  private String PUBLIC_KEY_PATH;
+
   private PrivateKey privateKey;
   private PublicKey publicKey;
 
   @PostConstruct
   public void init() {
     try {
-      privateKey = loadPrivateKey("keys/private.pem");
-      publicKey = loadPublicKey("keys/public.pem");
+      privateKey = loadPrivateKey(PRIVATE_KEY_PATH);
+      publicKey = loadPublicKey(PUBLIC_KEY_PATH);
     } catch (Exception e) {
 
       throw new RuntimeException("Error loading RSA keys", e);
@@ -40,9 +48,11 @@ public class JwtUtils {
     return publicKey;
   }
 
-  private PrivateKey loadPrivateKey(String path) throws Exception {
 
-    String key = new String(new ClassPathResource(path).getInputStream().readAllBytes());
+  private PrivateKey loadPrivateKey(String path) throws Exception {
+    Path keyPath = Paths.get(path.replace("file:", "")); // Ensure correct path format
+    String key = new String(Files.readAllBytes(keyPath));
+
     key = key.replace("-----BEGIN PRIVATE KEY-----", "")
         .replace("-----END PRIVATE KEY-----", "")
         .replaceAll("\\s", ""); // Remove spaces
@@ -53,8 +63,9 @@ public class JwtUtils {
   }
 
   private PublicKey loadPublicKey(String path) throws Exception {
-
-    String key = new String(new ClassPathResource(path).getInputStream().readAllBytes());
+    Path keyPath = Paths.get(path.replace("file:", "")); // Ensure correct path format
+    String key = new String(Files.readAllBytes(keyPath));
+  
     key = key.replace("-----BEGIN PUBLIC KEY-----", "")
         .replace("-----END PUBLIC KEY-----", "")
         .replaceAll("\\s", ""); // Remove spaces
