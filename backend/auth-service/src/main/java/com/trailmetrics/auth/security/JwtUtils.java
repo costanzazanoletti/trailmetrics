@@ -90,7 +90,7 @@ public class JwtUtils {
 
       return expirationTime.isAfter(Instant.now());
     } catch (Exception e) {
-      System.out.println("⚠ Token is invalid or expired.");
+      System.out.println("Token is invalid or expired.");
       return false;
     }
   }
