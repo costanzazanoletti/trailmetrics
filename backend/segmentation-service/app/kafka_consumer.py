@@ -2,6 +2,7 @@ import json
 import os
 from kafka import KafkaConsumer, KafkaProducer
 from dotenv import load_dotenv
+import logging
 from app.segmentation import segment_activity
 
 # Load environment variables
@@ -12,6 +13,8 @@ KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "segmentation-service-group")
 KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT", "activity-processed-queue")
 KAFKA_TOPIC_OUTPUT = os.getenv("KAFKA_TOPIC_OUTPUT", "activity-segmented-queue")
+
+logger = logging.getLogger("segmentation")
 
 print(f"Using Kafka broker: {KAFKA_BROKER}")
 
@@ -48,13 +51,15 @@ def start_kafka_consumer():
                 continue
 
             print(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
-
+            logger.info(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
+            
             # Perform segmentation
             segments_df = segment_activity(activity_id)
 
             if not segments_df.empty:
                 segment_count = len(segments_df)
                 print(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
+                logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
 
                 try:
                     producer.send(
@@ -69,9 +74,11 @@ def start_kafka_consumer():
                     print(f"Published '{KAFKA_TOPIC_OUTPUT}' event for Activity ID: {activity_id}")
                 except Exception as e:
                     print(f"Error publishing Kafka event for {activity_id}: {e}")
+                    logger.info(f"Error publishing Kafka event for {activity_id}: {e}")
             else:
                 print(f"Empty segments for Activity ID: {activity_id}")
-
+                logger.warning(f"Empty segments for Activity ID: {activity_id}")
         except Exception as e:
             print(f"Error processing message: {e}")
+            logging.error(f"Error processing message: {e}")
 

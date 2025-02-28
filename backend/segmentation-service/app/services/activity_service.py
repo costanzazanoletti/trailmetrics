@@ -1,36 +1,51 @@
 import pandas as pd
 import numpy as np
+import time
+import logging
 from app.database import get_raw_activity_streams
 
-def get_activity_streams(activity_id):
+logger = logging.getLogger("segmentation")
+
+def get_activity_streams(activity_id,retries=3,delay=1):
     """
-    Converts raw activity stream data into a structured format.
+    Fetches and processes activity stream data with a retry mechanism.
     """
-    df_streams = get_raw_activity_streams(activity_id)
+    for attempt in range(retries):
+        df_streams = get_raw_activity_streams(activity_id)
+        
+        if not df_streams.empty:
+            # Normally process activity stream
+            activity_data = {}
 
-    activity_data = {}
+            for _, row in df_streams.iterrows():
+                stream_type = row["type"]
+                values = row["data"]
 
-    for _, row in df_streams.iterrows():
-        stream_type = row["type"]
-        values = row["data"]
+                # Only parse if it's a string; otherwise, assume it's already a list
+                if isinstance(values, str):
+                    import ast
+                    values = ast.literal_eval(values)
 
-        # Only parse if it's a string; otherwise, assume it's already a list
-        if isinstance(values, str):
-            import ast
-            values = ast.literal_eval(values)
+                activity_data[stream_type] = values
 
-        activity_data[stream_type] = values
+            max_length = max(len(v) for v in activity_data.values())
 
-    max_length = max(len(v) for v in activity_data.values())
+            structured_data = {
+                key: (value if len(value) == max_length else [None] * max_length)
+                for key, value in activity_data.items()
+            }
 
-    structured_data = {
-        key: (value if len(value) == max_length else [None] * max_length)
-        for key, value in activity_data.items()
-    }
+            structured_data["activity_id"] = [activity_id] * max_length
 
-    structured_data["activity_id"] = [activity_id] * max_length
+            return pd.DataFrame(structured_data)
+        
+        # Wait before retrying
+        print(f"[WARNING] No streams found for Activity {activity_id} at attempt {attempt}")
+        logger.warning(f"No streams found for Activity {activity_id} at attempt {attempt}")
+        time.sleep(delay)
+    # Return empty DataFrame if no data is found
+    return pd.DataFrame
 
-    return pd.DataFrame(structured_data)
 
 def preprocess_streams(df):
     """
