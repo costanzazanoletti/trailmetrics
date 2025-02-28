@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 @Service
@@ -29,6 +30,7 @@ public class KafkaConsumerService {
   /**
    * Listens for activity imports from `activity-sync-queue`. Processes individual activities.
    */
+  @Transactional
   @KafkaListener(topics = ACTIVITY_SYNC_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void consumeActivity(ActivitySyncMessage message, Acknowledgment ack) {
     log.info("Reading message in queue {} for activity ID {}", ACTIVITY_SYNC_TOPIC,
@@ -40,6 +42,7 @@ public class KafkaConsumerService {
   /**
    * Listens for activity retries from `activity-retry-queue`. Retries failed activities.
    */
+  @Transactional
   @KafkaListener(topics = ACTIVITY_RETRY_TOPIC, groupId = KAFKA_ACTIVITY_GROUP)
   public void consumeActivityRetry(ActivityRetryMessage message, Acknowledgment ack) {
     log.info("Reading message in queue {} for activity ID {}", ACTIVITY_RETRY_TOPIC,

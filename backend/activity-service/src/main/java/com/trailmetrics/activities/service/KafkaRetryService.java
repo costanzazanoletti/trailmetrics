@@ -98,7 +98,6 @@ public class KafkaRetryService {
    * Determines how long to wait before retrying based on API rate limits.
    */
   private int determineWaitTime(HttpClientErrorException e) {
-
     int shortWindowUsage = extractRateLimitUsage(e, 0);
     int dailyUsage = extractRateLimitUsage(e, 1);
 
@@ -129,6 +128,10 @@ public class KafkaRetryService {
    * Extracts rate limit usage from headers.
    */
   private int extractRateLimitUsage(HttpClientErrorException e, int index) {
+    if (e == null) {
+      log.warn("Exception is null. Cannot parse headers to compute retry");
+      return (index == 0) ? rateLimitShortWindow : rateLimitDaily; // Conservative fallback
+    }
     try {
       HttpHeaders headers = e.getResponseHeaders();
       if (headers == null) {
