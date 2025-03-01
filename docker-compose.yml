@@ -8,6 +8,7 @@ services:
       - 9092:9092
     environment:
       KAFKA_BROKER_ID: 1
+      KAFKA_OPTS: '-XX:-UseContainerSupport'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
@@ -69,5 +70,27 @@ services:
     volumes:
       - ./backend/auth-service/config/application.yml:/app/config/application.yml
       - ./backend/auth-service/config/keys:/app/config/keys
+
+  activity-service:
+    build:
+      context: ./backend/activity-service
+      args:
+        JAR_FILE: target/activity-service-*.jar
+    container_name: activity-service
+    restart: always
+    depends_on:
+      - broker
+      - postgres
+      - auth-service
+    ports:
+      - '8081:8081'
+    env_file:
+      - ./backend/activity-service/.env
+    environment:
+      - KAFKA_BOOTSTRAP_SERVERS=broker:29092
+      - AUTH_SERVICE_URL=http://auth-service:8080
+      - AUTH_SERVICE_PUBLIC_KEY_URL=http://auth-service:8080/internal/public-key
+      - DB_URL=jdbc:postgresql://postgres:5432/trailmetrics
+
 volumes:
   postgres_data:

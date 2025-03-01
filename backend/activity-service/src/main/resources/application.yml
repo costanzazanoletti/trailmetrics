@@ -6,9 +6,9 @@ app:
     salt: ${ENCRYPTION_SALT}
 
 auth-service:
-  url: ${AUTH_SERVICE_URL:http://localhost:8080}
+  url: ${AUTH_SERVICE_URL}
   api-key: ${AUTH_SERVICE_API_KEY}
-  public-key-url: ${AUTH_SERVICE_PUBLIC_KEY_URL:http://localhost:8080/internal/public-key}
+  public-key-url: ${AUTH_SERVICE_PUBLIC_KEY_URL}
 
 server:
   port: ${SERVER_PORT:8081}
