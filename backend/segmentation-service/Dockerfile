@@ -1,15 +1,15 @@
-# Usa un'immagine Python leggera
+# Use a light python image
 FROM python:3.10-slim
 
-# Imposta la working directory dentro il container
+# Set the working directory
 WORKDIR /app
 
-# Copia i file di progetto
-COPY . .
-
-# Installa le dipendenze
+# Copy requirements and install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy the application files
+COPY . . 
 
 # Comando per avviare Flask
 CMD ["python", "app.py"]

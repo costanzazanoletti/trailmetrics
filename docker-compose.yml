@@ -91,5 +91,20 @@ services:
       - AUTH_SERVICE_PUBLIC_KEY_URL=http://auth-service:8080/internal/public-key
       - DB_URL=jdbc:postgresql://postgres:5432/trailmetrics
 
+  segmentation-service:
+    build:
+      context: ./backend/segmentation-service
+    container_name: segmentation-service
+    restart: always
+    depends_on:
+      - broker
+      - postgres
+    env_file:
+      - ./backend/segmentation-service/.env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/trailmetrics
+      - KAFKA_BROKER=broker:29092
+    command: ['python', 'app.py']
+
 volumes:
   postgres_data:
