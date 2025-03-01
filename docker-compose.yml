@@ -68,7 +68,6 @@ services:
     env_file:
       - ./backend/auth-service/.env
     volumes:
-      - ./backend/auth-service/config/application.yml:/app/config/application.yml
       - ./backend/auth-service/config/keys:/app/config/keys
 
   activity-service:

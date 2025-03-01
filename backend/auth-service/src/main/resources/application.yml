@@ -1,5 +1,5 @@
 app:
-  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  frontend-url: ${FRONTEND_URL}
   jwt-cookie-name: ${JWT_COOKIE_NAME:TRAILMETRICS-JWT-TOKEN}
   encryption:
     secret-key: ${ENCRYPTION_SECRET_KEY}
@@ -49,4 +49,3 @@ jwt:
   private-key-path: file:config/keys/private.pem
   public-key-path: file:config/keys/public.pem
   expiration-time: ${JWT_EXPIRATION:900000}
-

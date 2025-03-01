@@ -19,18 +19,15 @@ spring:
     import: optional:file:.env[.properties]
 ```
 
-## Test ##
+## Test
 
 Tests run with Profile=Test, src/test/resources/application-test.yml and can run from Intellij and
-from Maven
-plugin inside Intellij
+from Maven plugin inside Intellij.
 Ensure that .env file is present and that environment variables are loaded from .env file
 
 ### Docker set up
 
-Docker has no access to classpath, so it uses the /config/application.yml, so the two files must be
-consistent.
-Before starting the container in docker the application must be build with maven `clean package`
+Before starting the container in docker you must create the jar file using maven `clean package`.
 
 ## RSA Authentication
 
