@@ -28,14 +28,10 @@ public class ActivitySyncService {
   private final ActivityRepository activityRepository;
   private final KafkaProducerService kafkaProducerService;
   private final KafkaRetryService kafkaRetryService;
-  private final ActivityDetailService activityDetailService;
 
 
   @Value("${strava.api.max-per-page}")
   private int maxPerPage;
-
-  @Value("${strava.api.instant-sync-limit}")
-  private int instantSyncLimit;
 
   @Value("#{'${strava.api.allowed-sport-types}'.split(',')}")
   private List<String> allowedSportTypes;
@@ -59,7 +55,6 @@ public class ActivitySyncService {
 
     int page = 1;
     boolean hasMore = true;
-    int processedCount = 0;
 
     while (hasMore) {
       try {
@@ -85,19 +80,9 @@ public class ActivitySyncService {
             }
             // Save basic metadata for activities not processed yet
             saveBasicActivity(userId, activity);
-
-            // process immediately the first activities
-            if (processedCount < instantSyncLimit) {
-
-              log.info("Processing activity ID {} instantly", activity.getId());
-              activityDetailService.processActivity(activity.getId(),
-                  userIdString, 0);
-
-            } else {
-              log.info("Queuing activity ID {} for background sync", activity.getId());
-              kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
-            }
-            processedCount++;
+            // Send Kafka message for activity processing
+            log.info("Queuing activity ID {} for background sync", activity.getId());
+            kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
           }
           page++;
         }

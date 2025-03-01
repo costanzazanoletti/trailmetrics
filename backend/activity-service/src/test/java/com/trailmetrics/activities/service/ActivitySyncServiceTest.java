@@ -52,9 +52,6 @@ class ActivitySyncServiceTest {
   @MockitoBean
   private KafkaRetryService kafkaRetryService;
 
-  @MockitoBean
-  private ActivityDetailService activityDetailService;
-
 
   @BeforeEach
   void setUp() {
@@ -114,11 +111,9 @@ class ActivitySyncServiceTest {
     activitySyncService.syncUserActivities(userId, accessToken);
 
     // Then
-    verify(activityRepository, times(2)).save(any(Activity.class)); // Ensures only two saves
-    verify(kafkaProducerService, times(1)).publishActivityImport(anyLong(),
-        eq(userId)); // Ensures only one Kafka message is sent because exceeds instantSyncLimit (1)
-    verify(activityDetailService, times(1)).processActivity(eq(1L),
-        eq(userId), eq(0));
+    verify(activityRepository, times(2)).save(any(Activity.class));
+    verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(),
+        eq(userId));
   }
 
   @Test
@@ -136,8 +131,7 @@ class ActivitySyncServiceTest {
     // Then
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-    verify(activityDetailService, never()).processActivity(anyLong(),
-        anyString(), anyInt());
+
   }
 
   @Test
@@ -166,8 +160,7 @@ class ActivitySyncServiceTest {
     // Then
     verify(activityRepository, never()).save(any(Activity.class)); // No save should happen
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-    verify(activityDetailService, never()).processActivity(anyLong(),
-        anyString(), anyInt());
+
   }
 
   @Test
@@ -190,8 +183,7 @@ class ActivitySyncServiceTest {
     // Then
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-    verify(activityDetailService, never()).processActivity(anyLong(),
-        anyString(), anyInt());
+
   }
 
   @Test
@@ -217,8 +209,7 @@ class ActivitySyncServiceTest {
         any());
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
     verify(activityRepository, never()).save(any(Activity.class));
-    verify(activityDetailService, never()).processActivity(anyLong(),
-        anyString(), anyInt());
+
   }
 
 
