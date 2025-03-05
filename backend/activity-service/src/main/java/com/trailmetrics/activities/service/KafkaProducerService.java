@@ -15,7 +15,7 @@ public class KafkaProducerService {
 
   private final KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
   private final KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
-  private static final String ACTIVITY_PROCESSED_TOPIC = "activity-processed-queue";
+  private static final String ACTIVITY_PROCESSED_TOPIC = "activity-processing-started-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
 
   /**

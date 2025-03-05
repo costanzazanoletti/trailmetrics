@@ -78,9 +78,9 @@ This document defines the Kafka topics and messages used in the application for 
 
 ## Kafka Messages
 
-### `activity-processed-queue`
+### `activity-processing-started-queue`
 
-- **Description**: An activity has been processed
+- **Description**: An activity has been saved and the processing has started
 - **Producer Service**: `activity-service`
 - **Consumer Group**: `segmentation-service-group`
 - **Key**: `activityId`
