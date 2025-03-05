@@ -5,14 +5,17 @@
 **TrailMetrics** is an application for analyzing and processing trail running training and race activities. The system uses **Kafka** for real-time messaging, **PostgreSQL** for data storage, and **Spring Boot** for backend processing and API exposure.
 
 **Technologies used:**
+
 - **Kafka (Kraft)**: Real-time message processing.
 - **Spring Boot**: Backend framework.
+- **Python**: Metrics computation
 - **PostgreSQL**: Data storage for activities.
 - **Docker**: Containerization of services.
 
 ## 2. System Architecture
 
 The system uses a **microservices architecture** with the following components:
+
 - **Backend**: Spring Boot processes activity data and integrates with Kafka for real-time messaging.
 - **Kafka**: Handles real-time messaging and data processing via producer and consumer.
 - **PostgreSQL**: Stores activities and user data.
@@ -21,7 +24,7 @@ The system uses a **microservices architecture** with the following components:
 
 ### 3.1. Prerequisites
 
-- **Docker and Docker Compose**: To run Kafka, Zookeeper, and PostgreSQL containers.
+- **Docker and Docker Compose**: To run frontend, backend, data analysis, Kafka and PostgreSQL containers.
 - **Java 17+**: To run the Spring Boot backend.
 - **Maven**: For Spring Boot dependency management.
 
@@ -39,7 +42,7 @@ git clone https://github.com/your-username/trailmetrics.git
 cd trailmetrics
 ```
 
-2. Start the Kafka, Zookeeper, and PostgreSQL services:
+2. Start the services:
 
 ```bash
 docker-compose up -d
@@ -51,12 +54,6 @@ docker-compose up -d
 docker ps
 ```
 
-4. Start the Spring Boot backend:
-
-```bash
-mvn spring-boot:run
-```
-
 ## 4. Kafka Configuration
 
 ### 4.1. Kafka (Kraft)
@@ -65,75 +62,85 @@ Kafka is configured to **handle topics** and process messages via **producer** a
 
 - **Kafka Port**: `localhost:9092`
 
-### 4.2. Spring Boot Configuration
+## 5. Kafka Topics and Messages
 
-Kafka is configured in **`application.yml`** as follows:
+This table defines the Kafka topics and messages used in the application for event-driven communication between services.
 
-```yaml
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: trailmetrics-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-```
+### 5.1 Kafka Messages
 
-This ensures that the **consumer** can connect to Kafka, read messages, and maintain synchronization with the offset.
+# Kafka Topics and Messages
 
-## 5. Managing Kafka Topics
+This document defines the Kafka topics and messages used in the application for event-driven communication between services.
 
-### 5.1. Creating a New Topic
+# Kafka Topics and Messages
 
-Kafka topics can be managed via the CLI.
+This document defines the Kafka topics and messages used in the application for event-driven communication between services.
 
-To create a topic manually, run:
+## Kafka Messages
 
-```bash
-docker exec -it kafka kafka-topics --create --topic test-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
-```
+### `activity-processed-queue`
 
-### 5.2. Listing Topics
+- **Description**: An activity has been processed
+- **Producer Service**: `activity-service`
+- **Consumer Group**: `segmentation-service-group`
+- **Key**: `activityId`
+- **Value JSON**:
+  ```json
+  {
+    "activityId": 13484124195,
+    "processedAt": 1740680048.270867000
+  }
+  ```
 
-To list all available topics:
+### `activity-sync-queue`
 
-```bash
-docker exec -it kafka kafka-topics --list --bootstrap-server localhost:9092
-```
+- **Description**: Syncing activity data
+- **Producer Service**: `activity-service`
+- **Consumer Group**: `activity-service-group`
+- **Key**: `activityId`
+- **Value JSON**:
+  ```json
+  {
+    "userId": "28658549",
+    "activityId": 8054008512,
+    "timestamp": 1740680052.920566000
+  }
+  ```
 
-## 6. Producer and Consumer
+### `activity-retry-queue`
 
-### 6.1. Sending Messages to Kafka
+- **Description**: Retry failed activity syncs
+- **Producer Service**: `activity-service`
+- **Consumer Group**: `activity-service-group`
+- **Key**: `activityId`
+- **Value JSON**:
+  ```json
+  {
+    "userId": "28658549",
+    "activityId": 8054008512,
+    "timestamp": 1740680052.920566000
+  }
+  ```
 
-Kafka allows sending messages via the **Producer**. You can do this manually from the CLI:
+### `user-sync-retry-queue`
 
-```bash
-docker exec -it kafka kafka-console-producer --broker-list localhost:9092 --topic test-topic
-```
+- **Description**: Retry failed user syncs
+- **Producer Service**: `user-service`
+- **Consumer Group**: `user-service-group`
+- **Key**: `userId`
+- **Value JSON**: `UserSyncMessage`
 
-Write a message (e.g., `TestKafkaMessage`) and press **ENTER**.
+### `activity-segmented-queue`
 
-### 6.2. Reading Messages from Kafka
-
-To read messages from a topic (e.g., `test-topic`):
-
-```bash
-docker exec -it kafka kafka-console-consumer --bootstrap-server localhost:9092 --topic test-topic --from-beginning
-```
-
-## 7. Common Issues and Solutions
-
-### 7.1. Timeout and Connection Issues
-If Kafka fails to connect, check:
-- **Listener configuration** in `docker-compose.yml`.
-- **Correct connection between consumer and Kafka**.
-
-### 7.2. Consumer Errors
-Ensure that the **consumer group** is properly registered and connected:
-
-```bash
-docker exec -it kafka kafka-consumer-groups --bootstrap-server localhost:9092 --describe --group trailmetrics-group-new
-```
+- **Description**: An activity has been segmented
+- **Producer Service**: `segmentation-service`
+- **Consumer Group**: (future consumers)
+- **Key**: `activityId`
+- **Value JSON**:
+  ```json
+  {
+    "activityId": "13484124195",
+    "segmentedAt": 1740680048.270867,
+    "segmentCount": 27
+  }
+  ```
