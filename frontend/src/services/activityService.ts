@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { API_ACTIVITY_BASE_URL } from '../config/apiConfig';
-import { useAuthStore } from '../store/useAuthStore';
 
 // Create an axios instance with default settings
 const apiClient = axios.create({
