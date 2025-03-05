@@ -80,8 +80,9 @@ This document defines the Kafka topics and messages used in the application for 
 
 ### `activity-processing-started-queue`
 
-- **Description**: An activity has been saved and the processing has started
+- **Description**: An activity has been synchronized and the processing has started
 - **Producer Service**: `activity-service`
+- **Consumer Service**: `segmentation-service`
 - **Consumer Group**: `segmentation-service-group`
 - **Key**: `activityId`
 - **Value JSON**:
@@ -96,6 +97,7 @@ This document defines the Kafka topics and messages used in the application for 
 
 - **Description**: Syncing activity data
 - **Producer Service**: `activity-service`
+- **Consumer Service**: `activity-service`
 - **Consumer Group**: `activity-service-group`
 - **Key**: `activityId`
 - **Value JSON**:
@@ -111,6 +113,7 @@ This document defines the Kafka topics and messages used in the application for 
 
 - **Description**: Retry failed activity syncs
 - **Producer Service**: `activity-service`
+- **Consumer Service**: `activity-service`
 - **Consumer Group**: `activity-service-group`
 - **Key**: `activityId`
 - **Value JSON**:
@@ -125,22 +128,96 @@ This document defines the Kafka topics and messages used in the application for 
 ### `user-sync-retry-queue`
 
 - **Description**: Retry failed user syncs
-- **Producer Service**: `user-service`
+- **Producer Service**: `activity-service`
+- **Consumer Service**: `activity-service`
 - **Consumer Group**: `user-service-group`
 - **Key**: `userId`
 - **Value JSON**: `UserSyncMessage`
 
-### `activity-segmented-queue`
+### **activity-terrain-request-queue**
 
-- **Description**: An activity has been segmented
-- **Producer Service**: `segmentation-service`
-- **Consumer Group**: (future consumers)
-- **Key**: `activityId`
-- **Value JSON**:
-  ```json
-  {
-    "activityId": "13484124195",
-    "segmentedAt": 1740680048.270867,
-    "segmentCount": 27
-  }
-  ```
+**Description:** Request for terrain data collection  
+**Producer Service:** `segmentation-service`  
+**Consumer Service:** `terrain-service`  
+**Consumer Group:** `terrain-service-group`  
+**Key:** `activityId`  
+**Value JSON:**
+
+```json
+{
+  "activityId": 13484124195,
+  "requestedAt": 1740680048.270867
+}
+```
+
+---
+
+### **activity-weather-request-queue**
+
+**Description:** Request for weather data collection  
+**Producer Service:** `segmentation-service`  
+**Consumer Service:** `weather-service`  
+**Consumer Group:** `weather-service-group`  
+**Key:** `activityId`  
+**Value JSON:**
+
+```json
+{
+  "activityId": 13484124195,
+  "requestedAt": 1740680048.270867
+}
+```
+
+---
+
+### **activity-terrain-processed-queue**
+
+**Description:** Terrain data has been stored in the database  
+**Producer Service:** `terrain-service`  
+**Consumer Service:** `efficiency-service`  
+**Consumer Group:** `efficiency-service-group`  
+**Key:** `activityId`  
+**Value JSON:**
+
+```json
+{
+  "activityId": 13484124195,
+  "processedAt": 1740680050.123456
+}
+```
+
+---
+
+### **activity-meteo-processed-queue**
+
+**Description:** Weather data has been stored in the database  
+**Producer Service:** `weather-service`  
+**Consumer Service:** `efficiency-service`  
+**Consumer Group:** `efficiency-service-group`  
+**Key:** `activityId`  
+**Value JSON:**
+
+```json
+{
+  "activityId": 13484124195,
+  "processedAt": 1740680051.654321
+}
+```
+
+---
+
+### **activity-processing-completed-queue**
+
+**Description:** All required data for efficiency computation is available  
+**Producer Service:** `efficiency-service-group`
+**Consumer Service:** TO BE DEFINED
+**Consumer Group:** `efficiency-service-group`  
+**Key:** `activityId`  
+**Value JSON:**
+
+```json
+{
+  "activityId": 13484124195,
+  "completedAt": 1740680052.987654
+}
+```
