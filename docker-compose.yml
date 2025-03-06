@@ -69,6 +69,7 @@ services:
       - ./backend/auth-service/.env
     environment:
       - FRONTEND_URL=http://localhost:3000
+      - STRAVA_REDIRECT_URI=http://localhost:8080/login/oauth2/code/strava
     volumes:
       - ./backend/auth-service/config/keys:/app/config/keys
 
@@ -112,6 +113,10 @@ services:
   frontend:
     build:
       context: ./frontend
+      args:
+        VITE_API_AUTH__BASE_URL: http://localhost:8080
+        VITE_API_ACTIVITY_BASE_URL: http://localhost:8081
+        VITE_STRAVA_CLIENT_ID: 138564
     container_name: frontend
     restart: always
     depends_on:
@@ -119,11 +124,6 @@ services:
       - activity-service
     ports:
       - '3000:80' # Map Nginx to localhost:3000
-    env_file:
-      - ./frontend/.env
-    environment:
-      - VITE_API_AUTH__BASE_URL=http://auth-service:8080
-      - VITE_API_ACTIVITY_BASE_URL=http://activity-service:8081
 
 volumes:
   postgres_data:

@@ -13,6 +13,16 @@ RUN npm install --frozen-lockfile && npm install --save-dev @types/node
 # Copy the rest of the application
 COPY . .
 
+# Pass environment variables at build time
+ARG VITE_API_AUTH__BASE_URL
+ARG VITE_API_ACTIVITY_BASE_URL
+ARG VITE_STRAVA_CLIENT_ID
+
+# Ensure they are available in the build
+ENV VITE_API_AUTH__BASE_URL=$VITE_API_AUTH__BASE_URL
+ENV VITE_API_ACTIVITY_BASE_URL=$VITE_API_ACTIVITY_BASE_URL
+ENV VITE_STRAVA_CLIENT_ID=$VITE_STRAVA_CLIENT_ID
+
 # Build the frontend (this will generate the production-ready files in dist/)
 RUN npm run build
 

@@ -4,8 +4,8 @@ import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig(({ mode }) => {
-  // Load environment variables
-  const env = loadEnv(mode, process.cwd(), '');
+  // Load only variables prefixed with VITE_
+  const env = loadEnv(mode, process.cwd(), 'VITE_');
 
   return {
     plugins: [react(), tailwindcss()],
@@ -14,7 +14,8 @@ export default defineConfig(({ mode }) => {
       strictPort: true,
     },
     define: {
-      VITE_STRAVA_CLIENT_ID: env.VITE_STRAVA_CLIENT_ID,
+      'process.env': env, // Assicura che tutte le variabili VITE_ siano accessibili
+      VITE_STRAVA_CLIENT_ID: JSON.stringify(env.VITE_STRAVA_CLIENT_ID),
       VITE_API_AUTH__BASE_URL: JSON.stringify(env.VITE_API_AUTH__BASE_URL),
       VITE_API_ACTIVITY_BASE_URL: JSON.stringify(
         env.VITE_API_ACTIVITY_BASE_URL
