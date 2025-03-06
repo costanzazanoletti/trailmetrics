@@ -4,6 +4,7 @@ from kafka import KafkaConsumer, KafkaProducer
 from dotenv import load_dotenv
 import logging
 from app.segmentation import segment_activity
+from app.kafka_producers import send_terrain_request, send_weather_request
 
 # Load environment variables
 load_dotenv()
@@ -11,8 +12,9 @@ load_dotenv()
 # Kafka Configuration
 KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "segmentation-service-group")
-KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT", "activity-processed-queue")
-KAFKA_TOPIC_OUTPUT = os.getenv("KAFKA_TOPIC_OUTPUT", "activity-segmented-queue")
+KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT", "activity-processing-started-queue")
+KAFKA_TERRAIN_TOPIC_OUTPUT = os.getenv("KAFKA_TERRAIN_TOPIC_OUTPUT", "activity-terrain-request-queue")
+KAFKA_WEATHER_TOPIC_OUTPUT = os.getenv("KAFKA_WEATHER_TOPIC_OUTPUT", "activity-meteo-request-queue")
 
 logger = logging.getLogger("segmentation")
 
@@ -33,11 +35,6 @@ def start_kafka_consumer():
         enable_auto_commit=True
     )
 
-    producer = KafkaProducer(
-        bootstrap_servers=KAFKA_BROKER,
-        key_serializer=lambda k: k.encode("utf-8"),  # Ensure key is a string
-        value_serializer=lambda m: json.dumps(m).encode("utf-8")
-    )
 
     print(f"Kafka Consumer is listening for messages on '{KAFKA_TOPIC_INPUT}'...")
 
@@ -61,23 +58,14 @@ def start_kafka_consumer():
                 print(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
                 logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
 
-                try:
-                    producer.send(
-                        KAFKA_TOPIC_OUTPUT,
-                        key=activity_id,
-                        value={
-                            "activityId": activity_id,
-                            "segmentedAt": processed_at,
-                            "segmentCount": segment_count
-                        }
-                    )
-                    print(f"Published '{KAFKA_TOPIC_OUTPUT}' event for Activity ID: {activity_id}")
-                except Exception as e:
-                    print(f"Error publishing Kafka event for {activity_id}: {e}")
-                    logger.info(f"Error publishing Kafka event for {activity_id}: {e}")
+                # Send messages to terrain and weather services
+                send_terrain_request(activity_id, processed_at)
+                send_weather_request(activity_id, processed_at)
+
             else:
                 print(f"Empty segments for Activity ID: {activity_id}")
                 logger.warning(f"Empty segments for Activity ID: {activity_id}")
+                
         except Exception as e:
             print(f"Error processing message: {e}")
             logging.error(f"Error processing message: {e}")

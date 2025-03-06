@@ -134,7 +134,7 @@ This document defines the Kafka topics and messages used in the application for 
 - **Key**: `userId`
 - **Value JSON**: `UserSyncMessage`
 
-### **activity-terrain-request-queue**
+### `activity-terrain-request-queue`
 
 **Description:** Request for terrain data collection  
 **Producer Service:** `segmentation-service`  
@@ -150,9 +150,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
----
-
-### **activity-weather-request-queue**
+### `activity-weather-request-queue`
 
 **Description:** Request for weather data collection  
 **Producer Service:** `segmentation-service`  
@@ -168,9 +166,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
----
-
-### **activity-terrain-processed-queue**
+### `activity-terrain-processed-queue`
 
 **Description:** Terrain data has been stored in the database  
 **Producer Service:** `terrain-service`  
@@ -186,9 +182,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
----
-
-### **activity-meteo-processed-queue**
+### `activity-meteo-processed-queue`
 
 **Description:** Weather data has been stored in the database  
 **Producer Service:** `weather-service`  
@@ -204,9 +198,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
----
-
-### **activity-processing-completed-queue**
+### `activity-processing-completed-queue`
 
 **Description:** All required data for efficiency computation is available  
 **Producer Service:** `efficiency-service-group`
