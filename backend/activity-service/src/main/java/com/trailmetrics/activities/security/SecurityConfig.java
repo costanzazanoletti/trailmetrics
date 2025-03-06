@@ -1,6 +1,7 @@
 package com.trailmetrics.activities.security;
 
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,10 +15,12 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 
 @Configuration
+@Slf4j
 public class SecurityConfig {
 
   @Value("${app.frontend-url}")
   private String frontendUrl;
+
 
   private final JwtAuthFilter jwtAuthFilter;
 
@@ -49,6 +52,10 @@ public class SecurityConfig {
     configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
+
+    // Logging delle origini consentite
+    log.info("Configured CORS allowed origins: {}, {}", frontendUrl);
+    System.out.println("Configured CORS allowed origins: " + frontendUrl);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);

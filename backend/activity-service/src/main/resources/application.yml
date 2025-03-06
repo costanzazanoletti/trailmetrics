@@ -62,4 +62,4 @@ strava:
 
 sync:
   default-sync-years: ${SYNC_DEFAULT_SYNC_YEARS:6}
-  default-zone: ${SYNC_DEFAULT_ZONE:"Europe/Rome"}
+  default-zone: ${SYNC_DEFAULT_ZONE}
