@@ -14,7 +14,7 @@ KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "segmentation-service-group")
 KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT", "activity-processing-started-queue")
 KAFKA_TERRAIN_TOPIC_OUTPUT = os.getenv("KAFKA_TERRAIN_TOPIC_OUTPUT", "activity-terrain-request-queue")
-KAFKA_WEATHER_TOPIC_OUTPUT = os.getenv("KAFKA_WEATHER_TOPIC_OUTPUT", "activity-meteo-request-queue")
+KAFKA_WEATHER_TOPIC_OUTPUT = os.getenv("KAFKA_WEATHER_TOPIC_OUTPUT", "activity-weather-request-queue")
 
 logger = logging.getLogger("segmentation")
 

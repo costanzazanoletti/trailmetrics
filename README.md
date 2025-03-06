@@ -182,7 +182,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
-### `activity-meteo-processed-queue`
+### `activity-weather-processed-queue`
 
 **Description:** Weather data has been stored in the database  
 **Producer Service:** `weather-service`  
