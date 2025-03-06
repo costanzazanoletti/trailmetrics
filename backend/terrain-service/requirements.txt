@@ -1,0 +1,10 @@
+pandas
+numpy
+kafka-python
+psycopg2-binary
+pytest
+pytest-postgresql
+python-dotenv
+sqlalchemy
+shapely 
+requests 

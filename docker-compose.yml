@@ -110,6 +110,21 @@ services:
       - KAFKA_BROKER=broker:29092
     command: ['python', 'app.py']
 
+  terrain-service:
+    build:
+      context: ./backend/terrain-service
+    container_name: terrain-service
+    #restart: always
+    depends_on:
+      - broker
+      - postgres
+    env_file:
+      - ./backend/terrain-service/.env
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/trailmetrics
+      - KAFKA_BROKER=broker:29092
+    command: ['python', 'app.py']
+
   frontend:
     build:
       context: ./frontend
