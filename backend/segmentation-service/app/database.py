@@ -1,4 +1,5 @@
 import os
+import sys
 import psycopg2
 import pandas as pd
 import numpy as np
@@ -10,7 +11,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 # If test mode use test database
-if os.getenv("TEST_MODE"):
+if "pytest" in sys.modules:
     DATABASE_URL = os.getenv("TEST_DATABASE_URL", DATABASE_URL)
 
 if not DATABASE_URL:
@@ -60,7 +61,11 @@ def store_segments(segments_df):
             "segment_length": "float",
             "avg_gradient": "float",
             "avg_cadence": "float",
-            "grade_category": "float"
+            "grade_category": "float",
+            "start_lat": "float",
+            "start_lng": "float",
+            "end_lat": "float",
+            "end_lng": "float"
         })
 
         # Convert NumPy types to native Python types and handle NaN values
@@ -74,8 +79,9 @@ def store_segments(segments_df):
         # Insert new segments
         insert_query = """
         INSERT INTO segments (activity_id, start_distance, end_distance, segment_length, avg_gradient,
-                              avg_cadence, movement_type, type, grade_category)
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                              avg_cadence, movement_type, type, grade_category,
+                              start_lat, start_lng, end_lat, end_lng)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
         for _, row in segments_df.iterrows():
@@ -88,7 +94,11 @@ def store_segments(segments_df):
                 float(row["avg_cadence"]),
                 str(row["movement_type"]),
                 str(row["type"]),
-                float(row["grade_category"])
+                float(row["grade_category"]),
+                float(row["start_lat"]), 
+                float(row["start_lng"]), 
+                float(row["end_lat"]), 
+                float(row["end_lng"])
             ))
 
         # Commit transaction
@@ -127,6 +137,10 @@ def create_segments_table():
         movement_type VARCHAR(20) NOT NULL,
         type VARCHAR(20) NOT NULL,
         grade_category FLOAT NOT NULL,
+        start_lat FLOAT NOT NULL,
+        end_lat FLOAT NOT NULL,
+        start_lng FLOAT NOT NULL,
+        end_lng FLOAT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """

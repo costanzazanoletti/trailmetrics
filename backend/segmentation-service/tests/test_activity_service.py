@@ -20,7 +20,7 @@ mock_data = {
 mock_df = pd.DataFrame(mock_data)
 
 def test_preprocess_streams():
-    df_processed = preprocess_streams(mock_df)
+    df_processed = preprocess_streams(mock_df, mock_df["activity_id"])
 
     required_columns = ["distance", "altitude", "latlng", "cadence"]
     
@@ -44,7 +44,7 @@ def test_create_segments():
     rolling_window_size = 1
 
     # Ensure data is preprocessed
-    df_preprocessed = preprocess_streams(mock_df)
+    df_preprocessed = preprocess_streams(mock_df, mock_df["activity_id"])
 
     # Call the segmentation function
     segments_df = create_segments(

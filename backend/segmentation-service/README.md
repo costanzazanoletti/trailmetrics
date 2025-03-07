@@ -50,12 +50,16 @@ If you made changes to `requirements.txt` or `Dockerfile`, rebuild:
 docker-compose up --build -d
 ```
 
-## Running Tests
+## Tests
 
+### Set Up
+The integration tests run in a postgres test database. To set it up create a new database and update .env file with the configuration
+
+### Running tests
 To test the service, activate the virtual environment and run:
 
 ```bash
-pytest tests/
+pytest -s tests/
 ```
 
 ## More Information

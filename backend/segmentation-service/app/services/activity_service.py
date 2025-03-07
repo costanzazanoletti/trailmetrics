@@ -89,7 +89,6 @@ def create_segments(df, activity_id, gradient_tolerance, min_segment_length, max
     
     for i in range(1, len(df)):
         segment_length = df["distance"].iloc[i] - df["distance"].iloc[start_index]
-        
         grade_change = abs(df["grade"].iloc[i] - df["grade"].iloc[i - 1])
         cadence_change = abs(df["cadence"].iloc[i] - df["cadence"].iloc[i - 1])
         
@@ -102,6 +101,9 @@ def create_segments(df, activity_id, gradient_tolerance, min_segment_length, max
             movement_type = "running" if avg_cadence > cadence_threshold else "walking"
             segment_type = "uphill" if avg_gradient > 0 else "downhill" if avg_gradient < 0 else "flat"
             
+            start_lat, start_lng = df["latlng"].iloc[start_index]
+            end_lat, end_lng = df["latlng"].iloc[i - 1]
+
             segment = {
                 "activity_id": activity_id,
                 "start_distance": df["distance"].iloc[start_index],
@@ -111,7 +113,11 @@ def create_segments(df, activity_id, gradient_tolerance, min_segment_length, max
                 "avg_cadence": avg_cadence,
                 "movement_type": movement_type,
                 "type": segment_type,
-                "grade_category": round(avg_gradient / classification_tolerance) * classification_tolerance
+                "grade_category": round(avg_gradient / classification_tolerance) * classification_tolerance,
+                "start_lat": start_lat,
+                "start_lng": start_lng,
+                "end_lat": end_lat,
+                "end_lng": end_lng
             }
             segments.append(segment)
             start_index = i
