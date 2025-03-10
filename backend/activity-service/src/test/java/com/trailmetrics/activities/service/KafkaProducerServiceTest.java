@@ -7,6 +7,9 @@ import static org.mockito.Mockito.verify;
 
 import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -26,6 +29,15 @@ class KafkaProducerServiceTest {
   private KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
+
+
+  private byte[] compressJson(String json) throws Exception {
+    ByteArrayOutputStream compressedStream = new ByteArrayOutputStream();
+    try (GZIPOutputStream gzipOutput = new GZIPOutputStream(compressedStream)) {
+      gzipOutput.write(json.getBytes(StandardCharsets.UTF_8));
+    }
+    return compressedStream.toByteArray();
+  }
 
 
   @InjectMocks
@@ -63,12 +75,29 @@ class KafkaProducerServiceTest {
   }
 
   @Test
-  void shouldSendActivityProcessedEvent() {
+  void shouldSendActivityProcessedEvent() throws Exception {
     // Given
     Long activityId = 456L;
+    String sampleJson = """
+        {
+          "time": {
+            "data": [0, 1, 2, 3],
+            "series_type": "distance",
+            "original_size": 4,
+            "resolution": "high"
+          },
+          "latlng": {
+            "data": [[46.137134, 8.464204], [46.137118, 8.464177], [46.137102, 8.464150], [46.137090, 8.464120]],
+            "series_type": "distance",
+            "original_size": 4,
+            "resolution": "high"
+          }
+        }
+        """;
+    byte[] compressedJson = compressJson(sampleJson);
 
     // When
-    kafkaProducerService.publishActivityProcessed(activityId);
+    kafkaProducerService.publishActivityProcessed(activityId, compressedJson);
 
     // Then
     ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(
@@ -80,5 +109,6 @@ class KafkaProducerServiceTest {
     ActivityProcessedMessage capturedMessage = messageCaptor.getValue();
     assertEquals(activityId, capturedMessage.getActivityId());
     assertNotNull(capturedMessage.getProcessedAt());
+    assertEquals(compressedJson.length, capturedMessage.getCompressedStream().length);
   }
 }

@@ -28,9 +28,9 @@ public class KafkaProducerService {
   }
 
 
-  public void publishActivityProcessed(Long activityId) {
+  public void publishActivityProcessed(Long activityId, byte[] compressedStream) {
     ActivityProcessedMessage message = new ActivityProcessedMessage(activityId,
-        Instant.now());
+        Instant.now(), compressedStream);
     kafkaActivityProcessedTemplate.send(ACTIVITY_PROCESSED_TOPIC, String.valueOf(activityId),
         message);
     log.info("Sent ActivityProcessedMessage for activity {} to {}", activityId,
