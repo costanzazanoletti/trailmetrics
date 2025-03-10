@@ -114,50 +114,50 @@ def store_segments(segments_df):
         conn.close()
 
 
-def create_segments_table():
-    """
-    Checks if the 'segments' table exists. If not, creates it.
-    """
-    check_query = """
-    SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_name = 'segments'
-    );
-    """
+# def create_segments_table():
+#     """
+#     Checks if the 'segments' table exists. If not, creates it.
+#     """
+#     check_query = """
+#     SELECT EXISTS (
+#         SELECT FROM information_schema.tables 
+#         WHERE table_name = 'segments'
+#     );
+#     """
     
-    create_query = """
-    CREATE TABLE segments (
-        id SERIAL PRIMARY KEY,
-        activity_id BIGINT NOT NULL,
-        start_distance FLOAT NOT NULL,
-        end_distance FLOAT NOT NULL,
-        segment_length FLOAT NOT NULL,
-        avg_gradient FLOAT NOT NULL,
-        avg_cadence FLOAT NOT NULL,
-        movement_type VARCHAR(20) NOT NULL,
-        type VARCHAR(20) NOT NULL,
-        grade_category FLOAT NOT NULL,
-        start_lat FLOAT NOT NULL,
-        end_lat FLOAT NOT NULL,
-        start_lng FLOAT NOT NULL,
-        end_lng FLOAT NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    """
+#     create_query = """
+#     CREATE TABLE segments (
+#         id SERIAL PRIMARY KEY,
+#         activity_id BIGINT NOT NULL,
+#         start_distance FLOAT NOT NULL,
+#         end_distance FLOAT NOT NULL,
+#         segment_length FLOAT NOT NULL,
+#         avg_gradient FLOAT NOT NULL,
+#         avg_cadence FLOAT NOT NULL,
+#         movement_type VARCHAR(20) NOT NULL,
+#         type VARCHAR(20) NOT NULL,
+#         grade_category FLOAT NOT NULL,
+#         start_lat FLOAT NOT NULL,
+#         end_lat FLOAT NOT NULL,
+#         start_lng FLOAT NOT NULL,
+#         end_lng FLOAT NOT NULL,
+#         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+#     );
+#     """
     
-    with engine.connect() as conn:
-        result = conn.execute(text(check_query))
-        table_exists = result.scalar()  # Returns True if the table exists, False otherwise
+#     with engine.connect() as conn:
+#         result = conn.execute(text(check_query))
+#         table_exists = result.scalar()  # Returns True if the table exists, False otherwise
 
-        if not table_exists:
-            print("Table 'segments' not found. Creating it now...")
-            conn.execute(text(create_query))
-            conn.commit()
-            print("'segments' table created successfully.")
-        else:
-            print("Table 'segments' already exists. No action needed.")
+#         if not table_exists:
+#             print("Table 'segments' not found. Creating it now...")
+#             conn.execute(text(create_query))
+#             conn.commit()
+#             print("'segments' table created successfully.")
+#         else:
+#             print("Table 'segments' already exists. No action needed.")
 
 
 
-# Checks/creates the table on startup
-create_segments_table()
+# # Checks/creates the table on startup
+# create_segments_table()

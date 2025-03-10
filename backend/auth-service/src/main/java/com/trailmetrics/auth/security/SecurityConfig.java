@@ -95,6 +95,7 @@ public class SecurityConfig {
         .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
         .csrf(csrf -> csrf.disable()) // Disable CSRF
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/health").permitAll() // health check
             .requestMatchers("/", "/oauth2/**", "/login/oauth2/**", "/api/auth/user")
             .permitAll() //Allow public login
             .requestMatchers("/internal/**")

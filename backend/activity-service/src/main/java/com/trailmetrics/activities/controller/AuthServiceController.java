@@ -1,7 +1,6 @@
 package com.trailmetrics.activities.controller;
 
 import com.trailmetrics.activities.service.AuthServiceClient;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -15,8 +14,4 @@ public class AuthServiceController {
     this.authServiceClient = authServiceClient;
   }
 
-  @GetMapping("/test")
-  public String testAuthServiceConnection() {
-    return authServiceClient.getPublicKey();
-  }
 }

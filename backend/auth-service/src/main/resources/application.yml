@@ -49,3 +49,5 @@ jwt:
   private-key-path: file:config/keys/private.pem
   public-key-path: file:config/keys/public.pem
   expiration-time: ${JWT_EXPIRATION:900000}
+
+

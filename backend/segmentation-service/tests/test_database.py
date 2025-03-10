@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
-from app.database import store_segments, get_raw_activity_streams, create_segments_table
+from app.database import store_segments
 
 # Load environment variables
 load_dotenv()

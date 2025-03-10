@@ -23,6 +23,11 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    healthcheck:
+      test: ["CMD", "nc", "-z", "broker", "29092"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   postgres:
     image: postgres:latest
@@ -31,11 +36,16 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_DB: trailmetrics
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/database/init:/docker-entrypoint-initdb.d:ro 
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   akhq:
     image: tchiotludo/akhq
@@ -51,7 +61,8 @@ services:
               properties:
                 bootstrap.servers: "broker:29092"
     depends_on:
-      - broker
+      broker:
+        condition: service_healthy
 
   auth-service:
     build:
@@ -60,9 +71,11 @@ services:
         JAR_FILE: target/auth-service-*.jar
     container_name: auth-service
     restart: always
-    depends_on:
-      - broker
-      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - '8080:8080'
     env_file:
@@ -80,10 +93,18 @@ services:
         JAR_FILE: target/activity-service-*.jar
     container_name: activity-service
     restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     depends_on:
-      - broker
-      - postgres
-      - auth-service
+      broker:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
     ports:
       - '8081:8081'
     env_file:
@@ -92,7 +113,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
       - AUTH_SERVICE_URL=http://auth-service:8080
       - AUTH_SERVICE_PUBLIC_KEY_URL=http://auth-service:8080/internal/public-key
-      - DB_URL=jdbc:postgresql://postgres:5432/trailmetrics
+      - DB_URL=jdbc:postgresql://postgres:5432/activity_service
       - FRONTEND_URL=http://localhost:3000
 
   segmentation-service:
@@ -101,12 +122,13 @@ services:
     container_name: segmentation-service
     restart: always
     depends_on:
-      - broker
-      - postgres
+      broker:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     env_file:
       - ./backend/segmentation-service/.env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/trailmetrics
       - KAFKA_BROKER=broker:29092
     command: ['python', 'app.py']
 
@@ -114,14 +136,13 @@ services:
     build:
       context: ./backend/terrain-service
     container_name: terrain-service
-    #restart: always
+    restart: always
     depends_on:
-      - broker
-      - postgres
+      broker:
+        condition: service_healthy
     env_file:
       - ./backend/terrain-service/.env
     environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/trailmetrics
       - KAFKA_BROKER=broker:29092
     command: ['python', 'app.py']
 
@@ -135,8 +156,10 @@ services:
     container_name: frontend
     restart: always
     depends_on:
-      - auth-service
-      - activity-service
+      auth-service:
+        condition: service_healthy
+      activity-service:
+        condition: service_healthy
     ports:
       - '3000:80' # Map Nginx to localhost:3000
 

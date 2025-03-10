@@ -35,6 +35,7 @@ public class SecurityConfig {
         .csrf(csrf -> csrf.csrfTokenRepository(
             CookieCsrfTokenRepository.withHttpOnlyFalse())) // Enable CSRF
         .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/health").permitAll()
             .requestMatchers("/auth-service/**").permitAll() // test getPublicKey
             .requestMatchers("/api/activities/**").authenticated() // Require JWT for activity APIs
             .anyRequest().permitAll()
@@ -53,7 +54,7 @@ public class SecurityConfig {
     configuration.setAllowedHeaders(List.of("*"));
     configuration.setAllowCredentials(true);
 
-    // Logging delle origini consentite
+    // Logging of allowed origins
     log.info("Configured CORS allowed origins: {}, {}", frontendUrl);
     System.out.println("Configured CORS allowed origins: " + frontendUrl);
 
