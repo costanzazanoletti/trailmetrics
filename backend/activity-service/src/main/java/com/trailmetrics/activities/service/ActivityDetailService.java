@@ -1,18 +1,16 @@
 package com.trailmetrics.activities.service;
 
 import com.trailmetrics.activities.client.StravaClient;
-import com.trailmetrics.activities.dto.ActivityStreamDTO;
 import com.trailmetrics.activities.exception.TrailmetricsAuthServiceException;
-import com.trailmetrics.activities.mapper.ActivityStreamMapper;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.model.ActivityStream;
 import com.trailmetrics.activities.repository.ActivityRepository;
 import com.trailmetrics.activities.repository.ActivityStreamRepository;
+import java.io.InputStream;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.HttpClientErrorException;
 
 @Service
@@ -24,6 +22,7 @@ public class ActivityDetailService {
   private final StravaClient stravaClient;
   private final ActivityRepository activityRepository;
   private final ActivityStreamRepository activityStreamRepository;
+  private final ActivityStreamParserService activityStreamParserService;
   private final KafkaProducerService kafkaProducerService;
   private final KafkaRetryService kafkaRetryService;
   private final UserAuthService userAuthService;
@@ -63,26 +62,37 @@ public class ActivityDetailService {
     }
   }
 
-  @Transactional
+
   protected void fetchStreamAndUpdateActivity(String accessToken, Long activityId) {
-    log.info("Fetching streams for activity ID: {}", activityId);
-
-    ActivityStreamDTO streamDTO = stravaClient.fetchActivityStream(accessToken, activityId);
-
+    // Check if activity exists in database
     Activity activity = activityRepository.findById(activityId)
         .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
 
-    // Delete existing activity streams before saving new ones
-    log.info("Deleting existing streams for activity ID: {}", activityId);
-    activityStreamRepository.deleteByActivityId(activityId);
+    // Check if activity streams are in database (avoid duplicates)
+    int numStreams = activityStreamRepository.countByActivityId(activityId);
+    if (numStreams > 0) {
+      log.info("Activity streams for ID {} already in database", activityId);
+      return;
+    }
 
-    // Convert DTO to List<ActivityStream>
-    List<ActivityStream> activityStreams = ActivityStreamMapper.mapStreamsToEntities(activity,
-        streamDTO);
+    log.info("Fetching streams for activity ID: {}", activityId);
 
-    // Save streams to DB
-    log.info("Saving {} streams for activity ID: {}", activityStreams.size(), activityId);
-    activityStreamRepository.saveAll(activityStreams);
+    try (InputStream jsonStream = stravaClient.fetchActivityStream(accessToken,
+        activityId)) {
+      // Convert the stream with a parser into an ActivityStream List
+      List<ActivityStream> activityStreams = activityStreamParserService.parseActivityStreams(
+          jsonStream, activity);
+
+      log.info("Saving {} streams for activity ID: {}", activityStreams.size(), activityId);
+      activityStreamRepository.saveAll(activityStreams);
+
+    } catch (HttpClientErrorException.TooManyRequests e) {
+      throw e;
+    } catch (Exception e) {
+      log.error("Error parsing activity stream for activity ID {}", activityId, e);
+      throw new RuntimeException("Failed to parse activity stream", e);
+    }
+
 
   }
 

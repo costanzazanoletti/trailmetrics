@@ -1,12 +1,14 @@
 package com.trailmetrics.activities.client;
 
 import com.trailmetrics.activities.dto.ActivityDTO;
-import com.trailmetrics.activities.dto.ActivityStreamDTO;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -30,7 +32,7 @@ public class StravaClient {
 
   public List<ActivityDTO> fetchUserActivities(String accessToken, Instant before,
       Instant after, int page, int maxPerPage) {
-    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(
+    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(
             stravaBaseUrl + "/athlete/activities")
         .queryParam("before", before.getEpochSecond())
         .queryParam("after", after.getEpochSecond())
@@ -43,15 +45,15 @@ public class StravaClient {
         uriBuilder.toUriString(),
         HttpMethod.GET,
         requestEntity,
-        new ParameterizedTypeReference<List<ActivityDTO>>() {
+        new ParameterizedTypeReference<>() {
         }
     );
 
     return response.getBody();
   }
 
-  public ActivityDTO fetchActivityDetails(String accessToken, Long activityId) {
-    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(
+  /*public ActivityDTO fetchActivityDetails(String accessToken, Long activityId) {
+    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(
         stravaBaseUrl + "/activities/" + activityId);
 
     HttpEntity<Void> requestEntity = getVoidHttpEntity(accessToken, uriBuilder);
@@ -63,10 +65,10 @@ public class StravaClient {
         ActivityDTO.class
     );
     return response.getBody();
-  }
+  }*/
 
-  public ActivityStreamDTO fetchActivityStream(String accessToken, Long activityId) {
-    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl(
+  public InputStream fetchActivityStream(String accessToken, Long activityId) {
+    UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(
             stravaBaseUrl + "/activities/" + activityId + "/streams")
         .queryParam("keys",
             "time,distance,latlng,altitude,velocity_smooth,heartrate,cadence,watts,temp,moving,grade_smooth")
@@ -74,14 +76,22 @@ public class StravaClient {
 
     HttpEntity<Void> requestEntity = getVoidHttpEntity(accessToken, uriBuilder);
 
-    ResponseEntity<ActivityStreamDTO> response = restTemplate.exchange(
+    ResponseEntity<Resource> response = restTemplate.exchange(
         uriBuilder.toUriString(),
         HttpMethod.GET,
         requestEntity,
-        ActivityStreamDTO.class
+        Resource.class
     );
 
-    return response.getBody();
+    if (response.getBody() != null) {
+      try {
+        return response.getBody().getInputStream();
+      } catch (IOException e) {
+        throw new RuntimeException("Error retrieving input stream from response", e);
+      }
+    } else {
+      throw new RuntimeException("Empty response from Strava API");
+    }
   }
 
   private static HttpEntity<Void> getVoidHttpEntity(String accessToken,
@@ -95,4 +105,6 @@ public class StravaClient {
     log.info("Headers: {}", headers);
     return requestEntity;
   }
+
+
 }
