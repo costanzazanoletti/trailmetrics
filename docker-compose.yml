@@ -136,7 +136,7 @@ services:
     build:
       context: ./backend/terrain-service
     container_name: terrain-service
-    restart: always
+    #restart: always
     depends_on:
       broker:
         condition: service_healthy
