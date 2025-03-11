@@ -1,72 +1,81 @@
 import json
 import os
-from kafka import KafkaConsumer, KafkaProducer
-from dotenv import load_dotenv
+import base64
 import logging
-from app.segmentation import segment_activity
-from app.kafka_producers import send_terrain_request, send_weather_request
+from kafka import KafkaConsumer
+from dotenv import load_dotenv
+from app.segmentation_service import segment_activity
+from app.kafka_producer import send_segmentation_output
 
 # Load environment variables
 load_dotenv()
 
 # Kafka Configuration
-KAFKA_BROKER = os.getenv("KAFKA_BROKER", "localhost:9092")
-KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP", "segmentation-service-group")
-KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT", "activity-processing-started-queue")
-KAFKA_TERRAIN_TOPIC_OUTPUT = os.getenv("KAFKA_TERRAIN_TOPIC_OUTPUT", "activity-terrain-request-queue")
-KAFKA_WEATHER_TOPIC_OUTPUT = os.getenv("KAFKA_WEATHER_TOPIC_OUTPUT", "activity-weather-request-queue")
+KAFKA_BROKER = os.getenv("KAFKA_BROKER")
+KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP")
+KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT")
 
+# Setup logging
 logger = logging.getLogger("segmentation")
+logger.info(f"Using Kafka broker: {KAFKA_BROKER}")
 
-print(f"Using Kafka broker: {KAFKA_BROKER}")
-
-def start_kafka_consumer():
-    """
-    Starts the Kafka consumer to listen for 'activity-processed-queue' messages
-    and publishes results to 'activity-segmented-queue'.
-    """
-    consumer = KafkaConsumer(
+def create_kafka_consumer():
+    """Creates and returns a Kafka consumer instance."""
+    return KafkaConsumer(
         KAFKA_TOPIC_INPUT,
         bootstrap_servers=KAFKA_BROKER,
         group_id=KAFKA_CONSUMER_GROUP,
-        value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-        key_deserializer=lambda k: k.decode("utf-8") if k else None,  # Ensure string keys
+        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
+        key_deserializer=lambda k: k.decode("utf-8") if k else None,
         auto_offset_reset="earliest",
         enable_auto_commit=True
     )
 
+def process_message(message):
+    """Processes a single Kafka message."""
 
-    print(f"Kafka Consumer is listening for messages on '{KAFKA_TOPIC_INPUT}'...")
+    try:
+        if isinstance(message.value, bytes):
+            data = json.loads(message.value.decode("utf-8")) 
+        else:
+            data = message.value  
 
-    for message in consumer:
-        try:
-            activity_id = message.key
-            processed_at = message.value.get("processedAt")
 
-            if not activity_id:
-                print("Received message without 'activityId' key, ignoring...")
-                continue
+        print(f"Keys in data: {data.keys()}")  # debugging
 
-            print(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
-            logger.info(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
+        activity_id = data.get("activityId")
+        processed_at = data.get("processedAt")
+        compressed_stream = data.get("compressedStream")
+
+        if not activity_id or not compressed_stream:
+            logger.warning("Received message without valid 'activityId' or payload, ignoring...")
+            return
+        
+        # Decode the base64 value if it's a string
+        if isinstance(compressed_stream, str):
+            compressed_stream = base64.b64decode(compressed_stream)
+
+        logger.info(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
+        
+        # Perform segmentation
+        segments_df = segment_activity(activity_id, compressed_stream)
+
+        if not segments_df.empty:
+            segment_count = len(segments_df)
+            logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
             
-            # Perform segmentation
-            segments_df = segment_activity(activity_id)
+            # Produce Kafka message of segmentation output
+            send_segmentation_output(activity_id, segments_df, processed_at)
+        else:
+            logger.warning(f"Empty segments for Activity ID: {activity_id}")
+    except Exception as e:
+        logger.error(f"Error processing message: {e}")
 
-            if not segments_df.empty:
-                segment_count = len(segments_df)
-                print(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
-                logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
 
-                # Send messages to terrain and weather services
-                send_terrain_request(activity_id, processed_at)
-                send_weather_request(activity_id, processed_at)
-
-            else:
-                print(f"Empty segments for Activity ID: {activity_id}")
-                logger.warning(f"Empty segments for Activity ID: {activity_id}")
-                
-        except Exception as e:
-            print(f"Error processing message: {e}")
-            logging.error(f"Error processing message: {e}")
-
+def start_kafka_consumer():
+    """Starts the Kafka consumer and processes messages."""
+    consumer = create_kafka_consumer()
+    logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_INPUT}'...")
+    
+    for message in consumer:
+        process_message(message)
