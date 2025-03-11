@@ -89,7 +89,8 @@ This document defines the Kafka topics and messages used in the application for 
   ```json
   {
     "activityId": 13484124195,
-    "processedAt": 1740680048.270867000
+    "processedAt": 1740680048.270867000,
+    "compressedStream": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
   }
   ```
 
@@ -132,37 +133,29 @@ This document defines the Kafka topics and messages used in the application for 
 - **Consumer Service**: `activity-service`
 - **Consumer Group**: `user-service-group`
 - **Key**: `userId`
-- **Value JSON**: `UserSyncMessage`
-
-### `activity-terrain-request-queue`
-
-**Description:** Request for terrain data collection  
-**Producer Service:** `segmentation-service`  
-**Consumer Service:** `terrain-service`  
-**Consumer Group:** `terrain-service-group`  
-**Key:** `activityId`  
-**Value JSON:**
-
-```json
+- **Value JSON**: 
+````json
 {
-  "activityId": 13484124195,
-  "requestedAt": 1740680048.270867
-}
+    "userId": "28658549",
+    "scheduledRetryTime": 1740680052.920566000,
+    "sentTimestamp": 1740680052.920566000
+  }
 ```
 
-### `activity-weather-request-queue`
+### `segmentation-output-queue`
 
-**Description:** Request for weather data collection  
+**Description:** An activity has been segmented  
 **Producer Service:** `segmentation-service`  
-**Consumer Service:** `weather-service`  
-**Consumer Group:** `weather-service-group`  
+**Consumer Service:** `terrain-service`, `weather-service`, `efficiency-service`  
+**Consumer Group:** `terrain-service-group`,`weather-service-group`, `efficiency-service-group`  
 **Key:** `activityId`  
 **Value JSON:**
 
 ```json
 {
   "activityId": 13484124195,
-  "requestedAt": 1740680048.270867
+  "processedAt": 1740680048.270867,
+  "compressedSegments": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
 ```
 
@@ -178,7 +171,8 @@ This document defines the Kafka topics and messages used in the application for 
 ```json
 {
   "activityId": 13484124195,
-  "processedAt": 1740680050.123456
+  "processedAt": 1740680050.123456,
+  "compressedTerrain": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
 ```
 
@@ -194,7 +188,8 @@ This document defines the Kafka topics and messages used in the application for 
 ```json
 {
   "activityId": 13484124195,
-  "processedAt": 1740680051.654321
+  "processedAt": 1740680051.654321,
+  "compressedWeather": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
 ```
 
