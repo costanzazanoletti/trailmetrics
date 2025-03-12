@@ -1,7 +1,7 @@
 import logging_setup
 import logging
 
-logger = logging.getLogger("efficiency")
+logger = logging.getLogger("app")
 logger.info("Efficiency service started successfully")
 
 
