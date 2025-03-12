@@ -158,7 +158,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
-### `activity-terrain-processed-queue`
+### `terrain-output-queue`
 
 **Description:** Terrain data has been stored in the database  
 **Producer Service:** `terrain-service`  
@@ -175,7 +175,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
-### `activity-weather-processed-queue`
+### `weather-output-queue`
 
 **Description:** Weather data has been stored in the database  
 **Producer Service:** `weather-service`  
