@@ -192,7 +192,7 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
-### `activity-processing-completed-queue`
+### `activity-processed-queue`
 
 **Description:** All required data for efficiency computation is available  
 **Producer Service:** `efficiency-service-group`
