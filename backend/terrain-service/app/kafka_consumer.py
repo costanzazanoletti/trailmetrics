@@ -52,7 +52,6 @@ def process_message(message):
             compressed_segments = base64.b64decode(compressed_segments)
 
         logger.info(f"Processing terrain info for Activity ID: {activity_id}, processed at: {processed_at}")
-        print(f"Processing terrain info for Activity ID: {activity_id}, processed at: {processed_at}")
  
     except Exception as e:
         logger.error(f"Error processing message: {e}")
