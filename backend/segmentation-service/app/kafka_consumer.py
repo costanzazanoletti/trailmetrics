@@ -14,9 +14,11 @@ load_dotenv()
 KAFKA_BROKER = os.getenv("KAFKA_BROKER")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP")
 KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT")
+if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_INPUT]):
+    raise ValueError("Kafka environment variables are not set properly")
 
 # Setup logging
-logger = logging.getLogger("segmentation")
+logger = logging.getLogger("app")
 logger.info(f"Using Kafka broker: {KAFKA_BROKER}")
 
 def create_kafka_consumer():
@@ -73,6 +75,10 @@ def start_kafka_consumer():
     """Starts the Kafka consumer and processes messages."""
     consumer = create_kafka_consumer()
     logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_INPUT}'...")
-    
-    for message in consumer:
-        process_message(message)
+    try:
+        for message in consumer:
+            process_message(message)
+    except KeyboardInterrupt:
+        logger.info("Shutting down Kafka consumer...")
+    finally:
+        consumer.close()

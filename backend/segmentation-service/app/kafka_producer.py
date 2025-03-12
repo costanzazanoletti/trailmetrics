@@ -1,6 +1,7 @@
 import json
 import os
 import base64
+import gzip
 import logging
 from dotenv import load_dotenv
 from kafka import KafkaProducer
@@ -9,7 +10,7 @@ from kafka import KafkaProducer
 load_dotenv()
 
 # Set up logging
-logger = logging.getLogger("segmentation")
+logger = logging.getLogger("app")
 
 # Kafka Configuration
 KAFKA_BROKER = os.getenv("KAFKA_BROKER")
@@ -43,14 +44,15 @@ def prepare_segmentation_message(activity_id, segments_df, processed_at):
         segments.append(segment)
 
     # Convert segments in json and compress
-    json_segments = json.dumps(segments)
-    compressed_segments = base64.b64encode(json_segments.encode("utf-8")).decode("utf-8")
+    json_segments = json.dumps(segments).encode("utf-8")
+    compressed_segments = gzip.compress(json_segments)
+    encoded_segments = base64.b64encode(compressed_segments).decode("utf-8")
 
     # Return message
     return {
         "activityId": activity_id,
         "processedAt": processed_at,
-        "compressedSegments": compressed_segments
+        "compressedSegments": encoded_segments
     }
 
 def send_segmentation_output(activity_id, segments_df, processed_at):

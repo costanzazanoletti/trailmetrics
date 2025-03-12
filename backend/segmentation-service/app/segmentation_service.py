@@ -7,7 +7,7 @@ import pandas as pd
 from dotenv import load_dotenv
 
 # Setup logging
-logger = logging.getLogger("segmentation")
+logger = logging.getLogger("app")
 
 # Load environment variables
 load_dotenv()
