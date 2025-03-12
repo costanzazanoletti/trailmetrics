@@ -43,13 +43,19 @@ public class ActivityDetailService {
 
       // Process activity (fetch streams)
       List<ActivityStream> activityStreams = fetchStreamAndUpdateActivity(accessToken, activityId);
-      // Prepare Kafka message payload
-      byte[] compressedJson = prepareCompressedJsonOutputStream(activityStreams);
 
-      log.info("Successfully processed activity ID: {}", activityId);
+      if (activityStreams != null && !activityStreams.isEmpty()) {
 
-      // Publish activity processed to Kafka
-      kafkaProducerService.publishActivityProcessed(activityId, compressedJson);
+        // Prepare Kafka message payload
+        byte[] compressedJson = prepareCompressedJsonOutputStream(activityStreams);
+
+        log.info("Successfully processed activity ID: {}", activityId);
+
+        // Publish activity processed to Kafka
+        kafkaProducerService.publishActivityProcessed(activityId, compressedJson);
+      } else {
+        log.info("Activity ID {} already processed or streams are empty", activityId);
+      }
 
     } catch (HttpClientErrorException.TooManyRequests e) {
 
@@ -120,7 +126,7 @@ public class ActivityDetailService {
         jsonGenerator.writeStartObject();
         jsonGenerator.writeStringField("type", stream.getType());
         jsonGenerator.writeFieldName("data");
-        
+
         jsonGenerator.writeRawValue(stream.getData());
         jsonGenerator.writeEndObject();
       }
