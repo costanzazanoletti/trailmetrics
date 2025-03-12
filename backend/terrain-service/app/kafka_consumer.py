@@ -2,8 +2,10 @@ import json
 import os
 import base64
 import logging
+import logging_setup
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
+from app.terrain_service import get_terrain_info
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +19,7 @@ if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_INPUT]):
 
 
 # Setup logging
-logger = logging.getLogger("terrain")
+logger = logging.getLogger("app")
 logger.info(f"Using Kafka broker: {KAFKA_BROKER}")
 
 def create_kafka_consumer():
@@ -52,7 +54,11 @@ def process_message(message):
             compressed_segments = base64.b64decode(compressed_segments)
 
         logger.info(f"Processing terrain info for Activity ID: {activity_id}, processed at: {processed_at}")
- 
+
+        # Fetch terrain info
+        terrain_df = get_terrain_info(activity_id, compressed_segments)
+        logger.info(terrain_df.head())
+
     except Exception as e:
         logger.error(f"Error processing message: {e}")
 

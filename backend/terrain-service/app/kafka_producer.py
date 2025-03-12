@@ -2,6 +2,7 @@ import json
 import os
 import base64
 import logging
+import logging_setup
 from dotenv import load_dotenv
 from kafka import KafkaProducer
 
