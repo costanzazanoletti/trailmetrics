@@ -40,9 +40,6 @@ def process_message(message):
         else:
             data = message.value  
 
-
-        print(f"Keys in data: {data.keys()}")  # debugging
-
         activity_id = data.get("activityId")
         processed_at = data.get("processedAt")
         compressed_stream = data.get("compressedStream")

@@ -78,22 +78,6 @@ This document defines the Kafka topics and messages used in the application for 
 
 ## Kafka Messages
 
-### `activity-processing-started-queue`
-
-- **Description**: An activity has been synchronized and the processing has started
-- **Producer Service**: `activity-service`
-- **Consumer Service**: `segmentation-service`
-- **Consumer Group**: `segmentation-service-group`
-- **Key**: `activityId`
-- **Value JSON**:
-  ```json
-  {
-    "activityId": 13484124195,
-    "processedAt": 1740680048.270867000,
-    "compressedStream": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
-  }
-  ```
-
 ### `activity-sync-queue`
 
 - **Description**: Syncing activity data
@@ -134,14 +118,29 @@ This document defines the Kafka topics and messages used in the application for 
 - **Consumer Group**: `user-service-group`
 - **Key**: `userId`
 - **Value JSON**: 
-````json
+```json
 {
     "userId": "28658549",
     "scheduledRetryTime": 1740680052.920566000,
     "sentTimestamp": 1740680052.920566000
   }
 ```
+### `activity-stream-queue`
 
+- **Description**: An activity has been synchronized and the processing has started
+- **Producer Service**: `activity-service`
+- **Consumer Service**: `segmentation-service`
+- **Consumer Group**: `segmentation-service-group`
+- **Key**: `activityId`
+- **Value JSON**:
+  ```json
+  {
+    "activityId": 13484124195,
+    "processedAt": 1740680048.270867000,
+    "compressedStream": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
+  }
+  ```
+  
 ### `segmentation-output-queue`
 
 **Description:** An activity has been segmented  

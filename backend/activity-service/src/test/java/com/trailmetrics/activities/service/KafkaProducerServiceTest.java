@@ -22,7 +22,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 class KafkaProducerServiceTest {
 
-  private static final String ACTIVITY_PROCESSED_TOPIC = "activity-processing-started-queue";
+  private static final String ACTIVITY_PROCESSED_TOPIC = "activity-stream-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
