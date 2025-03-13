@@ -171,7 +171,7 @@ This document defines the Kafka topics and messages used in the application for 
 {
   "activityId": 13484124195,
   "processedAt": 1740680050.123456,
-  "compressedTerrain": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
+  "compressedTerrainInfo": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
 ```
 

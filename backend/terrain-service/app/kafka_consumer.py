@@ -6,6 +6,7 @@ import logging_setup
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from app.terrain_service import get_terrain_info
+from app.kafka_producer import send_terrain_output
 
 # Load environment variables
 load_dotenv()
@@ -57,7 +58,9 @@ def process_message(message):
 
         # Fetch terrain info
         terrain_df = get_terrain_info(activity_id, compressed_segments)
-        logger.info(terrain_df.head())
+
+        # Send Kafka message with terrain info
+        send_terrain_output(activity_id, terrain_df, processed_at)
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
