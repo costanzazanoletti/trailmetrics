@@ -15,7 +15,8 @@ load_dotenv()
 KAFKA_BROKER = os.getenv("KAFKA_BROKER")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP")
 KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT")
-if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_INPUT]):
+KAFKA_MAX_POLL_RECORDS = int(os.getenv("KAFKA_MAX_POLL_RECORDS"))
+if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_INPUT,KAFKA_MAX_POLL_RECORDS]):
     raise ValueError("Kafka environment variables are not set properly")
 
 
@@ -32,7 +33,8 @@ def create_kafka_consumer():
         value_deserializer=lambda v: json.loads(v.decode("utf-8")),
         key_deserializer=lambda k: k.decode("utf-8") if k else None,
         auto_offset_reset="earliest",
-        enable_auto_commit=True
+        enable_auto_commit=False,
+        max_poll_records=KAFKA_MAX_POLL_RECORDS
     )
 
 def process_message(message):
@@ -73,6 +75,7 @@ def start_kafka_consumer():
     try:
         for message in consumer:
             process_message(message)
+            consumer.commit()
     except KeyboardInterrupt:
         logger.info("Shutting down Kafka consumer...")
     finally:
