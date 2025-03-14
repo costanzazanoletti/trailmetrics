@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Segmentation Service** is a microservice responsible for processing activity data, segmenting the route based on elevation changes, and publishing the results to Kafka. This service is part of the **TRAILMETRICS** project and interacts with PostgreSQL, Kafka, and external APIs.
+The **Segmentation Service** is a microservice responsible for processing activity data, segmenting the route based on elevation changes, and publishing the results to Kafka. This service is part of the **TRAILMETRICS** project and interacts with Kafka.
 
 ## Setup
 
@@ -19,11 +19,18 @@ pip install -r requirements.txt
 ### Create the `.env` File
 
 The `.env` file contains environment variables required for the service. **Do not commit this file to Git!** Create a `.env` file in the root of `segmentation-service/` with:
-
 ```
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trailmetrics
-KAFKA_BROKER=broker:29092
-FLASK_ENV=development
+GRADIENT_TOLERANCE=0.5
+MIN_SEGMENT_LENGTH=50.0
+MAX_SEGMENT_LENGTH=200.0
+CLASSIFICATION_TOLERANCE=2.5
+CADENCE_THRESHOLD=60
+CADENCE_TOLERANCE=5
+ROLLING_WINDOW_SIZE=0
+KAFKA_BROKER=localhost:9092
+KAFKA_CONSUMER_GROUP=segmentation-service-group
+KAFKA_TOPIC_INPUT=activity-stream-queue
+KAFKA_TOPIC_OUTPUT=segmentation-output-queue
 ```
 
 ### Running Locally
@@ -33,8 +40,6 @@ After setting up the environment, start the service with:
 ```bash
 python app.py
 ```
-
-The service should be accessible at **http://127.0.0.1:5001/**.
 
 ## Running with Docker
 
@@ -51,9 +56,6 @@ docker-compose up --build -d
 ```
 
 ## Tests
-
-### Set Up
-The integration tests run in a postgres test database. To set it up create a new database and update .env file with the configuration
 
 ### Running tests
 To test the service, activate the virtual environment and run:
