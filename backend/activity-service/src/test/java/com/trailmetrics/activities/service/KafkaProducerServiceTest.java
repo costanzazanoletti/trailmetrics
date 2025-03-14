@@ -9,6 +9,7 @@ import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -78,6 +79,8 @@ class KafkaProducerServiceTest {
   void shouldSendActivityProcessedEvent() throws Exception {
     // Given
     Long activityId = 456L;
+    Instant startDate = Instant.now().minusSeconds(999999999L);
+
     String sampleJson = """
         {
           "time": {
@@ -97,7 +100,7 @@ class KafkaProducerServiceTest {
     byte[] compressedJson = compressJson(sampleJson);
 
     // When
-    kafkaProducerService.publishActivityProcessed(activityId, compressedJson);
+    kafkaProducerService.publishActivityProcessed(activityId, startDate, compressedJson);
 
     // Then
     ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(

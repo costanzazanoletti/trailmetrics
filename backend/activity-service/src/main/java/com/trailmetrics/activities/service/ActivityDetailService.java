@@ -38,11 +38,15 @@ public class ActivityDetailService {
     try {
       log.info("Processing activity ID {} for user {} (Retry: {})", activityId, userId, retryCount);
 
+      // Check if activity exists in database
+      Activity activity = activityRepository.findById(activityId)
+          .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
+
       // Fetch user access token
       String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
 
       // Process activity (fetch streams)
-      List<ActivityStream> activityStreams = fetchStreamAndUpdateActivity(accessToken, activityId);
+      List<ActivityStream> activityStreams = fetchStreamAndUpdateActivity(accessToken, activity);
 
       if (activityStreams != null && !activityStreams.isEmpty()) {
 
@@ -52,7 +56,8 @@ public class ActivityDetailService {
         log.info("Successfully processed activity ID: {}", activityId);
 
         // Publish activity processed to Kafka
-        kafkaProducerService.publishActivityProcessed(activityId, compressedJson);
+        kafkaProducerService.publishActivityProcessed(activity.getId(), activity.getStartDate(),
+            compressedJson);
       } else {
         log.info("Activity ID {} already processed or streams are empty", activityId);
       }
@@ -78,10 +83,10 @@ public class ActivityDetailService {
   }
 
 
-  protected List<ActivityStream> fetchStreamAndUpdateActivity(String accessToken, Long activityId) {
-    // Check if activity exists in database
-    Activity activity = activityRepository.findById(activityId)
-        .orElseThrow(() -> new RuntimeException("Activity not found: " + activityId));
+  protected List<ActivityStream> fetchStreamAndUpdateActivity(String accessToken,
+      Activity activity) {
+
+    Long activityId = activity.getId();
 
     // Check if activity streams are in database (avoid duplicates)
     int numStreams = activityStreamRepository.countByActivityId(activityId);
