@@ -53,21 +53,81 @@ def parse_kafka_stream(compressed_stream, activity_id):
         logger.error(f"Error parsing Kafka stream for Activity {activity_id}: {e}")
         return pd.DataFrame()
 
+
 def preprocess_streams(df, activity_id):
-    """Preprocesses DataFrame: renames columns, fills missing values."""
+    """Preprocesses DataFrame: cleans, interpolates, and fixes missing lat/lng values."""
+    
+    # Check for missing required columns
     required_columns = ["distance", "altitude", "latlng", "cadence", "grade_smooth", "velocity_smooth", "time"]
     missing_columns = [col for col in required_columns if col not in df.columns or df[col].isnull().all()]
     if missing_columns:
         logger.error(f"Missing required columns for Activity {activity_id}: {missing_columns}")
         return None
     
-    df = df.rename(columns={"grade_smooth": "grade", "velocity_smooth": "speed"})
-    df.ffill(inplace=True)
-    return df
+    # Remove rows with time o distance NaN
+    df.dropna(subset=["time", "distance"], inplace=True)
+
+    # Rename columns 
+    df.rename(columns={"grade_smooth": "grade", "velocity_smooth": "speed"}, inplace=True)
+
+    # Interpolate missing numerical values
+    for col in ["altitude", "grade", "speed", "cadence", "heartrate"]:
+        if col in df.columns:
+            df[col] = df[col].interpolate(method="linear", limit_direction="both")
+
+    # Handle latlng: fill null value and interpolate if necessary
+    for i in range(len(df)):
+
+        if (
+            len(df.loc[i, "latlng"]) == 0 or 
+            (i > 0 and tuple(df.loc[i, "latlng"]) == tuple(df.loc[i-1, "latlng"]) and df.loc[i, "distance"] != df.loc[i-1, "distance"])
+        ):
+        
+            logger.info(f"Fixing latlng at index {i}, distance: {df.loc[i, 'distance']}")
+
+            # If the previous point has identical distance, copy the coordinates
+            if i > 0 and df.loc[i, "distance"] == df.loc[i-1, "distance"]:
+                logger.info(f"Copying from previous point at index {i-1}")
+                df.at[i, "latlng"] = df.loc[i-1, "latlng"]
+
+            # If the following point has identical distance, copy the coordinates
+            elif i < len(df) - 1 and df.loc[i, "distance"] == df.loc[i+1, "distance"]:
+                logger.info(f"Copying from following point at index {i+1}")
+                df.at[i, "latlng"] = df.loc[i+1, "latlng"]
+
+            # If nor the previous nor the following point have the same distance, interpolate
+            else:
+                j = i + 1
+                while j < len(df) and (np.array_equal(df.loc[j, "latlng"], df.loc[i, "latlng"])):
+
+                    j += 1  # Find the first valid following point
+                
+                if j < len(df):  # If we find a valid point
+                    
+                    logger.info(f"Interpolating between index {i-1} and {j}")
+
+                    lat_start, lng_start = df.loc[i-1, "latlng"]
+                    lat_end, lng_end = df.loc[j, "latlng"]
+                    dist_start = df.loc[i-1, "distance"]
+                    dist_end = df.loc[j, "distance"]
+
+                    for k in range(i, j):  # Interpolate all the points in the block
+                        alpha = (df.loc[k, "distance"] - dist_start) / (dist_end - dist_start) if dist_end != dist_start else 0
+                        lat_interp = lat_start + alpha * (lat_end - lat_start)
+                        lng_interp = lng_start + alpha * (lng_end - lng_start)
+                        df.at[k, "latlng"] = [lat_interp, lng_interp]
+        
+                else:
+                    logger.info(f"No valid next point found for index {i}, copying previous")
+                    df.at[i, "latlng"] = df.loc[i-1, "latlng"]  # Copy the last valid point
+
+    return df.reset_index(drop=True)
+
 
 def create_segments(df, activity_id, config):
     """Segments an activity based on gradient and cadence changes."""
     df.sort_values("distance", inplace=True)
+
     if config["rolling_window_size"] > 1:
         df["grade"] = df["grade"].rolling(window=config["rolling_window_size"], center=True, min_periods=1).mean()
         df["cadence"] = df["cadence"].rolling(window=config["rolling_window_size"], center=True, min_periods=1).mean()
@@ -80,6 +140,7 @@ def create_segments(df, activity_id, config):
         
         if ((grade_change > config["gradient_tolerance"] or cadence_change > config["cadence_tolerance"]) and 
             segment_length >= config["min_segment_length"]) or segment_length > config["max_segment_length"]:
+            
             segment = {
                 "activity_id": activity_id,
                 "start_distance": df["distance"].iloc[start_index],
@@ -95,6 +156,7 @@ def create_segments(df, activity_id, config):
                 "end_lat": df["latlng"].iloc[i - 1][0],
                 "end_lng": df["latlng"].iloc[i - 1][1]
             }
+
             segments.append(segment)
             start_index = i
     
@@ -109,6 +171,7 @@ def segment_activity(activity_id, compressed_stream):
         return df
     
     df = preprocess_streams(df, activity_id)
+
     if df is None:
         return pd.DataFrame()
     
