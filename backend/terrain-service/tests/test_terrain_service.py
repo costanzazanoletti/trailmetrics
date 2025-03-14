@@ -14,7 +14,7 @@ import logging_setup
 def test_kafka_message():
     """Loads a real Kafka message from a JSON file."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir,"test_message.json")
+    file_path = os.path.join(base_dir,"mock_message.json")
     with open(file_path, "r") as file:
         data = json.load(file)
     
