@@ -22,7 +22,7 @@ producer = KafkaProducer(
     key_serializer=lambda k: str(k).encode("utf-8")
 )
 
-def prepare_segmentation_message(activity_id, segments_df, processed_at):
+def prepare_segmentation_message(activity_id, segments_df, processed_at, start_date):
     """Prepare the output message with compressed segments"""
     segments = []
     
@@ -51,15 +51,16 @@ def prepare_segmentation_message(activity_id, segments_df, processed_at):
     # Return message
     return {
         "activityId": activity_id,
+        "startDate": start_date,
         "processedAt": processed_at,
         "compressedSegments": encoded_segments
     }
 
-def send_segmentation_output(activity_id, segments_df, processed_at):
+def send_segmentation_output(activity_id, segments_df, processed_at, start_date):
     """Send segmentation output message to Kafka."""
     
     # Prepare message with compressed segments
-    kafka_message = prepare_segmentation_message(activity_id, segments_df, processed_at)
+    kafka_message = prepare_segmentation_message(activity_id, segments_df, processed_at, start_date)
 
     # Send message to Kafka
     producer.send(KAFKA_TOPIC_OUTPUT, key=str(activity_id), value=kafka_message)
