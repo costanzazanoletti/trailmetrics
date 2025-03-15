@@ -154,13 +154,15 @@ def create_segments(df, activity_id, config):
                 "start_lat": df["latlng"].iloc[start_index][0],
                 "start_lng": df["latlng"].iloc[start_index][1],
                 "end_lat": df["latlng"].iloc[i - 1][0],
-                "end_lng": df["latlng"].iloc[i - 1][1]
+                "end_lng": df["latlng"].iloc[i - 1][1],
+                "start_altitude": df["altitude"].iloc[start_index],
+                "end_altitude": df["altitude"].iloc[i - 1],
             }
 
             segments.append(segment)
             start_index = i
-    
-    return pd.DataFrame(segments) if segments else pd.DataFrame()
+    final_segments_df = pd.DataFrame(segments) if segments else pd.DataFrame()
+    return final_segments_df
 
 def segment_activity(activity_id, compressed_stream):
     """Main function to process and segment an activity."""

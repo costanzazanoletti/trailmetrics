@@ -48,7 +48,9 @@ def test_segment_activity(sample_compressed_stream):
     assert isinstance(segments_df, pd.DataFrame), "Output should be a pandas DataFrame"
     assert not segments_df.empty, "Segmentation should produce at least one segment"
     expected_columns = {"activity_id", "start_distance", "end_distance", "segment_length", 
-                        "avg_gradient", "avg_cadence", "movement_type", "type"}
+                        "avg_gradient", "avg_cadence", "movement_type", "type", "grade_category",
+                        "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude","end_altitude"}
+
     assert expected_columns.issubset(set(segments_df.columns)), f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
     
     print("Segments created by segment_activity:")
@@ -84,18 +86,19 @@ def test_create_segments():
     """
     mock_df = pd.DataFrame({
         "distance": [0, 10, 25, 50, 100],
+        "altitude": [862,899,1001,1100,1105],
         "grade": [0.1, 5.8, 7.1, 10.0, 0.3],
         "cadence": [70, 75, 65, 80, 60],
         "latlng": [[46.1, 8.4], [46.2, 8.5], [46.3, 8.6], [46.4, 8.7], [46.5, 8.8]]
     })
     config = {
         "gradient_tolerance": 0.5,
-        "min_segment_length": 5.0,
+        "min_segment_length": 50.0,
         "max_segment_length": 200.0,
         "classification_tolerance": 2.5,
         "cadence_threshold": 60,
         "cadence_tolerance": 5,
-        "rolling_window_size": 1
+        "rolling_window_size": 0
     }
     
     segments_df = create_segments(mock_df, 5727925996, config)
