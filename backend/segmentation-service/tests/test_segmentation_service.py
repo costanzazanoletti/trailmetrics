@@ -49,7 +49,8 @@ def test_segment_activity(sample_compressed_stream):
     assert not segments_df.empty, "Segmentation should produce at least one segment"
     expected_columns = {"activity_id", "start_distance", "end_distance", "segment_length", 
                         "avg_gradient", "avg_cadence", "movement_type", "type", "grade_category",
-                        "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude","end_altitude"}
+                        "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude","end_altitude",
+                        "start_time", "end_time"}
 
     assert expected_columns.issubset(set(segments_df.columns)), f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
     
@@ -85,6 +86,7 @@ def test_create_segments():
     Tests create_segments function by checking segment outputs.
     """
     mock_df = pd.DataFrame({
+        "time": [0,1,2,3,4],
         "distance": [0, 10, 25, 50, 100],
         "altitude": [862,899,1001,1100,1105],
         "grade": [0.1, 5.8, 7.1, 10.0, 0.3],

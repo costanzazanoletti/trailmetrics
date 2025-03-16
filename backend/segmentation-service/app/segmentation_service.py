@@ -157,6 +157,8 @@ def create_segments(df, activity_id, config):
                 "end_lng": df["latlng"].iloc[i - 1][1],
                 "start_altitude": df["altitude"].iloc[start_index],
                 "end_altitude": df["altitude"].iloc[i - 1],
+                "start_time": df["time"].iloc[start_index],
+                "end_time": df["time"].iloc[i - 1],
             }
 
             segments.append(segment)
