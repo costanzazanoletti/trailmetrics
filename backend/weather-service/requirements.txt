@@ -1,0 +1,8 @@
+pandas
+numpy
+kafka-python
+pytest
+python-dotenv
+shapely 
+requests 
+geopy
