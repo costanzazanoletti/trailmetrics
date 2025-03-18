@@ -161,6 +161,20 @@ services:
       - KAFKA_BROKER=broker:29092
     command: ['python', 'app.py']
 
+  weather-service:
+    build:
+      context: ./backend/weather-service
+    container_name: weather-service
+    restart: always
+    depends_on:
+      broker:
+        condition: service_healthy
+    env_file:
+      - ./backend/weather-service/.env
+    environment:
+      - KAFKA_BROKER=broker:29092
+    command: ['python', 'app.py']
+
   frontend:
     build:
       context: ./frontend
