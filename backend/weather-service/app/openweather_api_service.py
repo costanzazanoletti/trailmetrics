@@ -118,11 +118,11 @@ def fetch_weather_data(params, activity_id):
     """
     # Daily request counter
     global request_counter
+    logger.info(f"Request counter: {request_counter.get_count()}")
 
     # Increment request counter
     try:
         request_counter.increment()
-        logger.info(f"Request counter: {request_counter.get_count()}")
     except Exception as e:
         # If unable to increment counter, publish retry message
         logger.warning(f"Daily limit of {DAILY_REQUEST_LIMIT} requests reached. Re-schedule for the next day.")

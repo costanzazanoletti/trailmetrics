@@ -6,7 +6,6 @@ import logging_setup
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from app.weather_service import get_weather_info
-from app.kafka_producer import send_weather_output
 
 # Load environment variables
 load_dotenv()
@@ -39,10 +38,8 @@ def create_kafka_consumer():
 
 def process_message(message):
     """Processes a single Kafka message."""
-
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
-
 
         activity_id = data.get("activityId")
         start_date = data.get("startDate")
@@ -59,11 +56,9 @@ def process_message(message):
 
         logger.info(f"Processing weather info for Activity ID: {activity_id}, start date: {start_date}, processed at: {processed_at}")
 
-        # Fetch weather info and assign data to segments
-        weather_df = get_weather_info(start_date, compressed_segments)
+        # Fetch weather info, prepare and send Kafka message
+        get_weather_info(start_date, compressed_segments, activity_id, processed_at)
         
-        # Send Kafka message with weather info
-        send_weather_output(activity_id, weather_df, processed_at)
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")

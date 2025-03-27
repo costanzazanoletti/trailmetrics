@@ -6,7 +6,7 @@ import logging
 import logging_setup
 from dotenv import load_dotenv
 from kafka import KafkaProducer
-from app.weather_api_service import generate_variables_mapping
+from app.openweather_api_service import generate_weather_variables_mapping
 
 # Load environment variables
 load_dotenv()
@@ -27,19 +27,14 @@ producer = KafkaProducer(
 
 def prepare_message(activity_id, segments_df, processed_at):
     """Prepare the output message with compressed weather info"""
+    # Convert the DataFrame to a list of dictionaries 
+    json_segments = segments_df.to_dict(orient="records") 
 
-    # Get the weather column mapping from generate_variables_mapping
-    weather_mapping, _ = generate_variables_mapping()
-
-    # Keep only required columns: 'segmentId' + weather columns from weather_mapping
-    required_columns = ["segmentId"] + list(weather_mapping.values())
+    # Convert the list of dictionaries to JSON string and then compress it
+    json_segments_str = json.dumps(json_segments).encode("utf-8")
+    compressed_segments = gzip.compress(json_segments_str)
     
-    # Filter the DataFrame to keep only the necessary columns
-    segments = segments_df[required_columns].to_dict(orient="records")
-
-    # Convert segments in json and compress
-    json_segments = json.dumps(segments).encode("utf-8")
-    compressed_segments = gzip.compress(json_segments)
+    # Encode the compressed data to base64
     encoded_segments = base64.b64encode(compressed_segments).decode("utf-8")
     
     # Return message

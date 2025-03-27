@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from geopy.distance import geodesic
 from dotenv import load_dotenv
 from app.openweather_api_service import fetch_weather_data, generate_request_parameters
+from app.kafka_producer import send_weather_output
 
 logger = logging.getLogger("app")
 
@@ -123,16 +124,18 @@ def assign_weather_to_segments(reference_point, df_segments_all, weather_respons
 
     logger.info(f"Assign weather info to {len(df_segments)} segments")
 
-    # Ensure segment start_date_time is also timezone-naive
-    df_segments.loc[:, "start_date_time"] = pd.to_datetime(df_segments["start_date_time"]).dt.tz_localize(None)
+    # Create a new DataFrame with the segment IDs and broadcast the weather data across all segments
+    weather_columns = weather_response_df.columns
+    weather_data_repeated = pd.DataFrame([weather_response_df.iloc[0]] * len(df_segments), columns=weather_columns)
+    # Keep only segment_id column
+    df_segments_ids = df_segments[['segment_id']]
+    # Combine the weather data with the segments
+    combined_df = pd.concat([df_segments_ids.reset_index(drop=True), weather_data_repeated.reset_index(drop=True)], axis=1)
 
-
-    combined_df = pd.concat([df_segments, pd.concat([weather_response_df]*len(df_segments), ignore_index=True)], axis=1)
-    
     # Return the segments that were filtered and processed
     return combined_df
 
-def get_weather_info(activity_start_date, compressed_segments, activity_id):
+def get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at):
     # Extract segments from kafka message
     segments_df = parse_kafka_segments(compressed_segments)
     # Add start and end timestamp to each segment
@@ -149,11 +152,14 @@ def get_weather_info(activity_start_date, compressed_segments, activity_id):
         # Fetch weather data from external API
         weather_response_df = fetch_weather_data(request_params, activity_id)
 
-        # If weather_response is None or empty, return the DataFrame as is
-        if not weather_response_df or len(weather_response_df) == 0:
-            return None  
+        # If weather_response is None or empty, continue
+        if weather_response_df.empty:
+            continue 
 
         # Assign weather data to segments
-        return assign_weather_to_segments(row, segments_df, weather_response_df)
-   
-      
+        weather_df = assign_weather_to_segments(row, segments_df, weather_response_df)
+        #logger.info(f"Segment with weather Data\n{weather_df}")
+        
+        # If weather info is present, send Kafka message with weather info
+        if not weather_response_df.empty:
+            send_weather_output(activity_id, weather_df, processed_at)
