@@ -23,7 +23,7 @@ def get_terrain_info(activity_id, compressed_segments):
         min_lat, max_lat = df_segments["start_lat"].min(), df_segments["end_lat"].max()
         min_lng, max_lng = df_segments["start_lng"].min(), df_segments["end_lng"].max()
 
-        # Generate bounding boxes to split the area
+        # Generate bounding boxes to split the area (0.1 step is about 11 km but can change with the longitude)
         bounding_boxes = create_bounding_boxes(min_lat, max_lat, min_lng, max_lng, lat_step=0.1, lng_step=0.1)
         logger.info(f"Generated {len(bounding_boxes)} bounding boxes for Overpass queries.")
 
