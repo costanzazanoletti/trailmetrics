@@ -5,10 +5,10 @@ import gzip
 import os
 import pandas as pd
 import numpy as np
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from geopy.distance import geodesic
 from dotenv import load_dotenv
-from app.weather_api_service import fetch_weather_data, generate_variables_mapping
+from app.openweather_api_service import fetch_weather_data, generate_request_parameters
 
 logger = logging.getLogger("app")
 
@@ -45,7 +45,7 @@ def add_datetime_columns(segments_df, activity_start_timestamp):
     Adds start_date_time and end_date_time to segments_df based on activity start timestamp.
     """
     # Convert the activity start timestamp to a datetime object
-    activity_start_dt = datetime.utcfromtimestamp(activity_start_timestamp)
+    activity_start_dt = datetime.fromtimestamp(activity_start_timestamp, timezone.utc)
     
     # Create new columns with absolute datetime values
     segments_df["start_date_time"] = segments_df["start_time"].apply(lambda t: activity_start_dt + timedelta(seconds=t))
@@ -53,141 +53,86 @@ def add_datetime_columns(segments_df, activity_start_timestamp):
     
     return segments_df
 
-def create_reference_points(df_segments, distance_threshold, elevation_threshold, time_threshold):
+def create_reference_points(df_segments,  elevation_threshold, time_threshold, grid_size=0.1):
     """
-    Selects reference points for weather requests based on distance, elevation gain, and time intervals.
-    Copies start_date_time and end_date_time directly from the original segment data.
+    Creates reference points based on geographic location, time, and elevation gain,
+    using a grid-based approach to divide the area into bounding boxes (default grid_size=0.1 degrees).
     """
-
-    # Initialize the list of points with the first segment
-    selected_points = [
-        (df_segments.iloc[0]["start_lat"],
-         df_segments.iloc[0]["start_lng"],
-         df_segments.iloc[0]["start_distance"],
-         df_segments.iloc[0]["end_distance"],
-         df_segments.iloc[0]["start_altitude"],
-         df_segments.iloc[0]["end_altitude"],
-         df_segments.iloc[0]["start_date_time"],  # Copy actual timestamps
-         df_segments.iloc[0]["end_date_time"],
-         0,  # Distance traveled (first point has 0)
-         0,  # Time elapsed (first point has 0)
-         0)  # Elevation change (first point has 0)
-    ]
-
-    # Reference variables for tracking the last selected point
-    last_distance = df_segments.iloc[0]["end_distance"]
-    last_altitude = df_segments.iloc[0]["end_altitude"]
-    last_time = df_segments.iloc[0]["end_date_time"]
-
-    # Iterate over segments to determine weather request points
-    for index, row in df_segments.iterrows():
-        current_distance = row["end_distance"]
+    selected_points = []
+    # Initialize the first reference point with rounded coordinates based on grid_size
+    first_lat, first_lng = df_segments.iloc[0]["start_lat"], df_segments.iloc[0]["start_lng"]
+    last_time = df_segments.iloc[0]["start_date_time"]
+    last_altitude = df_segments.iloc[0]["start_altitude"]
+    
+    # Add the first reference point
+    selected_points.append({
+        "lat": first_lat,
+        "lng": first_lng,
+        "timestamp": last_time,
+        "altitude": last_altitude,
+        "associated_segments": [df_segments.iloc[0]["segment_id"]]
+    })
+    
+    # Round first_lat and first_lng to compare
+    last_lat = round(first_lat / grid_size) * grid_size  # Dynamic rounding based on grid_size
+    last_lng = round(first_lng / grid_size) * grid_size
+    
+    # Iterate over the segments to find changes in coordinates, time, and elevation
+    for idx, row in df_segments.iloc[1:].iterrows():
         current_lat, current_lng = row["end_lat"], row["end_lng"]
-        current_altitude = row["end_altitude"]
         current_time = row["end_date_time"]
+        current_altitude = row["end_altitude"]
 
-        # Compute the changes since the last selected point
-        distance_traveled = current_distance - last_distance
-        elevation_change = abs(current_altitude - last_altitude)
-        time_elapsed = (current_time - last_time).total_seconds()  # Ensure time is in seconds
+        # Check if there's a change in the grid location (bounding box), using grid_size for rounding
+        grid_lat = round(current_lat / grid_size) * grid_size  # Dynamic rounding based on grid_size
+        grid_lng = round(current_lng / grid_size) * grid_size
+        
+        # Calculate the time and elevation difference
+        time_diff = (current_time - last_time).total_seconds()
+        elevation_diff = abs(current_altitude - last_altitude)
 
-        # If any of the thresholds are exceeded, add a new reference point
-        if (distance_traveled >= distance_threshold or
-            elevation_change >= elevation_threshold or
-            time_elapsed >= time_threshold):
+        # If the reference point's grid or time threshold is exceeded, create a new reference point
+        if (grid_lat != last_lat or grid_lng != last_lng or time_diff >= time_threshold or elevation_diff >= elevation_threshold):
+            selected_points.append({
+                "lat": current_lat,
+                "lng": current_lng,
+                "timestamp": current_time,
+                "altitude": current_altitude,
+                "associated_segments": []
+            })
+            last_lat, last_lng = grid_lat, grid_lng  # Update last position
+            last_time = current_time  # Update last timestamp
+            last_altitude = current_altitude  # Update last altitude
 
-            selected_points.append((current_lat, current_lng, last_distance, current_distance,
-                                    last_altitude, current_altitude, last_time, current_time,
-                                    distance_traveled, time_elapsed, elevation_change))
+        # Associate the current segment to the closest reference point
+        selected_points[-1]["associated_segments"].append(row["segment_id"])
 
-            # Update reference variables
-            last_distance = current_distance
-            last_altitude = current_altitude
-            last_time = current_time
+    # Return a DataFrame for reference points, including associated segments
+    reference_points_df = pd.DataFrame(selected_points)
+    return reference_points_df
 
-    # Always add the final point of the activity
-    final_distance = df_segments.iloc[-1]["end_distance"] - last_distance
-    final_time = (df_segments.iloc[-1]["end_date_time"] - last_time).total_seconds()
-    final_elevation = abs(df_segments.iloc[-1]["end_altitude"] - last_altitude)
-
-    selected_points.append(
-        (df_segments.iloc[-1]["end_lat"],
-         df_segments.iloc[-1]["end_lng"],
-         df_segments.iloc[-1]["start_distance"],
-         df_segments.iloc[-1]["end_distance"],
-         df_segments.iloc[-1]["start_altitude"],
-         df_segments.iloc[-1]["end_altitude"],
-         df_segments.iloc[-1]["start_date_time"],
-         df_segments.iloc[-1]["end_date_time"],
-         final_distance,
-         final_time,
-         final_elevation
-        ))
-
-    # Create a DataFrame to display the selected points
-    return pd.DataFrame(selected_points, columns=[
-        "lat", "lng", "start_distance", "end_distance", "start_altitude", "end_altitude",
-        "start_date_time", "end_date_time", "distance_traveled", "time_elapsed", "elevation_change"
-    ])
-
-def assign_weather_to_segments(df_segments, weather_response):
+def assign_weather_to_segments(reference_point, df_segments_all, weather_response_df):
     """
-    Assigns weather data to each segment based on the closest matching time and location.
+    Assigns weather data to each segment listed in associated_segments of reference_point.
+    Directly maps weather data from the JSON response to the DataFrame columns.
     """
-    # Get response variables to column mapping
-    weather_mapping, _ = generate_variables_mapping()
 
-    # Initialize new columns in df_segments for weather data based on weather_mapping
-    for column in weather_mapping.values():
-        df_segments[column] = None  # Dynamically initialize columns based on weather_mapping
+    # Filter the segments to only include those in the reference point's associated_segments
+    segment_ids = reference_point["associated_segments"]
+    df_segments = df_segments_all[df_segments_all["segment_id"].isin(segment_ids)]
+
+    logger.info(f"Assign weather info to {len(df_segments)} segments")
 
     # Ensure segment start_date_time is also timezone-naive
-    df_segments["start_date_time"] = pd.to_datetime(df_segments["start_date_time"]).dt.tz_localize(None)
+    df_segments.loc[:, "start_date_time"] = pd.to_datetime(df_segments["start_date_time"]).dt.tz_localize(None)
 
-    # If weather_response is None or empty, log a warning and return the DataFrame as is
-    if not weather_response:
-        logging.warning("Weather response is empty or None, no weather data assigned.")
-        return df_segments  
 
-    # Convert forecasted_time to datetime and make it timezone-naive    
-    for entry in weather_response:
-        entry["forecasted_time"] = pd.to_datetime(entry["forecasted_time"]).tz_localize(None)
+    combined_df = pd.concat([df_segments, pd.concat([weather_response_df]*len(df_segments), ignore_index=True)], axis=1)
+    
+    # Return the segments that were filtered and processed
+    return combined_df
 
-    # Iterate over each segment
-    for index, segment in df_segments.iterrows():
-        segment_time = segment["start_date_time"]
-        segment_coords = (segment["start_lat"], segment["start_lng"])
-
-        # Find the closest weather data in time
-        closest_time_entry = min(
-            weather_response,
-            key=lambda w: abs((w["forecasted_time"] - segment_time).total_seconds())
-        )
-        closest_time = closest_time_entry["forecasted_time"]
-
-        # Filter weather entries that match this closest timestamp
-        matching_time_entries = [w for w in weather_response if w["forecasted_time"] == closest_time]
-        
-        # Find the closest weather data in location among these matching time entries
-        closest_weather = min(
-            matching_time_entries,
-            key=lambda w: geodesic(segment_coords, (w["lat"], w["lon"])).meters
-        )
-
-       # Log for debugging: Check if closest_weather contains expected data
-        logging.debug(f"Closest weather data for segment {index}: {closest_weather}")
-
-        # Assign the closest weather data to the segment using the mapping
-        for api_param, column in weather_mapping.items():
-            value = closest_weather.get(api_param, None)
-            df_segments.at[index, column] = value  # Assign the value to the column
-
-            # Log if a value was not found for the API parameter
-            if value is None:
-                logging.warning(f"Weather parameter {api_param} not found for segment {index}")
-    return df_segments
-
-def get_weather_info(activity_start_date, compressed_segments):
+def get_weather_info(activity_start_date, compressed_segments, activity_id):
     # Extract segments from kafka message
     segments_df = parse_kafka_segments(compressed_segments)
     # Add start and end timestamp to each segment
@@ -197,10 +142,18 @@ def get_weather_info(activity_start_date, compressed_segments):
     reference_points_df = create_reference_points(segments_df, DISTANCE_THRESHOLD, ELEVATION_THRESHOLD, TIME_THRESHOLD)
     logger.info(f"Computed {len(reference_points_df)} reference points")
 
-    # Fetch weather data from external API
-    weather_response = fetch_weather_data(reference_points_df)
+    for _, row in reference_points_df.iterrows():
+        # Generate request parameters from each reference point
+        request_params = generate_request_parameters(row)
+    
+        # Fetch weather data from external API
+        weather_response_df = fetch_weather_data(request_params, activity_id)
 
-    # Assign weather data to segments (HANDLE EMPTY RESPONSE)
-    return assign_weather_to_segments(segments_df, weather_response)
+        # If weather_response is None or empty, return the DataFrame as is
+        if not weather_response_df or len(weather_response_df) == 0:
+            return None  
 
+        # Assign weather data to segments
+        return assign_weather_to_segments(row, segments_df, weather_response_df)
+   
       
