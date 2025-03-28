@@ -3,14 +3,10 @@ import logging_setup
 import requests
 import os
 import pandas as pd
-import numpy as np
-from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import time
-import random
-import json
-from app.kafka_retry_producer import publish_retry_message
 from app.counter_manager import RequestCounter
+from app.exceptions import WeatherAPIException
 
 logger = logging.getLogger("app")
 
@@ -112,7 +108,7 @@ def json_to_dataframe(response):
     
     return df
 
-def fetch_weather_data(params, activity_id):
+def fetch_weather_data(params):
     """
     Sends requests to the weather API and retrieves the forecast data.
     """
@@ -124,18 +120,14 @@ def fetch_weather_data(params, activity_id):
     try:
         request_counter.increment()
     except Exception as e:
-        # If unable to increment counter, publish retry message
-        logger.warning(f"Daily limit of {DAILY_REQUEST_LIMIT} requests reached. Re-schedule for the next day.")
-        # Re-schedule in one day
-        publish_retry_message(params, activity_id, False)
-        return None  
+        # If unable to increment counter, raise an exception
+        logger.warning(f"Daily limit of {DAILY_REQUEST_LIMIT} requests reached.")
+        raise WeatherAPIException("Daily request limit reached", status_code=429, retry_in_hour=False) 
     
-    response = None
     try: 
         # Perform the request to the OpenWeather API
         logger.info(f"Requesting weather data for {params['lat']}, {params['lon']} at {params['dt']}")
         response = requests.get(OPENWEATHER_HISTORY_API_URL, params=params)  
-
         # Raise an exception for non-OK status codes
         response.raise_for_status()  
 
@@ -144,14 +136,16 @@ def fetch_weather_data(params, activity_id):
         time.sleep(1)  # Ensure at least 1 second between requests
         return json_to_dataframe(response.json())  # Return the API response as a DataFrame
         
-    except requests.exceptions.HTTPError as err:
-        logger.error(f"Error during request: {err}")
-  
+    except requests.exceptions.HTTPError as err:  
         if response is not None and response.status_code == 429: # Rate limit exceeded
-            logger.warning(f"Rate limit exceeded. Re-scheduling in one hour")
-            # Re-schedule in one hour
-            publish_retry_message(params, activity_id, True)
-
-        return None
+            logger.warning(f"Weather API rate limit exceeded.")
+            raise WeatherAPIException("Hourly request limit reached", status_code=429, retry_in_hour=True)
+        else:
+            logger.error(f"Request HTTP error: {err}")
+            raise WeatherAPIException(f"HTTP Error: {err}", status_code=response.status_code)
+        
+    except requests.exceptions.RequestException as err:
+        logger.error(f"Request error: {err}")
+        raise WeatherAPIException(f"Request failed: {err}")
 
 

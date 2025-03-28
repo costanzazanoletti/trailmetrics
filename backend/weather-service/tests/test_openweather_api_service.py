@@ -5,6 +5,7 @@ import requests
 import logging.config
 from unittest.mock import patch, MagicMock
 from app.openweather_api_service import generate_request_parameters, fetch_weather_data
+from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
 
@@ -26,7 +27,13 @@ def create_sample_dataframe():
 
 @pytest.fixture
 def create_sample_params():
-    return 
+    return {
+            "lat": 47.1,
+            "lon": 8.6,
+            "dt": 1709510400,
+            "units": "metric",  
+            "appid": 'fake_api_key'  
+        }
 
 def test_generate_request_parameters(create_sample_dataframe):
     reference_point = create_sample_dataframe.iloc[0]
@@ -47,7 +54,7 @@ def test_generate_request_parameters(create_sample_dataframe):
         assert result["dt"] == expected_timestamp
         assert result["units"] == expected_units
   
-def test_fetch_weather_data_success():
+def test_fetch_weather_data_success(create_sample_params):
     # Mock a success response (status 200) of the API, with the OpenWeather example structure
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -83,28 +90,17 @@ def test_fetch_weather_data_success():
         }
     ]
 }
+    
     # Mock of the function requests.get to return mock_response
     with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.publish_retry_message', autospec=True) as mock_publish_retry, \
          patch('app.openweather_api_service.time.sleep', return_value=None), \
          patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
         
-        activity_id = '12345'
-        params = {
-            "lat": 47.1,
-            "lon": 8.6,
-            "dt": 1709510400,
-            "units": "metric",  
-            "appid": 'fake_api_key'  
-        }
         # Call fetch_weather_data
-        result = fetch_weather_data(params, activity_id)
+        result = fetch_weather_data(create_sample_params)
 
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()
-
-        # Ensure Kafka retry is not called (since the request was successful)
-        mock_publish_retry.assert_not_called()
 
         # Verify data are as expected
         expected_length = 1
@@ -123,36 +119,25 @@ def test_fetch_weather_data_success():
         assert result.iloc[0]["pressure"] == expected_pressure
         assert result.iloc[0]["weather_description"] == expected_weather_description
  
-def test_fetch_weather_data_request_counter_limit():
+def test_fetch_weather_data_request_counter_limit(create_sample_params):
     # Mock a failure response from the request_counter.increment method
     mock_request_counter = MagicMock()
     mock_request_counter.increment.side_effect = Exception("Daily request limit reached")
 
-
     # Mock the rest of the function calls
-    with patch('app.openweather_api_service.publish_retry_message', autospec=True) as mock_publish_retry, \
-         patch('app.openweather_api_service.RequestCounter', return_value=mock_request_counter), \
+    with patch('app.openweather_api_service.RequestCounter', return_value=mock_request_counter), \
          patch('app.openweather_api_service.time.sleep', return_value=None):
         
-        params = {
-            "lat": 47.1,
-            "lon": 8.6,
-            "dt": 1709510400,
-            "units": "metric",  
-            "appid": 'fake_api_key'  
-        }
-        activity_id = '12345'
-
         # Call fetch_weather_data
-        result = fetch_weather_data(params, activity_id)
+        try:
+            fetch_weather_data(create_sample_params)
+        except WeatherAPIException as e:
+            # Verify that the exception has the expected parameters
+            assert str(e) == "Daily request limit reached"
+            assert e.status_code == 429
+            assert e.retry_in_hour == False
 
-        # Ensure Kafka retry is called once with a long delay
-        mock_publish_retry.assert_called_once_with(params, activity_id, False)
-
-        # Verify that the function returns None
-        assert result is None
-
-def test_fetch_weather_data_429():
+def test_fetch_weather_data_429(create_sample_params):
     # Mock a rate limit hit response (status 429) of the API
     mock_response = MagicMock()
     mock_response.status_code = 429
@@ -166,31 +151,23 @@ def test_fetch_weather_data_429():
   
     # Mock of the function requests.get to return mock_response
     with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.publish_retry_message', autospec=True) as mock_publish_retry, \
          patch('app.openweather_api_service.time.sleep', return_value=None), \
          patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
-        
-        activity_id = '12345'
-        params = {
-            "lat": 47.1,
-            "lon": 8.6,
-            "dt": 1709510400,
-            "units": "metric",  
-            "appid": 'fake_api_key'  
-        }
+      
         # Call fetch_weather_data
-        result = fetch_weather_data(params, activity_id)
+        try:
+            fetch_weather_data(create_sample_params)
+        except WeatherAPIException as e:
+            # Verify that the exception has the expected parameters
+            assert str(e) == "Hourly request limit reached"
+            assert e.status_code == 429
+            assert e.retry_in_hour == True
 
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()
 
-        # Ensure Kafka retry is called once with a short delay
-        mock_publish_retry.assert_called_once_with(params, activity_id, True)
-
-        # Verify that the function returns None
-        assert result is None
  
-def test_fetch_weather_data_error():
+def test_fetch_weather_data_error(create_sample_params):
     # Mock a rate limit hit response (status 429) of the API
     mock_response = MagicMock()
     mock_response.status_code = 400
@@ -207,27 +184,43 @@ def test_fetch_weather_data_error():
 
     # Mock of the function requests.get to return mock_response
     with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.publish_retry_message', autospec=True) as mock_publish_retry, \
          patch('app.openweather_api_service.time.sleep', return_value=None), \
          patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
-        
-        activity_id = '12345'
-        params = {
-            "lat": 47.1,
-            "lon": 8.6,
-            "dt": 1709510400,
-            "units": "metric",  
-            "appid": 'fake_api_key'  
-        }
+   
         # Call fetch_weather_data
-        result = fetch_weather_data(params, activity_id)
+        try:
+            fetch_weather_data(create_sample_params)
+        except WeatherAPIException as e:
+            # Verify that the exception has the expected parameters
+            assert e.status_code == 400
+            assert e.retry_in_hour == False
 
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()
 
-        # Ensure Kafka retry is not called (since the request got an HTTP error)
-        mock_publish_retry.assert_not_called()
+def test_fetch_weather_data_generic_error(create_sample_params):
+    # Mock a rate limit hit response (status 429) of the API
+    mock_response = MagicMock()
+    mock_response.status_code = 400
+    mock_response.json.return_value = {
+        "cod":400,
+        "message":"Invalid date format",
+        "parameters": [
+            "date"
+        ]
+    }
+  
+    # Mocking raise_for_status to raise an HTTPError when status_code is not 200
+    mock_response.raise_for_status.side_effect = requests.exceptions.ConnectTimeout("Connection timed out")
 
-        # Verify that the function returns None
-        assert result is None
- 
+    # Mock of the function requests.get to return mock_response
+    with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
+         patch('app.openweather_api_service.time.sleep', return_value=None), \
+         patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
+   
+        # Call fetch_weather_data
+        try:
+            fetch_weather_data(create_sample_params)
+        except  WeatherAPIException as e:
+            assert str(e) == "Request failed: Connection timed out"
+            assert e.status_code is None

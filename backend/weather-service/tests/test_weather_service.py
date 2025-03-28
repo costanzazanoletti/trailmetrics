@@ -1,7 +1,9 @@
 import pytest
 import pandas as pd
 import logging.config
-from app.weather_service import create_reference_points, assign_weather_to_segments
+from unittest.mock import patch
+from app.weather_service import create_reference_points, assign_weather_to_segments, get_weather_info
+from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
 
@@ -135,3 +137,78 @@ def test_assign_weather_to_segments(sample_df_segments, sample_reference_point, 
 
     # Verifica that a segment not associated is not present
     assert "123456-5" not in result_df["segment_id"].values
+
+def test_get_weather_info_success(sample_df_segments, sample_df_weather_response):
+    # Define input parameters for the function
+    activity_start_date = 1627315508.0
+    compressed_segments = b"compressed_segments"  # Simulated compressed segments
+    activity_id = 12345
+    processed_at = 1743092455.4382648
+
+    with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
+         patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
+         patch('app.weather_service.fetch_weather_data', return_value=sample_df_weather_response) as mock_fetch_weather_data, \
+         patch('app.weather_service.send_weather_output') as mock_send_output, \
+         patch('app.weather_service.send_retry_message') as mock_send_retry:
+        
+        # Call the function
+        get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at)
+
+         # Verify that fetch_weather_data was called once for each reference point
+        assert mock_fetch_weather_data.call_count == 2 
+
+        # Verify that send_weather_output was called once for each successful fetch
+        assert mock_send_output.call_count == 2 
+
+        # Verify that send_retry_message was not called (since there were no exceptions)
+        mock_send_retry.assert_not_called()
+
+def test_get_weather_info_failure(sample_df_segments):
+    # Define input parameters for the function
+    activity_start_date = 1627315508.0
+    compressed_segments = b"compressed_segments"  # Simulated compressed segments
+    activity_id = 12345
+    processed_at = 1743092455.4382648
+
+    with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
+         patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
+         patch('app.weather_service.fetch_weather_data', side_effect= WeatherAPIException("Request failed")) as mock_fetch_weather_data, \
+         patch('app.weather_service.send_weather_output') as mock_send_output, \
+         patch('app.weather_service.send_retry_message') as mock_send_retry:
+        
+        # Call the function
+        get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at)
+
+         # Verify that fetch_weather_data was called once for each reference point
+        assert mock_fetch_weather_data.call_count == 2 
+
+        # Verify that send_weather_output was never called because each fetch failed
+        mock_send_output.assert_not_called()
+
+        # Verify that send_retry_message was not called (since there were no rate limit exceptions)
+        mock_send_retry.assert_not_called()
+
+def test_get_weather_info_429(sample_df_segments):
+    # Define input parameters for the function
+    activity_start_date = 1627315508.0
+    compressed_segments = b"compressed_segments"  # Simulated compressed segments
+    activity_id = 12345
+    processed_at = 1743092455.4382648
+
+    with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
+         patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
+         patch('app.weather_service.fetch_weather_data', side_effect= WeatherAPIException("Hourly request limit reached", status_code=429, retry_in_hour=True)) as mock_fetch_weather_data, \
+         patch('app.weather_service.send_weather_output') as mock_send_output, \
+         patch('app.weather_service.send_retry_message') as mock_send_retry:
+        
+        # Call the function
+        get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at)
+
+         # Verify that fetch_weather_data was called once for each reference point
+        assert mock_fetch_weather_data.call_count == 2 
+
+        # Verify that send_weather_output was never called because each fetch failed
+        mock_send_output.assert_not_called()
+
+        # Verify that send_retry_message was called once for each rate limit hit
+        assert mock_send_retry.call_count == 2

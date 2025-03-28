@@ -9,7 +9,8 @@ from datetime import datetime, timedelta, timezone
 from geopy.distance import geodesic
 from dotenv import load_dotenv
 from app.openweather_api_service import fetch_weather_data, generate_request_parameters
-from app.kafka_producer import send_weather_output
+from app.kafka_producer import send_weather_output, send_retry_message
+from app.exceptions import WeatherAPIException
 
 logger = logging.getLogger("app")
 
@@ -148,18 +149,18 @@ def get_weather_info(activity_start_date, compressed_segments, activity_id, proc
     for _, row in reference_points_df.iterrows():
         # Generate request parameters from each reference point
         request_params = generate_request_parameters(row)
-    
-        # Fetch weather data from external API
-        weather_response_df = fetch_weather_data(request_params, activity_id)
+        try:
+            # Fetch weather data from external API
+            weather_response_df = fetch_weather_data(request_params)
 
-        # If weather_response is None or empty, continue
-        if weather_response_df.empty:
-            continue 
+            # Assign weather data to segments
+            weather_df = assign_weather_to_segments(row, segments_df, weather_response_df)
+            
+            # If weather info is present, send Kafka message with weather info
+            if not weather_response_df.empty:
+                send_weather_output(activity_id, weather_df, processed_at)
 
-        # Assign weather data to segments
-        weather_df = assign_weather_to_segments(row, segments_df, weather_response_df)
-        #logger.info(f"Segment with weather Data\n{weather_df}")
-        
-        # If weather info is present, send Kafka message with weather info
-        if not weather_response_df.empty:
-            send_weather_output(activity_id, weather_df, processed_at)
+        except WeatherAPIException as e:
+            if e.status_code and e.status_code ==429:
+                # Hit API request limit: publish retry message
+                send_retry_message(activity_id, row, request_params, short=e.retry_in_hour)
