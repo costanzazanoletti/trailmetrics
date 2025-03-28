@@ -6,6 +6,7 @@ import base64
 import logging.config
 from unittest.mock import patch
 from app.weather_service import get_weather_info
+from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
 
@@ -33,5 +34,19 @@ def test_get_weather_info(sample_kafka_message):
          patch('app.weather_service.send_weather_output') as mock_send:
         get_weather_info(start_date, compressed_segments, activity_id, processed_at)
     
-    # Verify that sent weather info is called 6 times
+    # Verify that the Kafka output message is sent
     assert mock_send.call_count == 6
+
+def test_get_weather_info_retry(sample_kafka_message):
+    """Integration test to verify the behavior of get_weather_info with real data."""
+    start_date, compressed_segments, activity_id, processed_at = sample_kafka_message
+    with patch('app.counter_manager.RequestCounter.increment', autospec=True), \
+         patch('app.weather_service.send_retry_message') as mock_send_retry, \
+         patch('app.weather_service.fetch_weather_data', side_effect= WeatherAPIException("Hourly request limit reached", status_code=429, retry_in_hour=True)) as mock_fetch_weather_data:
+         
+        get_weather_info(start_date, compressed_segments, activity_id, processed_at)
+    
+    # Verify that the API request is sent
+    assert mock_fetch_weather_data.call_count == 6
+    # Verify that the retry message is sent
+    assert mock_send_retry.call_count == 6

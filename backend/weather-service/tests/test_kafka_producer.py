@@ -55,7 +55,7 @@ def test_prepare_message(sample_df):
 
 def test_prepare_retry_message_short(sample_reference_point):
     activity_id = 12345
-    reference_point = sample_reference_point
+    reference_point = sample_reference_point.iloc[0]
     request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
     short = True
 
@@ -68,8 +68,8 @@ def test_prepare_retry_message_short(sample_reference_point):
     assert "request_params" in result
     assert result["request_params"] == request_params
     assert "reference_point" in result
-    assert isinstance(result["reference_point"], list)  # Should be a list of dictionaries
-    assert len(result["reference_point"]) == 1  # The sample reference point contains one row
+    assert isinstance(result["reference_point"], dict)  
+    assert len(result["reference_point"]) == len(reference_point)
     assert "retry_timestamp" in result
 
     # Verify retry_timestamp is in the future (1 hour added)
@@ -80,7 +80,7 @@ def test_prepare_retry_message_short(sample_reference_point):
 # Test prepare_retry_message function (short=False)
 def test_prepare_retry_message_long(sample_reference_point):
     activity_id = 12345
-    reference_point = sample_reference_point
+    reference_point = sample_reference_point.iloc[0]
     request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
     short = False
 
@@ -93,8 +93,8 @@ def test_prepare_retry_message_long(sample_reference_point):
     assert "request_params" in result
     assert result["request_params"] == request_params
     assert "reference_point" in result
-    assert isinstance(result["reference_point"], list)  # Should be a list of dictionaries
-    assert len(result["reference_point"]) == 1  # The sample reference point contains one row
+    assert isinstance(result["reference_point"], dict)  
+    assert len(result["reference_point"]) == len(reference_point)
     assert "retry_timestamp" in result
 
     # Verify retry_timestamp is at the start of the next day (00:00 UTC)
