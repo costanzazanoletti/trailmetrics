@@ -17,7 +17,12 @@ KAFKA_BROKER = os.getenv("KAFKA_BROKER")
 KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP")
 KAFKA_TOPIC_INPUT = os.getenv("KAFKA_TOPIC_INPUT")
 KAFKA_TOPIC_RETRY = os.getenv("KAFKA_TOPIC_RETRY")
-KAFKA_MAX_POLL_RECORDS = int(os.getenv("KAFKA_MAX_POLL_RECORDS"))
+# Latency Configuration
+KAFKA_MAX_POLL_RECORDS = int(os.getenv("KAFKA_MAX_POLL_RECORDS", 10))
+KAFKA_MAX_POLL_INTERVAL_MS = int(os.getenv("KAFKA_MAX_POLL_INTERVAL_MS", 600000)) 
+KAFKA_SESSION_TIMEOUT_MS = int(os.getenv("KAFKA_SESSION_TIMEOUT_MS", 40000))
+KAFKA_HEARTBEAT_INTERVAL_MS = int(os.getenv("KAFKA_HEARTBEAT_INTERVAL_MS", 10000)) 
+
 if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_INPUT,KAFKA_MAX_POLL_RECORDS]):
     raise ValueError("Kafka environment variables are not set properly")
 
@@ -36,7 +41,10 @@ def create_kafka_consumer(topic):
         key_deserializer=lambda k: k.decode("utf-8") if k else None,
         auto_offset_reset="earliest",
         enable_auto_commit=False,
-        max_poll_records=KAFKA_MAX_POLL_RECORDS
+        max_poll_records=KAFKA_MAX_POLL_RECORDS,
+        max_poll_interval_ms=KAFKA_MAX_POLL_INTERVAL_MS,
+        session_timeout_ms=KAFKA_SESSION_TIMEOUT_MS,
+        heartbeat_interval_ms=KAFKA_HEARTBEAT_INTERVAL_MS,
     )
 
 def process_message(message):
