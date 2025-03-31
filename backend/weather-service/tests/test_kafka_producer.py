@@ -62,7 +62,7 @@ def test_prepare_retry_message_short():
     assert result["segmentIds"] == segment_ids  
     assert "retryTimestamp" in result
 
-    # Verify retry_timestamp is in the future (1 hour added)
+    # Verify retry_timestamp is in the future (1 minute added)
     retry_time = datetime.fromtimestamp(result["retryTimestamp"], tz=timezone.utc)
     assert retry_time > datetime.now(timezone.utc)
 

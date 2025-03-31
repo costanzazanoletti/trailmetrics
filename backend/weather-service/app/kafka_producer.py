@@ -66,8 +66,8 @@ def prepare_retry_message(activity_id, segment_ids, request_params, short):
     # Compute the retry time
     retry_time = datetime.now(timezone.utc)
     if short:
-        # Add 1 hour if "short" is true
-        retry_time = retry_time + timedelta(hours=1)
+        # Add 1 minute if "short" is true
+        retry_time = retry_time + timedelta(minutes=1)
     else:
         retry_time = retry_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
     
