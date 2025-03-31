@@ -24,9 +24,13 @@ def start_consumers():
     weather_consumer_thread.start()
 
     # Wait for all threads to finish
-    segment_consumer_thread.join()
-    terrain_consumer_thread.join()
-    weather_consumer_thread.join()
+    try:
+        segment_consumer_thread.join()
+        terrain_consumer_thread.join()
+        weather_consumer_thread.join()
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt received. Shutting down...")
+        graceful_shutdown(None, None)
 
 def graceful_shutdown(signum, frame):
     """Gracefully shuts down the Kafka consumers and exits."""
@@ -35,11 +39,15 @@ def graceful_shutdown(signum, frame):
     # Signal the consumer threads to stop
     shutdown_event.set()
 
-    # Optionally, you can give time for threads to clean up before exiting
+    # Wait a bit to allow the threads to clean up (optional)
     logger.info("Cleanup complete. Exiting gracefully.")
     sys.exit(0)  # Exit the program
 
 if __name__ == "__main__":
     print("Efficiency service started successfully")
     check_segments_table()
+    
+    # Capture SIGINT (Ctrl-C) and perform graceful shutdown
+    signal.signal(signal.SIGINT, graceful_shutdown)
+    
     start_consumers()
