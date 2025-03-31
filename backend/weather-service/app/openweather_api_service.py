@@ -63,8 +63,7 @@ def generate_request_parameters(reference_point):
         "lat": coordinates["lat"],
         "lon": coordinates["lon"],
         "dt": timestamp,
-        "units": "metric",  
-        "appid": OPENWEATHER_API_KEY  
+        "units": "metric" 
     }
 
 def json_to_dataframe(response):
@@ -116,8 +115,6 @@ def json_to_dataframe(response):
     
     return df
 
-
-
 def fetch_weather_data(params):
     """
     Sends requests to the weather API and retrieves the forecast data.
@@ -134,6 +131,9 @@ def fetch_weather_data(params):
         logger.warning(f"Daily limit of {DAILY_REQUEST_LIMIT} requests reached.")
         raise WeatherAPIException("Daily request limit reached", status_code=429, retry_in_hour=False) 
     
+    # Add api key to params 
+    params["appid"] = OPENWEATHER_API_KEY 
+
     try: 
         # Perform the request to the OpenWeather API
         logger.info(f"Requesting weather data for {params['lat']}, {params['lon']} at {params['dt']}")

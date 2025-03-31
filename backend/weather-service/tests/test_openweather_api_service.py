@@ -79,7 +79,6 @@ def test_json_to_dataframe():
     assert result.iloc[0]["wind"] == expected_wind
     assert result.iloc[0]["weather_description"] == expected_weather_description
  
-
 def test_fetch_weather_data_success(create_sample_params):
     # Mock a success response (status 200) of the API, with the OpenWeather example structure
     mock_response = MagicMock()
