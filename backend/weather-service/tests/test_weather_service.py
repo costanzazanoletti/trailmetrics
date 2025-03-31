@@ -66,30 +66,15 @@ def sample_df_weather_response():
     return pd.DataFrame({
     'lat': [47.1],
     'lon': [8.6],
-    'timezone': ['Europe/Zurich'],
-    'timezone_offset': [3600],
     'dt': [1709510400],
-    'sunrise': [1709531980],
-    'sunset': [1709572509],
     'temp': [273.1],
     'feels_like': [272.5],
-    'pressure': [1010],
     'humidity': [80],
-    'dew_point': [270.1],
-    'uvi': [None],
-    'clouds': [100],
-    'visibility': [10000],
-    'wind_speed': [5.2],
-    'wind_deg': [270],
-    'wind_gust': [None],
+    'wind': [5.2],
     'weather_id': [500],
     'weather_main': ['Rain'],
-    'weather_description': ['light rain'],
-    'weather_icon': ['10n'],
-    'rain_1h': [0.34],
-    'snow_1h': [None]
+    'weather_description': ['light rain']
 })
-
 
 def test_create_reference_points(sample_df_segments):
  
@@ -109,10 +94,11 @@ def test_create_reference_points(sample_df_segments):
     assert result_df.iloc[0]["lat"] == 46.0
     assert result_df.iloc[0]["lng"] == 8.0
     
-def test_assign_weather_to_segments(sample_df_segments, sample_reference_point, sample_df_weather_response):
-
+def test_assign_weather_to_segments(sample_reference_point, sample_df_weather_response):
+    # Get the segment ids
+    segment_ids = sample_reference_point["associated_segments"]
     # Call the function
-    result_df = assign_weather_to_segments(sample_reference_point, sample_df_segments, sample_df_weather_response)
+    result_df = assign_weather_to_segments(segment_ids, sample_df_weather_response)
     
     print(f"Result assign weather to segments\n{result_df.head()}")
     
@@ -123,17 +109,16 @@ def test_assign_weather_to_segments(sample_df_segments, sample_reference_point, 
     # Verify that weather info are correctly added
     assert "temp" in result_df.columns
     assert "feels_like" in result_df.columns
-    assert "pressure" in result_df.columns
+    assert "wind" in result_df.columns
     assert "humidity" in result_df.columns
     assert "weather_description" in result_df.columns
     
     # Verifica that the weather data are correct
     assert result_df["temp"].iloc[0] == 273.1
     assert result_df["feels_like"].iloc[0] == 272.5
-    assert result_df["pressure"].iloc[0] == 1010
+    assert result_df["wind"].iloc[0] == 5.2
     assert result_df["humidity"].iloc[0] == 80
     assert result_df["weather_description"].iloc[0] == "light rain"
-
 
     # Verifica that a segment not associated is not present
     assert "123456-5" not in result_df["segment_id"].values
@@ -152,7 +137,7 @@ def test_get_weather_info_success(sample_df_segments, sample_df_weather_response
          patch('app.weather_service.send_retry_message') as mock_send_retry:
         
         # Call the function
-        get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at)
+        get_weather_info(activity_start_date, compressed_segments, activity_id)
 
          # Verify that fetch_weather_data was called once for each reference point
         assert mock_fetch_weather_data.call_count == 2 
@@ -177,7 +162,7 @@ def test_get_weather_info_failure(sample_df_segments):
          patch('app.weather_service.send_retry_message') as mock_send_retry:
         
         # Call the function
-        get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at)
+        get_weather_info(activity_start_date, compressed_segments, activity_id)
 
          # Verify that fetch_weather_data was called once for each reference point
         assert mock_fetch_weather_data.call_count == 2 
@@ -202,7 +187,7 @@ def test_get_weather_info_429(sample_df_segments):
          patch('app.weather_service.send_retry_message') as mock_send_retry:
         
         # Call the function
-        get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at)
+        get_weather_info(activity_start_date, compressed_segments, activity_id)
 
          # Verify that fetch_weather_data was called once for each reference point
         assert mock_fetch_weather_data.call_count == 2 

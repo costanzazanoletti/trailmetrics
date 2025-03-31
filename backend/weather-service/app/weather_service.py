@@ -6,7 +6,6 @@ import os
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta, timezone
-from geopy.distance import geodesic
 from dotenv import load_dotenv
 from app.openweather_api_service import fetch_weather_data, generate_request_parameters
 from app.kafka_producer import send_weather_output, send_retry_message
@@ -113,30 +112,27 @@ def create_reference_points(df_segments,  elevation_threshold, time_threshold, g
     reference_points_df = pd.DataFrame(selected_points)
     return reference_points_df
 
-def assign_weather_to_segments(reference_point, df_segments_all, weather_response_df):
+def assign_weather_to_segments(segment_ids, weather_response_df):
     """
     Assigns weather data to each segment listed in associated_segments of reference_point.
     Directly maps weather data from the JSON response to the DataFrame columns.
     """
-
-    # Filter the segments to only include those in the reference point's associated_segments
-    segment_ids = reference_point["associated_segments"]
-    df_segments = df_segments_all[df_segments_all["segment_id"].isin(segment_ids)]
-
-    logger.info(f"Assign weather info to {len(df_segments)} segments")
-
+    
     # Create a new DataFrame with the segment IDs and broadcast the weather data across all segments
     weather_columns = weather_response_df.columns
-    weather_data_repeated = pd.DataFrame([weather_response_df.iloc[0]] * len(df_segments), columns=weather_columns)
-    # Keep only segment_id column
-    df_segments_ids = df_segments[['segment_id']]
-    # Combine the weather data with the segments
+    weather_data_repeated = pd.DataFrame([weather_response_df.iloc[0]] * len(segment_ids), columns=weather_columns)
+
+    # Create a new DataFrame with segment_ids
+    df_segments_ids = pd.DataFrame({"segment_id": segment_ids})
+
+    # Combine the weather data with the segment_ids
     combined_df = pd.concat([df_segments_ids.reset_index(drop=True), weather_data_repeated.reset_index(drop=True)], axis=1)
 
-    # Return the segments that were filtered and processed
+    # Return the combined DataFrame with segment IDs and weather data
     return combined_df
 
-def get_weather_info(activity_start_date, compressed_segments, activity_id, processed_at):
+
+def get_weather_info(activity_start_date, compressed_segments, activity_id):
     # Extract segments from kafka message
     segments_df = parse_kafka_segments(compressed_segments)
     # Add start and end timestamp to each segment
@@ -149,18 +145,24 @@ def get_weather_info(activity_start_date, compressed_segments, activity_id, proc
     for _, row in reference_points_df.iterrows():
         # Generate request parameters from each reference point
         request_params = generate_request_parameters(row)
-        try:
-            # Fetch weather data from external API
-            weather_response_df = fetch_weather_data(request_params)
+        # Extract the segment_ids directly from reference_point's associated_segments
+        segment_ids = row["associated_segments"]
+        # Call weather API and handle success and error response
+        get_weather_data_from_api(activity_id, segment_ids, request_params)
 
-            # Assign weather data to segments
-            weather_df = assign_weather_to_segments(row, segments_df, weather_response_df)
-            
-            # If weather info is present, send Kafka message with weather info
-            if not weather_response_df.empty:
-                send_weather_output(activity_id, weather_df, processed_at)
+def get_weather_data_from_api(activity_id, segment_ids, request_params):
+    try:
+        # Fetch weather data from external API
+        weather_response_df = fetch_weather_data(request_params)
 
-        except WeatherAPIException as e:
-            if e.status_code and e.status_code ==429:
-                # Hit API request limit: publish retry message
-                send_retry_message(activity_id, row, request_params, short=e.retry_in_hour)
+        # Assign weather data to segments
+        weather_df = assign_weather_to_segments(segment_ids, weather_response_df)
+        
+        # If weather info is present, send Kafka message with weather info
+        if not weather_response_df.empty:
+            send_weather_output(activity_id, weather_df)
+
+    except WeatherAPIException as e:
+        if e.status_code and e.status_code == 429:
+            # Hit API request limit: publish retry message
+            send_retry_message(activity_id, segment_ids, request_params, short=e.retry_in_hour)
