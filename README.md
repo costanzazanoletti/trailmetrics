@@ -154,7 +154,7 @@ This document defines the Kafka topics and messages used in the application for 
 ```json
 {
   "activityId": 13484124195,
-  "startDate": 1740680048.270867
+  "startDate": 1740680048.270867,
   "processedAt": 1740680048.270867,
   "compressedSegments": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
@@ -162,7 +162,7 @@ This document defines the Kafka topics and messages used in the application for 
 
 ### `terrain-output-queue`
 
-**Description:** Terrain data has been stored in the database  
+**Description:** Terrain data has been retrieved from API
 **Producer Service:** `terrain-service`  
 **Consumer Service:** `efficiency-service`  
 **Consumer Group:** `efficiency-service-group`  
@@ -172,14 +172,13 @@ This document defines the Kafka topics and messages used in the application for 
 ```json
 {
   "activityId": 13484124195,
-  "processedAt": 1740680050.123456,
   "compressedTerrainInfo": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
 ```
 
 ### `weather-output-queue`
 
-**Description:** Weather data has been stored in the database  
+**Description:** Weather data has been retrieved from API  
 **Producer Service:** `weather-service`  
 **Consumer Service:** `efficiency-service`  
 **Consumer Group:** `efficiency-service-group`  
@@ -189,8 +188,30 @@ This document defines the Kafka topics and messages used in the application for 
 ```json
 {
   "activityId": 13484124195,
-  "processedAt": 1740680051.654321,
-  "compressedWeather": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
+  "compressedWeatherInfo": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
+}
+```
+
+### `weather-retry-queue`
+
+**Description:** Weather API rate limit hit, retry after a delay  
+**Producer Service:** `weather-service`  
+**Consumer Service:** `weather-service`  
+**Consumer Group:** `weather-service-group`  
+**Key:** `activityId`  
+**Value JSON:**
+
+```json
+{
+  "activityId": 12345,
+  "requestParams": {
+    "lat": 46.0,
+    "lon": 8.0,
+    "dt": 1633595280,
+    "units": "metric"
+  },
+  "segmentIds": ["123456-1","123456-2"],
+  "retryTimestamp": 1743416209
 }
 ```
 
