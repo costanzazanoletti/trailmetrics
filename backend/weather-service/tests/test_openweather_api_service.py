@@ -4,7 +4,7 @@ import random
 import requests
 import logging.config
 from unittest.mock import patch, MagicMock
-from app.openweather_api_service import generate_request_parameters, fetch_weather_data
+from app.openweather_api_service import generate_request_parameters, fetch_weather_data, json_to_dataframe
 from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
@@ -53,7 +53,33 @@ def test_generate_request_parameters(create_sample_dataframe):
         assert result["lon"] == expected_lon
         assert result["dt"] == expected_timestamp
         assert result["units"] == expected_units
-  
+
+def test_json_to_dataframe():
+    # Mock a success response (status 200) of the API, with the OpenWeather example structure
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"lat":45.8844,"lon":8.2886,"timezone":"Europe/Rome","timezone_offset":7200,"data":[{"dt":1743397200,"sunrise":1743397716,"sunset":1743443585,"temp":-0.03,"feels_like":-3.97,"pressure":1014,"humidity":64,"dew_point":-5.34,"uvi":0,"clouds":0,"visibility":10000,"wind_speed":3.52,"wind_deg":328,"wind_gust":4.52,"weather":[{"id":800,"main":"Clear","description":"clear sky","icon":"01n"}]}]}
+    
+    result = json_to_dataframe(mock_response.json())
+
+    # Verify data are as expected
+    expected_length = 1
+    expected_dt = 1743397200  
+    expected_lat = 45.8844
+    expected_lon = 8.2886
+    expected_temp = -0.03
+    expected_wind =  3.82 # 3.52*0.7 + 4.52*0.3
+    expected_weather_description = "clear sky"
+       
+    assert len(result) == expected_length
+    assert result.iloc[0]["lat"] == expected_lat
+    assert result.iloc[0]["lon"] == expected_lon
+    assert result.iloc[0]["dt"] == expected_dt
+    assert result.iloc[0]["temp"] == expected_temp
+    assert result.iloc[0]["wind"] == expected_wind
+    assert result.iloc[0]["weather_description"] == expected_weather_description
+ 
+
 def test_fetch_weather_data_success(create_sample_params):
     # Mock a success response (status 200) of the API, with the OpenWeather example structure
     mock_response = MagicMock()
@@ -108,7 +134,7 @@ def test_fetch_weather_data_success(create_sample_params):
         expected_lat = 47.1
         expected_lon = 8.6
         expected_temp = 276.24
-        expected_pressure = 1006
+        expected_wind =  1.26
         expected_weather_description = "light rain"
        
         assert len(result) == expected_length
@@ -116,7 +142,7 @@ def test_fetch_weather_data_success(create_sample_params):
         assert result.iloc[0]["lon"] == expected_lon
         assert result.iloc[0]["dt"] == expected_dt
         assert result.iloc[0]["temp"] == expected_temp
-        assert result.iloc[0]["pressure"] == expected_pressure
+        assert result.iloc[0]["wind"] == expected_wind
         assert result.iloc[0]["weather_description"] == expected_weather_description
  
 def test_fetch_weather_data_request_counter_limit(create_sample_params):
@@ -166,7 +192,6 @@ def test_fetch_weather_data_429(create_sample_params):
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()
 
- 
 def test_fetch_weather_data_error(create_sample_params):
     # Mock a rate limit hit response (status 429) of the API
     mock_response = MagicMock()

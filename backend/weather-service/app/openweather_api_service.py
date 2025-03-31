@@ -74,39 +74,49 @@ def json_to_dataframe(response):
     # Extract the weather information and flatten it
     weather = data.get('weather', [{}])[0]
     
-    # Create a dictionary for the DataFrame columns
+    # Get the wind values
+    wind_speed = data.get('wind_speed', None)
+    wind_gust = data.get('wind_gust', None)
+    
+    # Compute the aggregated wind value
+    alpha = 0.7  # Adjust alpha to reflect the desired weighting
+    if wind_speed is not None and wind_gust is not None:
+        # If both wind_speed and wind_gust are available, calculate the weighted average
+        aggregated_wind = (alpha * wind_speed) + ((1 - alpha) * wind_gust)
+    elif wind_speed is not None:
+        # If only wind_speed is available, use it directly
+        aggregated_wind = wind_speed
+    elif wind_gust is not None:
+        # If only wind_gust is available, use it directly
+        aggregated_wind = wind_gust
+    else:
+        # If both are None, set aggregated_wind to None
+        aggregated_wind = None
+    # Limit the aggregated wind to 2 decimal places
+    if aggregated_wind is not None:
+        aggregated_wind = round(aggregated_wind, 2)
+
+
+    # Create a dictionary for the DataFrame columns with only necessary data
     data_dict = {
         'lat': response['lat'],
         'lon': response['lon'],
-        'timezone': response['timezone'],
-        'timezone_offset': response['timezone_offset'],
         'dt': data['dt'],
-        'sunrise': data.get('sunrise', None),  # Corrected line
-        'sunset': data.get('sunset', None),  # Corrected line
-        'temp': data.get('temp', None),  # Corrected line
-        'feels_like': data.get('feels_like', None),  # Corrected line
-        'pressure': data.get('pressure', None),  # Corrected line
-        'humidity': data.get('humidity', None),  # Corrected line
-        'dew_point': data.get('dew_point', None),  # Corrected line
-        'uvi': data.get('uvi', None),  # Corrected line
-        'clouds': data.get('clouds', None),  # Corrected line
-        'visibility': data.get('visibility', None),  # Corrected line
-        'wind_speed': data.get('wind_speed', None),  # Corrected line
-        'wind_deg': data.get('wind_deg', None),  # Corrected line
-        'wind_gust': data.get('wind_gust', None),  # Corrected line
+        'temp': data.get('temp', None),
+        'feels_like': data.get('feels_like', None),
+        'humidity': data.get('humidity', None),
+        'wind': aggregated_wind,  
         'weather_id': weather.get('id', None),
         'weather_main': weather.get('main', None),
-        'weather_description': weather.get('description', None),
-        'weather_icon': weather.get('icon', None),
-        'rain_1h': data.get('rain', {}).get('1h', None),  # Ensure rain and snow also show None if missing
-        'snow_1h': data.get('snow', {}).get('1h', None)
+        'weather_description': weather.get('description', None)
     }
-
 
     # Convert to DataFrame
     df = pd.DataFrame([data_dict])
     
     return df
+
+
 
 def fetch_weather_data(params):
     """
