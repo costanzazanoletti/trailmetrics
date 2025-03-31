@@ -128,7 +128,7 @@ def test_get_weather_info_success(sample_df_segments, sample_df_weather_response
     activity_start_date = 1627315508.0
     compressed_segments = b"compressed_segments"  # Simulated compressed segments
     activity_id = 12345
-    processed_at = 1743092455.4382648
+
 
     with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
          patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
@@ -153,7 +153,6 @@ def test_get_weather_info_failure(sample_df_segments):
     activity_start_date = 1627315508.0
     compressed_segments = b"compressed_segments"  # Simulated compressed segments
     activity_id = 12345
-    processed_at = 1743092455.4382648
 
     with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
          patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
@@ -178,7 +177,6 @@ def test_get_weather_info_429(sample_df_segments):
     activity_start_date = 1627315508.0
     compressed_segments = b"compressed_segments"  # Simulated compressed segments
     activity_id = 12345
-    processed_at = 1743092455.4382648
 
     with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
          patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
