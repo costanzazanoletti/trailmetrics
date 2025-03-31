@@ -28,7 +28,7 @@ def prepare_terrain_message(activity_id, segments_df, processed_at):
     """Prepare the output message with compressed terrain info"""
     
     # Keep only required columns
-    segments = segments_df[["segmentId", "highway", "surface"]].to_dict(orient="records")
+    segments = segments_df[["segment_id", "highway", "surface"]].to_dict(orient="records")
 
     # Convert segments in json and compress
     json_segments = json.dumps(segments).encode("utf-8")

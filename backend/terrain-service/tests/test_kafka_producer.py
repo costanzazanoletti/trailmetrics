@@ -9,7 +9,7 @@ from app.kafka_producer import prepare_terrain_message
 def sample_segments_df():
     """Create a test DataFrame"""
     data = {
-        "segmentId": ["2767750533-1", "2767750533-2", "2767750533-3"],
+        "segment-id": ["2767750533-1", "2767750533-2", "2767750533-3"],
         "highway": ["residential", "residential","secondary"],
         "surface": ["sett","asphalt", None]
     }
