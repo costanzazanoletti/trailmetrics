@@ -64,14 +64,25 @@ def preprocess_streams(df, activity_id):
         logger.error(f"Missing required columns for Activity {activity_id}: {missing_columns}")
         return None
     
+    # Ensure heartrate column exists, if not, create it with NaN values
+    if "heartrate" not in df.columns:
+        logger.warning(f"Missing 'heartrate' data for Activity {activity_id}. Setting 'heartrate' to None.")
+        df["heartrate"] = None
+
     # Remove rows with time o distance NaN
     df.dropna(subset=["time", "distance"], inplace=True)
 
     # Rename columns 
     df.rename(columns={"grade_smooth": "grade", "velocity_smooth": "speed"}, inplace=True)
 
+    # Convert columns to numeric to avoid interpolation warning
+    numeric_columns = ["altitude", "grade", "speed", "cadence", "heartrate"]
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors='coerce')  # Convert to numeric, coercing errors to NaN
+
     # Interpolate missing numerical values
-    for col in ["altitude", "grade", "speed", "cadence", "heartrate"]:
+    for col in numeric_columns:
         if col in df.columns:
             df[col] = df[col].interpolate(method="linear", limit_direction="both")
 
@@ -159,6 +170,9 @@ def create_segments(df, activity_id, config):
                 "end_altitude": df["altitude"].iloc[i - 1],
                 "start_time": df["time"].iloc[start_index],
                 "end_time": df["time"].iloc[i - 1],
+                "start_heartrate": df["heartrate"].iloc[start_index] if df["heartrate"].iloc[start_index] is not None else np.nan,  # Handle missing heartrate
+                "end_heartrate": df["heartrate"].iloc[i - 1] if df["heartrate"].iloc[i - 1] is not None else np.nan,  # Handle missing heartrate
+                "avg_heartrate": np.nanmean(df["heartrate"].iloc[start_index:i]) if df["heartrate"].iloc[start_index:i].notna().any() else np.nan,  # Use nanmean to handle NaN values
             }
 
             segments.append(segment)

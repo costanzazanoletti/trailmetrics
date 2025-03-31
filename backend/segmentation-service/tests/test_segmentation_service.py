@@ -18,7 +18,8 @@ def sample_compressed_stream():
         {"type": "latlng", "data": [[46.142836, 8.469562], [46.142853, 8.469612], [46.142875, 8.469717], 
                                         [46.142875, 8.469759], [46.142875, 8.469759]]},
         {"type": "velocity_smooth", "data": [0.0, 0.0, 0.7, 0.97, 1.21]},
-        {"type": "grade_smooth", "data": [10.0, 10.0, 10.6, 0.8, 0.4]}
+        {"type": "grade_smooth", "data": [10.0, 10.0, 10.6, 0.8, 0.4]},
+        {"type": "heartrate", "data":[115, 117, 125, 130, 130]}
     ]
     
     json_data = json.dumps(sample_stream)
@@ -50,7 +51,7 @@ def test_segment_activity(sample_compressed_stream):
     expected_columns = {"activity_id", "start_distance", "end_distance", "segment_length", 
                         "avg_gradient", "avg_cadence", "movement_type", "type", "grade_category",
                         "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude","end_altitude",
-                        "start_time", "end_time"}
+                        "start_time", "end_time", "start_heartrate", "end_heartrate", "avg_heartrate"}
 
     assert expected_columns.issubset(set(segments_df.columns)), f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
     
@@ -66,7 +67,7 @@ def test_preprocess_streams():
         "velocity_smooth": [0.0, 0.0, 2.3, 2.2, 2.5],
         "grade_smooth": [2.6, np.nan, 1.6, np.nan, 0.6],
         "cadence": [55, np.nan, np.nan, 82, 82],
-        "heartrate": [80, 80, 84, 88, 91],
+        #"heartrate": [80, 80, 84, 88, 91],
         "altitude": [904.6, 904.7, np.nan, 904.9, np.nan],
         "distance": [1.0, 4.7, 22.6, 35.8, 59.5],
         "time": [0, 1, 5, 6, 7]
@@ -91,7 +92,8 @@ def test_create_segments():
         "altitude": [862,899,1001,1100,1105],
         "grade": [0.1, 5.8, 7.1, 10.0, 0.3],
         "cadence": [70, 75, 65, 80, 60],
-        "latlng": [[46.1, 8.4], [46.2, 8.5], [46.3, 8.6], [46.4, 8.7], [46.5, 8.8]]
+        "latlng": [[46.1, 8.4], [46.2, 8.5], [46.3, 8.6], [46.4, 8.7], [46.5, 8.8]],
+        "heartrate": [110, 113, 120, 120, 125]
     })
     config = {
         "gradient_tolerance": 0.5,
