@@ -25,36 +25,33 @@ producer = KafkaProducer(
     bootstrap_servers=KAFKA_BROKER,
     value_serializer=lambda v: json.dumps(v).encode("utf-8"),
     key_serializer=lambda k: str(k).encode("utf-8"),
-    request_timeout_ms=30000,  # Increase timeout to 30 seconds
-    retries=5,  # Retry sending the message up to 5 times
-    acks='all'  # Ensure message is acknowledged by all replicas
+    request_timeout_ms=30000
 )
 
-
-def prepare_message(activity_id, segments_df, processed_at):
-    """Prepare the output message with compressed weather info"""
+def dataframe_to_compressed_json(df):
     # Convert the DataFrame to a list of dictionaries 
-    json_segments = segments_df.to_dict(orient="records") 
-
+    json_data = df.to_dict(orient="records") 
     # Convert the list of dictionaries to JSON string and then compress it
-    json_segments_str = json.dumps(json_segments).encode("utf-8")
-    compressed_segments = gzip.compress(json_segments_str)
-    
+    json_str = json.dumps(json_data).encode("utf-8")
+    compressed_json = gzip.compress(json_str)
     # Encode the compressed data to base64
-    encoded_segments = base64.b64encode(compressed_segments).decode("utf-8")
-    
+    return base64.b64encode(compressed_json).decode("utf-8")
+
+def prepare_message(activity_id, segments_df):
+    """Prepare the output message with compressed weather info"""
+    # Prepare the compressed segments
+    encoded_segments = dataframe_to_compressed_json(segments_df) 
     # Return message
     return {
         "activityId": activity_id,
-        "processedAt": processed_at,
         "compressedWeatherInfo": encoded_segments
     }
 
-def send_weather_output(activity_id, weather_df, processed_at):
+def send_weather_output(activity_id, weather_df):
     """Send weather output message to Kafka."""
     
     # Prepare message with compressed segments
-    kafka_message = prepare_message(activity_id, weather_df, processed_at)
+    kafka_message = prepare_message(activity_id, weather_df)
 
     # Send message to Kafka
     try:
@@ -64,7 +61,7 @@ def send_weather_output(activity_id, weather_df, processed_at):
     except Exception as e:
         logger.error(f"Error sending weather info for Activity ID {activity_id}: {e}")
 
-def prepare_retry_message(activity_id, reference_point, request_params, short):
+def prepare_retry_message(activity_id, segment_ids, request_params, short):
     """Prepare the retry message with the reference point and request params and the retry timestamp"""
     # Compute the retry time
     retry_time = datetime.now(timezone.utc)
@@ -76,18 +73,13 @@ def prepare_retry_message(activity_id, reference_point, request_params, short):
     
     retry_timestamp = int(retry_time.timestamp())
 
-    # Convert the DataFrame to a list of dictionaries 
-    json_rf = reference_point.to_dict() 
-    for key, value in json_rf.items():
-        if isinstance(value, pd.Timestamp):
-            json_rf[key] = int(value.timestamp())
 
     # Create the message with the retry timestamp
     return {
         "activityId": activity_id,
-        "request_params": request_params,
-        "reference_point": json_rf,
-        "retry_timestamp": retry_timestamp
+        "requestParams": request_params,
+        "segmentIds": segment_ids,
+        "retryTimestamp": retry_timestamp
     }
 
 
@@ -97,7 +89,7 @@ def send_retry_message(activity_id, reference_point, request_params, short = Fal
     try:
         producer.send(KAFKA_TOPIC_RETRY, key=activity_id, value=retry_message)
         producer.flush()  
-        logger.info(f"Sent retry Message for activity {activity_id}")
+        logger.info(f"Sent retry Message for Activity ID {activity_id}")
     except Exception as e:
         logger.error(f"Error sending retry message for Activity ID {activity_id}: {e}")
 
