@@ -47,8 +47,7 @@ def segments_batch_insert_and_update_status(segments_df, activity_id):
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    try:
-               
+    try:         
         # SQL query for batch insert or update segments (upsert)
         upsert_query = """
         INSERT INTO segments (activity_id, start_distance, end_distance, segment_length, 

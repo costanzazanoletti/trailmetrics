@@ -7,6 +7,7 @@ import base64
 from datetime import datetime, timezone
 from app.segments_service import process_segments
 from app.exceptions import DatabaseException
+from database import get_db_connection
 
 
 @pytest.fixture
@@ -27,19 +28,60 @@ def load_sample_segments():
         compressed_segments = base64.b64decode(compressed_segments)
     return activity_id, compressed_segments
 
+def delete_segments_for_activity(activity_id):
+    """Cancella tutti i segmenti per un dato activity_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Esegui il comando DELETE
+    cursor.execute("DELETE FROM segments WHERE activity_id = %s", (activity_id,))
+    cursor.execute("DELETE FROM activity_status_tracker WHERE activity_id = %s", (activity_id,))
+    # Conferma le modifiche
+    conn.commit()
+    
+    cursor.close()
+    conn.close()
+
 def test_process_segments(load_sample_segments):
     """
     Tests process_segments_message with a real Kafka message. 
-    Stores data into the test Database
+    Stores data into the test Database.
     """
     # Load sample data
     activity_id, compressed_segments = load_sample_segments
     
+    # Clear segments table
+    delete_segments_for_activity(activity_id)
+    
+    # Connect to database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Check the number of segments before execution of process_segments
+    cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
+    initial_count = cursor.fetchone()[0]
+    
     # Call process_segments
     process_segments(activity_id, compressed_segments)
+    
+    # Check the number of segments after execution of process_segments
+    cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
+    final_count = cursor.fetchone()[0]
+    
+    # Check that activity_status_tracker has been updated
+    cursor.execute("SELECT segment_status FROM activity_status_tracker WHERE activity_id = %s", (activity_id,))
+    segment_status = cursor.fetchone()[0]
+    
+    # Assertion
+    expected_rows = 226
+    assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
+    assert segment_status == True
+    
+    cursor.close()
+    conn.close()
 
 def test_process_segments_with_database_exception(load_sample_segments):
-    """Tests process_segments_message with a real Kafka message."""
+    """Tests that process_segments_message doesn't store any data when it handles a DatabaseException."""
     with patch('app.segments_service.segments_batch_insert_and_update_status') as mock_store_segments:
         # Load sample data
         activity_id, compressed_segments = load_sample_segments
@@ -47,5 +89,60 @@ def test_process_segments_with_database_exception(load_sample_segments):
         # Configure mock to raise a DatabaseException
         mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting segments.")
 
+        # Clear segments table
+        delete_segments_for_activity(activity_id)
+        
+        # Connect to database
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Check the number of segments before execution of process_segments
+        cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
+        initial_count = cursor.fetchone()[0]
+        
+        # Call process_segments
         process_segments(activity_id, compressed_segments)
         
+        # Check the number of segments after execution of process_segments
+        cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
+        final_count = cursor.fetchone()[0]
+        
+        # Assertion
+        assert final_count == initial_count, "Segments were inserted into the database"
+        
+        cursor.close()
+        conn.close()
+
+def test_process_segments_for_existing_activity(load_sample_segments):
+    """
+    Tests process_segments_message when the activity has already been processed.
+    """
+    # Load sample data
+    activity_id, compressed_segments = load_sample_segments
+    
+    # Clear segments table
+    delete_segments_for_activity(activity_id)
+    
+    # Connect to database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Check the number of segments before execution of process_segments
+    cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
+    initial_count = cursor.fetchone()[0]
+    
+    # Call process_segments
+    process_segments(activity_id, compressed_segments)
+    # Call process_segments a second time so that segments exist
+    process_segments(activity_id, compressed_segments)
+    
+    # Check the number of segments after execution of process_segments
+    cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
+    final_count = cursor.fetchone()[0]
+    
+    # Assertion
+    expected_rows = 226
+    assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
+    
+    cursor.close()
+    conn.close()        
