@@ -45,7 +45,6 @@ def graceful_shutdown(signum, frame):
 
 if __name__ == "__main__":
     print("Efficiency service started successfully")
-    check_segments_table()
     
     # Capture SIGINT (Ctrl-C) and perform graceful shutdown
     signal.signal(signal.SIGINT, graceful_shutdown)

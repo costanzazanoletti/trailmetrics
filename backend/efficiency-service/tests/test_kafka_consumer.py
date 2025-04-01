@@ -1,0 +1,31 @@
+import pytest
+import json
+import os
+import pandas as pd
+from unittest.mock import Mock, patch
+import time
+from datetime import datetime, timezone
+from app.kafka_consumer import process_segments_message
+
+
+@pytest.fixture
+def load_test_message(request):
+    """Loads a real Kafka message from a JSON file."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir,request.param)
+    with open(file_path, "r") as file:
+        message_data = json.load(file)
+    
+    mock_message = Mock()
+    mock_message.key = message_data["key"].encode("utf-8")
+    mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
+
+    return mock_message
+
+@pytest.mark.parametrize('load_test_message', ['mock_segmentation.json'], indirect=True)
+def test_segments_message(load_test_message):
+    """Tests process_segments_message with a real Kafka message."""
+    with patch('app.kafka_consumer.process_segments') as mock_process_segments:
+        process_segments_message(load_test_message)
+    # Assertions
+    mock_process_segments.assert_called_once

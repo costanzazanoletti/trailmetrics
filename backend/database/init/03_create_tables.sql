@@ -74,5 +74,23 @@ CREATE TABLE segments (
     weather_main VARCHAR(255),
     weather_description VARCHAR(255),
     efficiency_score DOUBLE PRECISION,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE weather_status_tracking (
+    activity_id BIGINT,
+    group_id INT,
+    total_groups INT,
+    received BOOLEAN DEFAULT FALSE,
+    PRIMARY KEY (activity_id, group_id)
+);
+
+CREATE TABLE activity_status_tracker (
+    activity_id BIGINT PRIMARY KEY,
+    segment_status BOOLEAN DEFAULT FALSE,
+    terrain_status BOOLEAN DEFAULT FALSE,
+    weather_status BOOLEAN DEFAULT FALSE,
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+

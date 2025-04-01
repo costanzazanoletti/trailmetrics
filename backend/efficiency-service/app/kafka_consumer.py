@@ -6,6 +6,7 @@ import logging_setup
 import time
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
+from app.segments_service import process_segments
 
 
 # Load environment variables
@@ -42,12 +43,18 @@ def process_segments_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        compressed_segments = data.get("compressedSegments")
 
         if not activity_id:
             logger.warning("Received segments message without valid 'activityId'")
             return
-
+        
+        # Decode the base64 value if it's a string
+        if isinstance(compressed_segments, str):
+            compressed_segments = base64.b64decode(compressed_segments)
+            
         logger.info(f"Processing segments for Activity ID: {activity_id}")
+        process_segments(activity_id, compressed_segments)
 
     except Exception as e:
         logger.error(f"Error processing segments message: {e}")
