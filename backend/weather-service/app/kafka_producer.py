@@ -37,21 +37,22 @@ def dataframe_to_compressed_json(df):
     # Encode the compressed data to base64
     return base64.b64encode(compressed_json).decode("utf-8")
 
-def prepare_message(activity_id, segments_df):
+def prepare_message(activity_id, segments_df, reference_point_id):
     """Prepare the output message with compressed weather info"""
     # Prepare the compressed segments
     encoded_segments = dataframe_to_compressed_json(segments_df) 
     # Return message
     return {
         "activityId": activity_id,
+        "groupId": reference_point_id,
         "compressedWeatherInfo": encoded_segments
     }
 
-def send_weather_output(activity_id, weather_df):
+def send_weather_output(activity_id, weather_df, reference_point_id):
     """Send weather output message to Kafka."""
     
     # Prepare message with compressed segments
-    kafka_message = prepare_message(activity_id, weather_df)
+    kafka_message = prepare_message(activity_id, weather_df, reference_point_id)
 
     # Send message to Kafka
     try:
@@ -61,7 +62,7 @@ def send_weather_output(activity_id, weather_df):
     except Exception as e:
         logger.error(f"Error sending weather info for Activity ID {activity_id}: {e}")
 
-def prepare_retry_message(activity_id, segment_ids, request_params, short):
+def prepare_retry_message(activity_id, segment_ids, reference_point_id, request_params, short):
     """Prepare the retry message with the reference point and request params and the retry timestamp"""
     # Compute the retry time
     retry_time = datetime.now(timezone.utc)
@@ -79,12 +80,13 @@ def prepare_retry_message(activity_id, segment_ids, request_params, short):
         "activityId": activity_id,
         "requestParams": request_params,
         "segmentIds": segment_ids,
+        "groupId": reference_point_id,
         "retryTimestamp": retry_timestamp
     }
 
 
-def send_retry_message(activity_id, reference_point, request_params, short = False):
-    retry_message = prepare_retry_message(activity_id, reference_point, request_params, short)
+def send_retry_message(activity_id, reference_point, reference_point_id, request_params, short = False):
+    retry_message = prepare_retry_message(activity_id, reference_point, reference_point_id, request_params, short)
 
     try:
         producer.send(KAFKA_TOPIC_RETRY, key=activity_id, value=retry_message)

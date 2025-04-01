@@ -28,14 +28,15 @@ def sample_df():
 def test_prepare_message(sample_df):
     # Define input parameters
     activity_id = 12345
-
+    reference_point_id = "1_4"
     # Call the function
-    result = prepare_message(activity_id, sample_df)
+    result = prepare_message(activity_id, sample_df, reference_point_id)
 
     # Verify the structure of the returned dictionary
     assert "activityId" in result
     assert result["activityId"] == activity_id
     assert "compressedWeatherInfo" in result
+    assert "groupId" in result
 
     # Ensure that the "compressedWeatherInfo" field is a base64 encoded string
     assert isinstance(result["compressedWeatherInfo"], str)
@@ -43,15 +44,17 @@ def test_prepare_message(sample_df):
 
     # Ensure that the compression and encoding worked by checking the type of the encoded string
     assert result["compressedWeatherInfo"].startswith("H4sIA")
+    assert result["groupId"] == reference_point_id
 
 def test_prepare_retry_message_short():
     activity_id = 12345
     segment_ids = ["1234-1", "1234-2"]
     request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
     short = True
+    reference_point_id = "1_4"
 
     # Call the function
-    result = prepare_retry_message(activity_id, segment_ids, request_params, short)
+    result = prepare_retry_message(activity_id, segment_ids, reference_point_id, request_params, short)
 
     # Verify the structure of the returned dictionary
     assert "activityId" in result
@@ -60,6 +63,8 @@ def test_prepare_retry_message_short():
     assert result["requestParams"] == request_params
     assert "segmentIds" in result
     assert result["segmentIds"] == segment_ids  
+    assert "groupId" in result
+    assert result["groupId"] == reference_point_id
     assert "retryTimestamp" in result
 
     # Verify retry_timestamp is in the future (1 minute added)
@@ -71,9 +76,10 @@ def test_prepare_retry_message_long():
     segment_ids = ["1234-1", "1234-2"]
     request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
     short = False
+    reference_point_id = "1_4"
 
     # Call the function
-    result = prepare_retry_message(activity_id, segment_ids, request_params, short)
+    result = prepare_retry_message(activity_id, segment_ids, reference_point_id, request_params, short)
 
     # Verify the structure of the returned dictionary
     assert "activityId" in result
@@ -82,6 +88,8 @@ def test_prepare_retry_message_long():
     assert result["requestParams"] == request_params
     assert "segmentIds" in result
     assert result["segmentIds"] == segment_ids  
+    assert "groupId" in result
+    assert result["groupId"] == reference_point_id
     assert "retryTimestamp" in result
     # Verify retry_timestamp is at the start of the next day (00:00 UTC)
     retry_time = datetime.fromtimestamp(result["retryTimestamp"], tz=timezone.utc)

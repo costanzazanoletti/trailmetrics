@@ -140,17 +140,20 @@ def get_weather_info(activity_start_date, compressed_segments, activity_id):
 
     # Create reference points
     reference_points_df = create_reference_points(segments_df, DISTANCE_THRESHOLD, ELEVATION_THRESHOLD, TIME_THRESHOLD)
+
     logger.info(f"Computed {len(reference_points_df)} reference points")
 
-    for _, row in reference_points_df.iterrows():
+    for index, row in reference_points_df.iterrows():
         # Generate request parameters from each reference point
         request_params = generate_request_parameters(row)
         # Extract the segment_ids directly from reference_point's associated_segments
         segment_ids = row["associated_segments"]
+        # Create an id for this block of segments
+        reference_point_id = str(index + 1) + '_' + str(len(reference_points_df))
         # Call weather API and handle success and error response
-        get_weather_data_from_api(activity_id, segment_ids, request_params)
+        get_weather_data_from_api(activity_id, segment_ids, request_params, reference_point_id)
 
-def get_weather_data_from_api(activity_id, segment_ids, request_params):
+def get_weather_data_from_api(activity_id, segment_ids, request_params, reference_point_id):
     try:
         # Fetch weather data from external API
         weather_response_df = fetch_weather_data(request_params)
@@ -160,9 +163,9 @@ def get_weather_data_from_api(activity_id, segment_ids, request_params):
         
         # If weather info is present, send Kafka message with weather info
         if not weather_response_df.empty:
-            send_weather_output(activity_id, weather_df)
+            send_weather_output(activity_id, weather_df, reference_point_id)
 
     except WeatherAPIException as e:
         if e.status_code and e.status_code == 429:
             # Hit API request limit: publish retry message
-            send_retry_message(activity_id, segment_ids, request_params, short=e.retry_in_hour)
+            send_retry_message(activity_id, segment_ids, reference_point_id, request_params, short=e.retry_in_hour)
