@@ -31,6 +31,20 @@ def get_db_connection():
     """Creates and returns a connection to PostgreSQL."""
     return psycopg2.connect(DATABASE_URL)
 
+def delete_segments_and_status_for_activity(activity_id):
+    """Delete all segments and activity_status_tracker for a given activity_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Execute DELETE
+    cursor.execute("DELETE FROM segments WHERE activity_id = %s", (activity_id,))
+    cursor.execute("DELETE FROM activity_status_tracker WHERE activity_id = %s", (activity_id,))
+    # Commit
+    conn.commit()
+    
+    cursor.close()
+    conn.close()
+
 def convert_values_to_python_native(data):
     """
     Convert single numpy values in Python native (int, float).
@@ -86,9 +100,7 @@ def segments_batch_insert_and_update_status(segments_df, activity_id):
             tuple(convert_values_to_python_native(x) for x in row) 
             for row in segments_df.to_records(index=False)
         ]
-        # Verifica le colonne nel DataFrame
-        logger.info(f"Columns in DataFrame: {segments_df.columns.tolist()}")
-
+        
         # Execute batch insert
         execute_batch(cursor, upsert_query, segments_data)
         
@@ -101,6 +113,64 @@ def segments_batch_insert_and_update_status(segments_df, activity_id):
         DO UPDATE
         SET 
             segment_status = TRUE, 
+            last_updated = CURRENT_TIMESTAMP;
+        """
+        
+        cursor.execute(update_status_query, (activity_id,))
+
+        # Complete the transaction
+        conn.commit()
+
+    except Exception as e:
+        # If there is an error, rollback
+        conn.rollback()
+        raise DatabaseException(f"An error occurred {e}")
+    
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+
+def terrain_batch_insert_and_update_status(segments_df, activity_id):
+    """Batch insert segment terrain info and update activity status in transaction."""
+    # Prepare the db connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:         
+        # SQL query for batch insert or update segments (upsert)
+        upsert_query = """
+        INSERT INTO segments (segment_id, road_type, surface_type, activity_id)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (segment_id) 
+        DO UPDATE 
+        SET 
+            road_type = EXCLUDED.road_type,
+            surface_type = EXCLUDED.surface_type,
+            activity_id = EXCLUDED.activity_id,
+            last_updated = CURRENT_TIMESTAMP
+        """
+
+        # Convert the DataFrame in a list of tuples
+        segments_data = [
+            tuple(convert_values_to_python_native(x) for x in row) 
+            for row in segments_df.to_records(index=False)
+        ]
+        # DEBUG Check columns in DataFrame 
+        #logger.info(f"Columns in DataFrame: {segments_df.columns.tolist()}")
+
+        # Execute batch insert
+        execute_batch(cursor, upsert_query, segments_data)
+        
+        logger.info("\nExecuted segment terrain info batch store\n")
+
+        update_status_query = f"""
+        INSERT into activity_status_tracker(activity_id, terrain_status)
+        VALUES (%s, TRUE)
+        ON CONFLICT (activity_id)
+        DO UPDATE
+        SET 
+            terrain_status = TRUE, 
             last_updated = CURRENT_TIMESTAMP;
         """
         

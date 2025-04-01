@@ -7,6 +7,7 @@ import time
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from app.segments_service import process_segments
+from app.terrain_service import process_terrain_info
 
 
 # Load environment variables
@@ -45,8 +46,8 @@ def process_segments_message(message):
         activity_id = data.get("activityId")
         compressed_segments = data.get("compressedSegments")
 
-        if not activity_id:
-            logger.warning("Received segments message without valid 'activityId'")
+        if not activity_id or not compressed_segments:
+            logger.warning("Received segments message without valid 'activityId' or 'compressedSegments'")
             return
         
         # Decode the base64 value if it's a string
@@ -64,12 +65,18 @@ def process_terrain_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        compressed_terrain_info = data.get("compressedTerrainInfo")
 
-        if not activity_id:
-            logger.warning("Received terrain message without valid 'activityId'")
+        if not activity_id or not compressed_terrain_info:
+            logger.warning("Received terrain message without valid 'activityId' or 'compressedTerrainInfo")
             return
 
+        # Decode the base64 value if it's a string
+        if isinstance(compressed_terrain_info, str):
+            compressed_terrain_info = base64.b64decode(compressed_terrain_info)
+
         logger.info(f"Processing terrain info for Activity ID: {activity_id}")
+        process_terrain_info(activity_id, compressed_terrain_info)
 
     except Exception as e:
         logger.error(f"Error processing terrain message: {e}")

@@ -5,7 +5,7 @@ import pandas as pd
 from unittest.mock import Mock, patch
 import time
 from datetime import datetime, timezone
-from app.kafka_consumer import process_segments_message
+from app.kafka_consumer import process_segments_message, process_terrain_message
 
 
 @pytest.fixture
@@ -29,3 +29,12 @@ def test_segments_message(load_test_message):
         process_segments_message(load_test_message)
     # Assertions
     mock_process_segments.assert_called_once
+
+
+@pytest.mark.parametrize('load_test_message', ['mock_terrain.json'], indirect=True)
+def test_terrain_message(load_test_message):
+    """Tests process_segments_message with a real Kafka message."""
+    with patch('app.kafka_consumer.process_terrain_info') as mock_process_terrain:
+        process_terrain_message(load_test_message)
+    # Assertions
+    mock_process_terrain.assert_called_once
