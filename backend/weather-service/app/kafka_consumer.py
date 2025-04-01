@@ -80,6 +80,7 @@ def process_retry_message(message):
         activity_id = data.get("activityId")
         request_params = data.get("requestParams")
         segment_ids = data.get("segmentIds")
+        group_id = data.get("groupId")
         retry_timestamp = data.get("retryTimestamp")
 
         if not activity_id or not retry_timestamp:
@@ -100,7 +101,7 @@ def process_retry_message(message):
         # Process the retry message
         logger.info(f"Processing retry message for Activity ID {activity_id}, retry at {retry_timestamp}")
         # Call function that fetches data and handles response
-        get_weather_data_from_api(activity_id, segment_ids, request_params)
+        get_weather_data_from_api(activity_id, segment_ids, request_params, group_id)
 
     except Exception as e:
         logger.error(f"Error processing retry message {e}")
