@@ -3,7 +3,6 @@ import logging
 import threading
 import sys
 import signal
-from app.database import check_segments_table
 from app.kafka_consumer import start_kafka_segments_consumer, start_kafka_terrain_consumer, start_kafka_weather_consumer
 
 logger = logging.getLogger("app")
