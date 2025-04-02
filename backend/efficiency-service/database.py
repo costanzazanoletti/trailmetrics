@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from app.exceptions import DatabaseException
 
 logger = logging.getLogger("app")
+
 # Load environment variables from .env
 load_dotenv()
 
@@ -39,11 +40,30 @@ def delete_segments_and_status_for_activity(activity_id):
     # Execute DELETE
     cursor.execute("DELETE FROM segments WHERE activity_id = %s", (activity_id,))
     cursor.execute("DELETE FROM activity_status_tracker WHERE activity_id = %s", (activity_id,))
+    cursor.execute("DELETE FROM weather_data_progress WHERE activity_id = %s", (activity_id,))
+    
     # Commit
     conn.commit()
     
     cursor.close()
     conn.close()
+
+def delete_all_data():
+    """Delete all segments and activity_status_tracker for a given activity_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Execute DELETE
+    cursor.execute("DELETE FROM segments WHERE activity_id is not null")
+    cursor.execute("DELETE FROM activity_status_tracker WHERE activity_id is not null")
+    cursor.execute("DELETE FROM weather_data_progress WHERE activity_id is not null")
+    
+    # Commit
+    conn.commit()
+    
+    cursor.close()
+    conn.close()
+    pass
 
 def convert_values_to_python_native(data):
     """
@@ -103,10 +123,9 @@ def segments_batch_insert_and_update_status(segments_df, activity_id):
         
         # Execute batch insert
         execute_batch(cursor, upsert_query, segments_data)
-        
-        logger.info("\nExecuted segments batch store\n")
+        logger.info(f"Executed segments batch store for activity {activity_id}")
 
-        update_status_query = f"""
+        update_status_query = """
         INSERT into activity_status_tracker(activity_id, segment_status)
         VALUES (%s, TRUE)
         ON CONFLICT (activity_id)
@@ -117,6 +136,7 @@ def segments_batch_insert_and_update_status(segments_df, activity_id):
         """
         
         cursor.execute(update_status_query, (activity_id,))
+        logger.info(f"Updated segment status for activity {activity_id}")
 
         # Complete the transaction
         conn.commit()
@@ -160,11 +180,10 @@ def terrain_batch_insert_and_update_status(segments_df, activity_id):
         #logger.info(f"Columns in DataFrame: {segments_df.columns.tolist()}")
 
         # Execute batch insert
-        execute_batch(cursor, upsert_query, segments_data)
-        
-        logger.info("\nExecuted segment terrain info batch store\n")
+        execute_batch(cursor, upsert_query, segments_data)   
+        logger.info(f"Executed segment terrain info batch store for activity {activity_id}")
 
-        update_status_query = f"""
+        update_status_query = """
         INSERT into activity_status_tracker(activity_id, terrain_status)
         VALUES (%s, TRUE)
         ON CONFLICT (activity_id)
@@ -175,7 +194,96 @@ def terrain_batch_insert_and_update_status(segments_df, activity_id):
         """
         
         cursor.execute(update_status_query, (activity_id,))
+        logger.info(f"Updated terrain status for activity {activity_id}")
 
+        # Complete the transaction
+        conn.commit()
+
+    except Exception as e:
+        # If there is an error, rollback
+        conn.rollback()
+        raise DatabaseException(f"An error occurred {e}")
+    
+    finally:
+        # Close the cursor and connection
+        cursor.close()
+        conn.close()
+
+def weather_batch_insert_and_update_status(weather_df, activity_id, group_id, total_groups):
+    """
+    Batch insert weather terrain info and update weather data progress.
+    If progress is complete, update activity status in transaction.
+    """
+    # Prepare the db connection
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:         
+        # SQL query for batch insert or update segments (upsert)
+        upsert_query = """
+        INSERT INTO segments (segment_id, temperature, feels_like, humidity, wind, weather_id, weather_main, weather_description, activity_id)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (segment_id) 
+        DO UPDATE 
+        SET 
+            temperature = EXCLUDED.temperature,
+            feels_like = EXCLUDED.feels_like,
+            humidity = EXCLUDED.humidity,
+            wind = EXCLUDED.wind,
+            weather_id = EXCLUDED.weather_id,
+            weather_main = EXCLUDED.weather_main,
+            weather_description = EXCLUDED.weather_description,
+            activity_id = EXCLUDED.activity_id,
+            last_updated = CURRENT_TIMESTAMP
+        """
+
+        # Convert the DataFrame in a list of tuples
+        segments_data = [
+            tuple(convert_values_to_python_native(x) for x in row) 
+            for row in weather_df.to_records(index=False)
+        ]
+        # DEBUG Check columns in DataFrame 
+        #logger.info(f"Columns in DataFrame: {weather_df.columns.tolist()}")
+
+        # Execute batch insert
+        execute_batch(cursor, upsert_query, segments_data)
+        logger.info(f"Executed segment weather info batch store for activity {activity_id} group {group_id}")
+
+        update_progress_query = """
+        INSERT INTO weather_data_progress (activity_id, group_id, total_groups, saved)
+        VALUES (%s, %s, %s, TRUE)
+        ON CONFLICT (activity_id, group_id) 
+        DO UPDATE 
+        SET 
+            saved = TRUE,
+            last_updated = CURRENT_TIMESTAMP;
+        """
+        cursor.execute(update_progress_query, (activity_id, group_id, total_groups,))
+        logger.info(f"Executed weather data progress update for activity {activity_id} group {group_id}")
+
+        # Check if all groups are saved
+        check_progress_query = """
+        SELECT COUNT(*) all_groups_saved
+            FROM weather_data_progress
+            WHERE activity_id = %s;
+        """
+        cursor.execute(check_progress_query,(activity_id,))
+        all_groups_saved = cursor.fetchone()[0]
+        logger.info(f"Saved {all_groups_saved} of {total_groups} groups for activity {activity_id} group {group_id}")
+        
+        if all_groups_saved == total_groups:
+            update_status_query = """
+            INSERT into activity_status_tracker(activity_id, weather_status)
+            VALUES (%s, TRUE)
+            ON CONFLICT (activity_id)
+            DO UPDATE
+            SET 
+                weather_status = TRUE, 
+                last_updated = CURRENT_TIMESTAMP;
+            """
+            
+            cursor.execute(update_status_query, (activity_id,))
+            logger.info(f"Updated weather status for activity {activity_id}")
         # Complete the transaction
         conn.commit()
 

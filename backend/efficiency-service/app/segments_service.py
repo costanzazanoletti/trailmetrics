@@ -18,9 +18,9 @@ def process_segments(activity_id, compressed_segments):
         
         # Store segments into database and update activity status
         segments_batch_insert_and_update_status(segments_df, activity_id)
-        logger.info(f"Stored {len(segments_df)} segments for Activity ID {activity_id} into database")
+        logger.info(f"Stored {len(segments_df)} segments for activity {activity_id} into database")
     
     except DatabaseException as de:
-        logger.error(f"An error occurred while storing segments for Activity ID {activity_id}: {de}")
+        logger.error(f"An error occurred while storing segments for activity {activity_id}: {de}")
     except Exception as e:
         logger.error(e)

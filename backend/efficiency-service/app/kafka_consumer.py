@@ -8,6 +8,7 @@ from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from app.segments_service import process_segments
 from app.terrain_service import process_terrain_info
+from app.weather_service import process_weather_info
 
 
 # Load environment variables
@@ -49,12 +50,8 @@ def process_segments_message(message):
         if not activity_id or not compressed_segments:
             logger.warning("Received segments message without valid 'activityId' or 'compressedSegments'")
             return
-        
-        # Decode the base64 value if it's a string
-        if isinstance(compressed_segments, str):
-            compressed_segments = base64.b64decode(compressed_segments)
             
-        logger.info(f"Processing segments for Activity ID: {activity_id}")
+        logger.info(f"Processing segments for activity {activity_id}")
         process_segments(activity_id, compressed_segments)
 
     except Exception as e:
@@ -71,11 +68,7 @@ def process_terrain_message(message):
             logger.warning("Received terrain message without valid 'activityId' or 'compressedTerrainInfo")
             return
 
-        # Decode the base64 value if it's a string
-        if isinstance(compressed_terrain_info, str):
-            compressed_terrain_info = base64.b64decode(compressed_terrain_info)
-
-        logger.info(f"Processing terrain info for Activity ID: {activity_id}")
+        logger.info(f"Processing terrain info for activity {activity_id}")
         process_terrain_info(activity_id, compressed_terrain_info)
 
     except Exception as e:
@@ -86,12 +79,15 @@ def process_weather_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        group_id = data.get("groupId")
+        compressed_weather_info = data.get("compressedWeatherInfo")
 
-        if not activity_id:
-            logger.warning("Received weather message without valid 'activityId'")
+        if not activity_id or not group_id or not compressed_weather_info:
+            logger.warning("Received weather message without valid 'activityId' or 'groupId' or 'compressedWeatherInfo'")
             return
 
-        logger.info(f"Processing weather info for Activity ID: {activity_id}")
+        logger.info(f"Processing weather info for activity {activity_id}")
+        process_weather_info(activity_id, group_id, compressed_weather_info)
 
     except Exception as e:
         logger.error(f"Error processing weather message: {e}")

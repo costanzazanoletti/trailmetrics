@@ -94,3 +94,12 @@ CREATE TABLE activity_status_tracker (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE weather_data_progress (
+    activity_id BIGINT NOT NULL,               
+    group_id VARCHAR(20) NOT NULL,            
+    total_groups INT NOT NULL,                 
+    saved BOOLEAN DEFAULT FALSE,               
+    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP, 
+    PRIMARY KEY (activity_id, group_id),      
+    CONSTRAINT check_group_order CHECK (CAST(SPLIT_PART(group_id, '_', 1) AS INT) <= total_groups) 
+);

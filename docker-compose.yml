@@ -130,22 +130,22 @@ services:
       - KAFKA_BROKER=broker:29092
     command: ['python', 'app.py']
 
-  efficiency-service:
-    build:
-      context: ./backend/efficiency-service
-    container_name: efficiency-service
-    #restart: always
-    depends_on:
-      broker:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-    env_file:
-      - ./backend/efficiency-service/.env
-    environment:
-      - KAFKA_BROKER=broker:29092
-      - DATABASE_URL=postgresql://analytics_user:dock@postgres:5432/analytics_service
-    command: ['python', 'app.py']
+  # efficiency-service:
+  #   build:
+  #     context: ./backend/efficiency-service
+  #   container_name: efficiency-service
+  #   restart: always
+  #   depends_on:
+  #     broker:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #   env_file:
+  #     - ./backend/efficiency-service/.env
+  #   environment:
+  #     - KAFKA_BROKER=broker:29092
+  #     - DATABASE_URL=postgresql://analytics_user:103QKa3O4kpDnZA@postgres:5432/analytics_service
+  #   command: ['python', 'app.py']
 
   terrain-service:
     build:

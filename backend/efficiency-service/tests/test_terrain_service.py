@@ -7,8 +7,12 @@ import base64
 from datetime import datetime, timezone
 from app.terrain_service import process_terrain_info
 from app.exceptions import DatabaseException
-from database import get_db_connection, delete_segments_and_status_for_activity
+from database import get_db_connection, delete_all_data
 
+@pytest.fixture 
+def set_up(autouse=True):
+    print("Clear all data from database")
+    delete_all_data()
 
 @pytest.fixture
 def load_sample_segments():
@@ -24,33 +28,29 @@ def load_sample_segments():
     data = mock_message.value if isinstance(mock_message.value, dict) else json.loads(mock_message.value)
     activity_id = data.get("activityId")
     compressed_terrain_info = data.get("compressedTerrainInfo")
-    if isinstance(compressed_terrain_info, str):
-        compressed_terrain_info = base64.b64decode(compressed_terrain_info)
+
     return activity_id, compressed_terrain_info
 
-def test_process_terrain_info(load_sample_segments):
+def test_process_terrain_info(load_sample_segments, set_up):
     """
     Tests process_terrain_info with a real Kafka message. 
     Stores data into the test Database.
     """
     # Load sample data
     activity_id, compressed_terrain_info = load_sample_segments
-    
-    # Clear segments table
-    delete_segments_and_status_for_activity(activity_id)
-    
+     
     # Connect to database
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    # Check the number of segments before execution of process_segments
+    # Check the number of segments before execution of process_terrain_info
     cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
     initial_count = cursor.fetchone()[0]
     
-    # Call process_segments
+    # Call process_terrain_info
     process_terrain_info(activity_id, compressed_terrain_info)
     
-    # Check the number of segments after execution of process_segments
+    # Check the number of segments after execution of process_terrain_info
     cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
     final_count = cursor.fetchone()[0]
     
@@ -66,7 +66,7 @@ def test_process_terrain_info(load_sample_segments):
     cursor.close()
     conn.close()
 
-def test_process_segments_with_database_exception(load_sample_segments):
+def test_process_terrain_info_with_database_exception(load_sample_segments,set_up):
     """Tests that process_terrain_info doesn't store any data when it handles a DatabaseException."""
     with patch('app.terrain_service.terrain_batch_insert_and_update_status') as mock_store_segments:
         # Load sample data
@@ -74,22 +74,19 @@ def test_process_segments_with_database_exception(load_sample_segments):
         
         # Configure mock to raise a DatabaseException
         mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting terrain info.")
-
-        # Clear segments table
-        delete_segments_and_status_for_activity(activity_id)
         
         # Connect to database
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Check the number of segments before execution of process_segments
+        # Check the number of segments before execution of process_terrain_info
         cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
         initial_count = cursor.fetchone()[0]
         
-        # Call process_segments
+        # Call process_terrain_info
         process_terrain_info(activity_id, compressed_terrain_info)
         
-        # Check the number of segments after execution of process_segments
+        # Check the number of segments after execution of process_terrain_info
         cursor.execute("SELECT COUNT(*) FROM segments WHERE activity_id = %s", (activity_id,))
         final_count = cursor.fetchone()[0]
         

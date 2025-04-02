@@ -18,9 +18,9 @@ def process_terrain_info(activity_id, compressed_terrain_info):
         terrain_df['activity_id'] = terrain_df['segment_id'].str.split('-').str[0].astype(int)
         # Store segments into database and update activity status
         terrain_batch_insert_and_update_status(terrain_df, activity_id)
-        logger.info(f"Stored {len(terrain_df)} segment terrain info for Activity ID {activity_id} into database")
+        logger.info(f"Stored {len(terrain_df)} segment terrain info for activity {activity_id} into database")
     
     except DatabaseException as de:
-        logger.error(f"An error occurred while storing segment terrain info for Activity ID {activity_id}: {de}")
+        logger.error(f"An error occurred while storing segment terrain info for activity {activity_id}: {de}")
     except Exception as e:
         logger.error(e)

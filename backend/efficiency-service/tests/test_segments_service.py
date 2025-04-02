@@ -7,8 +7,12 @@ import base64
 from datetime import datetime, timezone
 from app.segments_service import process_segments
 from app.exceptions import DatabaseException
-from database import get_db_connection, delete_segments_and_status_for_activity
+from database import get_db_connection, delete_all_data
 
+@pytest.fixture 
+def set_up(autouse=True):
+    print("Clear all data from database")
+    delete_all_data()
 
 @pytest.fixture
 def load_sample_segments():
@@ -24,20 +28,16 @@ def load_sample_segments():
     data = mock_message.value if isinstance(mock_message.value, dict) else json.loads(mock_message.value)
     activity_id = data.get("activityId")
     compressed_segments = data.get("compressedSegments")
-    if isinstance(compressed_segments, str):
-        compressed_segments = base64.b64decode(compressed_segments)
+
     return activity_id, compressed_segments
 
-def test_process_segments(load_sample_segments):
+def test_process_segments(load_sample_segments, set_up):
     """
     Tests process_segments_message with a real Kafka message. 
     Stores data into the test Database.
     """
     # Load sample data
     activity_id, compressed_segments = load_sample_segments
-    
-    # Clear segments table
-    delete_segments_and_status_for_activity(activity_id)
     
     # Connect to database
     conn = get_db_connection()
@@ -66,7 +66,7 @@ def test_process_segments(load_sample_segments):
     cursor.close()
     conn.close()
 
-def test_process_segments_with_database_exception(load_sample_segments):
+def test_process_segments_with_database_exception(load_sample_segments, set_up):
     """Tests that process_segments_message doesn't store any data when it handles a DatabaseException."""
     with patch('app.segments_service.segments_batch_insert_and_update_status') as mock_store_segments:
         # Load sample data
@@ -74,9 +74,6 @@ def test_process_segments_with_database_exception(load_sample_segments):
         
         # Configure mock to raise a DatabaseException
         mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting segments.")
-
-        # Clear segments table
-        delete_segments_and_status_for_activity(activity_id)
         
         # Connect to database
         conn = get_db_connection()
@@ -99,20 +96,16 @@ def test_process_segments_with_database_exception(load_sample_segments):
         cursor.close()
         conn.close()
 
-def test_process_segments_for_existing_activity(load_sample_segments):
+def test_process_segments_for_existing_activity(load_sample_segments, set_up):
     """
     Tests process_segments_message when the activity has already been processed.
     """
     # Load sample data
     activity_id, compressed_segments = load_sample_segments
     
-    # Clear segments table
-    delete_segments_and_status_for_activity(activity_id)
-    
     # Connect to database
     conn = get_db_connection()
     cursor = conn.cursor()
-    
     
     # Call process_segments
     process_segments(activity_id, compressed_segments)
