@@ -19,7 +19,7 @@ logger = logging.getLogger("app")
 # Kafka Configuration
 KAFKA_BROKER = os.getenv("KAFKA_BROKER")
 KAFKA_TOPIC_OUTPUT = os.getenv("KAFKA_TOPIC_OUTPUT")
-KAFKA_TOPIC_RETRY = os.getenv("KAFKA_TOPIC_RETRY")
+KAFKA_TOPIC_RETRY = os.getenv("KAFKA_RETRY_TOPIC_INPUT")
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BROKER,

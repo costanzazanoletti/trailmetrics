@@ -116,14 +116,7 @@ def test_process_message(load_test_message):
 }
 
     with patch('app.weather_service.send_weather_output') as mock_send_output, \
-         patch('app.weather_service.fetch_weather_data') as mock_fetch_weather_data, \
-         patch('app.kafka_producer.KafkaProducer') as MockKafkaProducer, \
-         patch('app.kafka_consumer.KafkaConsumer') as MockKafkaConsumer:
-            mock_kafka_producer_instance = MagicMock()
-            MockKafkaProducer.return_value = mock_kafka_producer_instance
-            
-            # Now patch the methods on the producer instance
-            mock_kafka_producer_instance.send.return_value = MagicMock()
+         patch('app.weather_service.fetch_weather_data') as mock_fetch_weather_data:
         
             # Mock fetch_weather_data response
             mock_fetch_weather_data.return_value = mock_response
