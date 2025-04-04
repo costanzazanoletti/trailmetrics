@@ -52,7 +52,7 @@ strava:
   api:
     base-url: ${STRAVA_API_BASE_URL:https://www.strava.com/api/v3}
     max-per-page: ${STRAVA_API_MAX_PER_PAGE:200} # Pagination setting
-    allowed-sport-types: "Run,Trail Run,Walk,Hike" # Only foot sports are considered
+    allowed-sport-types: "Run,Trail Run" # Only foot sports are considered
     rate-limit-short-window: ${STRAVA_API_RATE_LIMIT_SHORT_WINDOW:200}  # Max 100 requests per 15 minutes
     read-rate-limit-short-window: ${STRAVA_API_READ_RATE_LIMIT_SHORT_WINDOW:100}  # Max 100 requests per 15 minutes
     rate-limit-daily: ${STRAVA_API_RATE_LIMIT_DAILY:2000}  # Max 1000 requests per day

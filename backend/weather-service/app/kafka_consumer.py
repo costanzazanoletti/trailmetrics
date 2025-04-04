@@ -3,6 +3,7 @@ import os
 import base64
 import logging
 import logging_setup
+import time
 from datetime import datetime, timezone
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
@@ -87,7 +88,7 @@ def process_message(message):
         if isinstance(compressed_segments, str):
             compressed_segments = base64.b64decode(compressed_segments)
 
-        logger.info(f"Processing weather info for Activity ID: {activity_id}, start date: {start_date}, processed at: {processed_at}")
+        logger.info(f"Processing weather info for Activity ID: {activity_id}")
 
         # Fetch weather info, prepare and send Kafka message
         get_weather_info(start_date, compressed_segments, activity_id)
@@ -105,10 +106,11 @@ def process_retry_message(message):
         segment_ids = data.get("segmentIds")
         group_id = data.get("groupId")
         retry_timestamp = data.get("retryTimestamp")
+        retries = data.get("retries")
 
         if not activity_id or not retry_timestamp:
             logger.warning("Received retry message without 'activityId' or 'retryTimestamp'")
-            return True # Unable to process message, must be discarded
+            return
         
         # Current time to check the delay
         current_time = int(datetime.now(timezone.utc).timestamp())
@@ -116,19 +118,15 @@ def process_retry_message(message):
         # If retry_timestamp is not yet arrived
         if current_time < retry_timestamp:
             delay = retry_timestamp - current_time
-            logger.info(f"Message for activity ID {activity_id} rescheduled. Waiting for {delay} seconds before retry.")
-            return False # Message not processed yet
-        else: 
-            logger.info(f"Retry time reached for activity ID {activity_id}. Processing message immediately.")
-            # Process the retry message
-            logger.info(f"Processing retry message for Activity ID {activity_id}, retry at {retry_timestamp}")
-            # Call function that fetches data and handles response
-            get_weather_data_from_api(activity_id, segment_ids, request_params, group_id)
-            return True # Message successfully processed
+            logger.info(f"Message for activity ID {activity_id} group {group_id} rescheduled. Waiting {delay} seconds before retry.")
+            time.sleep(delay)
+      
+        logger.info(f"Retry time reached for activity ID {activity_id} group {group_id}. Processing message.")
+        # Process the retry message
+        get_weather_data_from_api(activity_id, segment_ids, request_params, group_id, retries)
 
     except Exception as e:
         logger.error(f"Error processing retry message {e}")
-        return True # Message processed with error
 
 def start_kafka_consumer(shutdown_event):
     """Starts the Kafka consumer and processes messages."""
@@ -139,6 +137,7 @@ def start_kafka_consumer(shutdown_event):
             for message in consumer:
                 process_message(message)
                 consumer.commit()
+
         logger.info("Shutting down Kafka consumer...")
     finally:
         consumer.close()
@@ -151,12 +150,8 @@ def start_kafka_retry_consumer(shutdown_event):
     try:
         while not shutdown_event.is_set():
             for message in consumer:
-                    # Try to process message
-                    processed = process_retry_message(message)
-                    # If message was processed commit, otherwise leave the message in the queue for retry
-                    if processed == True:
-                        logger.info("Commit")
-                        consumer.commit()
+                process_retry_message(message) 
+                consumer.commit()
                               
         logger.info("Shutting down Kafka retry consumer...")
     finally:

@@ -129,7 +129,7 @@ def fetch_weather_data(params):
     except Exception as e:
         # If unable to increment counter, raise an exception
         logger.warning(f"Daily limit of {DAILY_REQUEST_LIMIT} requests reached.")
-        raise WeatherAPIException("Daily request limit reached", status_code=429, retry_in_hour=False) 
+        raise WeatherAPIException("Daily request limit reached", status_code=429) 
     
     # Add api key to params 
     params["appid"] = OPENWEATHER_API_KEY 
@@ -149,7 +149,7 @@ def fetch_weather_data(params):
     except requests.exceptions.HTTPError as err:  
         if response is not None and response.status_code == 429: # Rate limit exceeded
             logger.warning(f"Weather API rate limit exceeded.")
-            raise WeatherAPIException("Hourly request limit reached", status_code=429, retry_in_hour=True)
+            raise WeatherAPIException("Hourly request limit reached", status_code=429)
         else:
             logger.error(f"Request HTTP error: {err}")
             raise WeatherAPIException(f"HTTP Error: {err}", status_code=response.status_code)

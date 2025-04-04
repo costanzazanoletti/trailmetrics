@@ -20,6 +20,7 @@ logger = logging.getLogger("app")
 KAFKA_BROKER = os.getenv("KAFKA_BROKER")
 KAFKA_TOPIC_OUTPUT = os.getenv("KAFKA_TOPIC_OUTPUT")
 KAFKA_TOPIC_RETRY = os.getenv("KAFKA_RETRY_TOPIC_INPUT")
+KAFKA_RETRY_MAX_POLL_INTERVAL_MS = os.getenv("KAFKA_RETRY_MAX_POLL_INTERVAL_MS")
 
 producer = KafkaProducer(
     bootstrap_servers=KAFKA_BROKER,
@@ -50,7 +51,6 @@ def prepare_message(activity_id, segments_df, reference_point_id):
 
 def send_weather_output(activity_id, weather_df, reference_point_id):
     """Send weather output message to Kafka."""
-    
     # Prepare message with compressed segments
     kafka_message = prepare_message(activity_id, weather_df, reference_point_id)
 
@@ -62,37 +62,30 @@ def send_weather_output(activity_id, weather_df, reference_point_id):
     except Exception as e:
         logger.error(f"Error sending weather info for Activity ID {activity_id}: {e}")
 
-def prepare_retry_message(activity_id, segment_ids, reference_point_id, request_params, short):
+def send_retry_message(activity_id, segment_ids, group_id, request_params, retries):
     """Prepare the retry message with the reference point and request params and the retry timestamp"""
-    # Compute the retry time
-    retry_time = datetime.now(timezone.utc)
-    if short:
-        # Add 1 minute if "short" is true
-        retry_time = retry_time + timedelta(minutes=1)
-    else:
-        retry_time = retry_time.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
-    
+    # Compute the retry time based on Kafka max poll interval
+    retry_time_seconds = int(KAFKA_RETRY_MAX_POLL_INTERVAL_MS)/1000 - 1
+    retry_time = datetime.now(timezone.utc) + timedelta(seconds=retry_time_seconds)  
     retry_timestamp = int(retry_time.timestamp())
-
-
+    retries = retries + 1
+    
     # Create the message with the retry timestamp
-    return {
+    retry_message = {
         "activityId": activity_id,
         "requestParams": request_params,
         "segmentIds": segment_ids,
-        "groupId": reference_point_id,
-        "retryTimestamp": retry_timestamp
+        "groupId": group_id,
+        "retryTimestamp": retry_timestamp,
+        "retries" : retries
     }
 
-
-def send_retry_message(activity_id, reference_point, reference_point_id, request_params, short = False):
-    retry_message = prepare_retry_message(activity_id, reference_point, reference_point_id, request_params, short)
-
+    # Send the message to Kafka
     try:
         producer.send(KAFKA_TOPIC_RETRY, key=activity_id, value=retry_message)
         producer.flush()  
-        logger.info(f"Sent retry Message for Activity ID {activity_id}")
+        logger.info(f"Sent retry message {retries} for Activity ID {activity_id} group {group_id} retry in {retry_time_seconds} seconds")
     except Exception as e:
-        logger.error(f"Error sending retry message for Activity ID {activity_id}: {e}")
+        logger.error(f"Error sending retry message for Activity ID {activity_id} group {group_id}: {e}")
 
     

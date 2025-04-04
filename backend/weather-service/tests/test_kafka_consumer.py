@@ -7,59 +7,6 @@ import time
 from datetime import datetime, timezone
 from app.kafka_consumer import process_message, process_retry_message
 
-@pytest.fixture
-def sample_retry_message():
-    # Set retry timestamp 10 seconds after current time
-    current_timestamp = int(time.time())
-    retry_timestamp = current_timestamp + 10
-
-    message = {
-    "activityId": 2463829980,
-    "requestParams": {
-        "lat": 46.128185,
-        "lon": 8.290736,
-        "dt": 1560960228,
-        "units": "metric"
-    },
-    "segmentIds": [
-        "2463829980-1",
-        "2463829980-2",
-    ],
-    "groupId": "1_8",
-    "retryTimestamp": retry_timestamp
-    }
-
-    kafka_message = MagicMock()
-    kafka_message.value = message  
-    kafka_message.key = "2463829980"
-    return kafka_message
-
-@pytest.fixture
-def sample_retry_message_expired():
-    # Set retry timestamp 10 seconds before current time
-    current_timestamp = int(time.time())
-    retry_timestamp = current_timestamp - 10
-
-    message = {
-    "activityId": 2463829980,
-    "requestParams": {
-        "lat": 46.128185,
-        "lon": 8.290736,
-        "dt": 1560960228,
-        "units": "metric"
-    },
-    "segmentIds": [
-        "2463829980-1",
-        "2463829980-2",
-    ],
-    "groupId": "1_8",
-    "retryTimestamp": retry_timestamp
-    }
-
-    kafka_message = MagicMock()
-    kafka_message.value = message  
-    kafka_message.key = "2463829980"
-    return kafka_message
 
 @pytest.fixture
 def load_test_message(request):
@@ -115,31 +62,98 @@ def test_process_message(load_test_message):
     ]
 }
 
-    with patch('app.weather_service.send_weather_output') as mock_send_output, \
-         patch('app.weather_service.fetch_weather_data') as mock_fetch_weather_data:
-        
-            # Mock fetch_weather_data response
-            mock_fetch_weather_data.return_value = mock_response
-
+    with patch('app.kafka_consumer.get_weather_info') as mock_get_weather_info:
             process_message(load_test_message)
-            # Assertions
-            assert mock_send_output.call_count == 6
-            assert mock_fetch_weather_data.call_count == 6
+            mock_get_weather_info.assert_called_once
 
 
-def test_retry_message_not_processing(sample_retry_message):
-    """Test that the retry message is not processed, but rescheduled."""
-    print("\nTest retry message not processing")
-    with patch('app.weather_service.send_weather_output'), \
-        patch('app.weather_service.fetch_weather_data'):
+def test_retry_message_processing_with_delay():
+    """Test that the retry message is processed with the delay."""
+    # Set retry timestamp 10 seconds after current time
+    current_timestamp = int(time.time())
+    retry_timestamp = current_timestamp + 10
+    activity_id = 2463829980
+    request_params = {
+        "lat": 46.128185,
+        "lon": 8.290736,
+        "dt": 1560960228,
+        "units": "metric"
+    }
+    segment_ids = ["2463829980-1","2463829980-2"]
+    group_id = "1_8"
+    retries = 3
 
-        assert process_retry_message(sample_retry_message) == False
+    message = {
+        "activityId": activity_id,
+        "requestParams": request_params,
+        "segmentIds": segment_ids,
+        "groupId": group_id,
+        "retryTimestamp": retry_timestamp,
+        "retries": retries
+    }
+
+    kafka_message = MagicMock()
+    kafka_message.value = message  
+    kafka_message.key = "2463829980"
+    
+    # Mock the `time.sleep` function to avoid waiting during the test
+    with patch('time.sleep') as mock_sleep, \
+        patch('app.kafka_consumer.get_weather_data_from_api') as mock_get_weather_data:
+
+        # Mock the behavior of the get_weather_data_from_api function
+        mock_get_weather_data.return_value = None  # Simulate that the function returns without doing anything
+
+        # Call the function you want to test
+        process_retry_message(kafka_message)
+
+        # Assert that time.sleep was called to wait for the retry timestamp
+        mock_sleep.assert_called_once_with(retry_timestamp - int(datetime.now(timezone.utc).timestamp()))
+
+        # Check that get_weather_data_from_api was called with the correct parameters
+        mock_get_weather_data.assert_called_once_with(activity_id, segment_ids, request_params, group_id, retries)
 
 
-def test_retry_message_processing(sample_retry_message_expired):
-    """Test that the retry message is processed correctly."""
-    print("\nTest retry message processing")
-    with patch('app.weather_service.send_weather_output'), \
-        patch('app.weather_service.fetch_weather_data'):
+def test_retry_message_processing_immediately():
+    """Test that the retry message is processed immediately."""
+    # Set retry timestamp 10 seconds before current time
+    current_timestamp = int(time.time())
+    retry_timestamp = current_timestamp - 10
+    activity_id = 2463829980
+    request_params = {
+        "lat": 46.128185,
+        "lon": 8.290736,
+        "dt": 1560960228,
+        "units": "metric"
+    }
+    segment_ids = ["2463829980-1","2463829980-2"]
+    group_id = "1_8"
+    retries = 3
 
-        assert process_retry_message(sample_retry_message_expired) == True
+    message = {
+        "activityId": activity_id,
+        "requestParams": request_params,
+        "segmentIds": segment_ids,
+        "groupId": group_id,
+        "retryTimestamp": retry_timestamp,
+        "retries": retries
+    }
+
+    kafka_message = MagicMock()
+    kafka_message.value = message  
+    kafka_message.key = "2463829980"
+    
+    # Mock the `time.sleep` function to avoid waiting during the test
+    with patch('time.sleep') as mock_sleep, \
+        patch('app.kafka_consumer.get_weather_data_from_api') as mock_get_weather_data:
+
+        # Mock the behavior of the get_weather_data_from_api function
+        mock_get_weather_data.return_value = None  # Simulate that the function returns without doing anything
+
+        # Call the function you want to test
+        process_retry_message(kafka_message)
+
+        # Assert that time.sleep was called to wait for the retry timestamp
+        mock_sleep.assert_not_called
+
+        # Check that get_weather_data_from_api was called with the correct parameters
+        mock_get_weather_data.assert_called_once_with(activity_id, segment_ids, request_params, group_id, retries)

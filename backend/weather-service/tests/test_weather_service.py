@@ -180,7 +180,7 @@ def test_get_weather_info_429(sample_df_segments):
 
     with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
          patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
-         patch('app.weather_service.fetch_weather_data', side_effect= WeatherAPIException("Hourly request limit reached", status_code=429, retry_in_hour=True)) as mock_fetch_weather_data, \
+         patch('app.weather_service.fetch_weather_data', side_effect= WeatherAPIException("Hourly request limit reached", status_code=429)) as mock_fetch_weather_data, \
          patch('app.weather_service.send_weather_output') as mock_send_output, \
          patch('app.weather_service.send_retry_message') as mock_send_retry:
         

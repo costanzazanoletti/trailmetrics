@@ -160,7 +160,6 @@ def test_fetch_weather_data_request_counter_limit(create_sample_params):
             # Verify that the exception has the expected parameters
             assert str(e) == "Daily request limit reached"
             assert e.status_code == 429
-            assert e.retry_in_hour == False
 
 def test_fetch_weather_data_429(create_sample_params):
     # Mock a rate limit hit response (status 429) of the API
@@ -186,7 +185,6 @@ def test_fetch_weather_data_429(create_sample_params):
             # Verify that the exception has the expected parameters
             assert str(e) == "Hourly request limit reached"
             assert e.status_code == 429
-            assert e.retry_in_hour == True
 
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()
@@ -217,7 +215,6 @@ def test_fetch_weather_data_error(create_sample_params):
         except WeatherAPIException as e:
             # Verify that the exception has the expected parameters
             assert e.status_code == 400
-            assert e.retry_in_hour == False
 
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()

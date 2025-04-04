@@ -1,9 +1,11 @@
 import pytest
 import pandas as pd
-from datetime import datetime, timezone
-from unittest.mock import patch
+import json
+import os
+from datetime import datetime, timezone, timedelta
+from unittest.mock import patch, MagicMock
 import logging.config
-from app.kafka_producer import prepare_message, prepare_retry_message
+from app.kafka_producer import prepare_message, send_retry_message
 
 logging.config.fileConfig("./logging.conf")
 
@@ -24,8 +26,9 @@ def sample_df():
     }
     return pd.DataFrame(sample_data)
 
-# Test prepare_message function
+
 def test_prepare_message(sample_df):
+    """Test prepared_message with controlled parameters"""
     # Define input parameters
     activity_id = 12345
     reference_point_id = "1_4"
@@ -46,54 +49,45 @@ def test_prepare_message(sample_df):
     assert result["compressedWeatherInfo"].startswith("H4sIA")
     assert result["groupId"] == reference_point_id
 
-def test_prepare_retry_message_short():
+def test_send_retry_message():
+    """Test send_retry_message with controlled parameters"""
+    KAFKA_RETRY_MAX_POLL_INTERVAL_MS = os.getenv("KAFKA_RETRY_MAX_POLL_INTERVAL_MS")    
+    KAFKA_TOPIC_RETRY = os.getenv("KAFKA_RETRY_TOPIC_INPUT")
+    
+    # Test data
     activity_id = 12345
     segment_ids = ["1234-1", "1234-2"]
     request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
-    short = True
-    reference_point_id = "1_4"
+    group_id = "1_4"
+    retries = 2
 
-    # Call the function
-    result = prepare_retry_message(activity_id, segment_ids, reference_point_id, request_params, short)
+    # Mock the producer
+    with patch('app.kafka_producer.producer.send') as mock_producer_send, \
+        patch('app.kafka_producer.producer.flush') as mock_producer_flush:
+    
+        # Call the function you want to test
+        send_retry_message(activity_id, segment_ids, group_id, request_params, retries)
 
-    # Verify the structure of the returned dictionary
-    assert "activityId" in result
-    assert result["activityId"] == activity_id
-    assert "requestParams" in result
-    assert result["requestParams"] == request_params
-    assert "segmentIds" in result
-    assert result["segmentIds"] == segment_ids  
-    assert "groupId" in result
-    assert result["groupId"] == reference_point_id
-    assert "retryTimestamp" in result
+        # Compute expected retry timestamp
+        retry_time_seconds = (int(KAFKA_RETRY_MAX_POLL_INTERVAL_MS) / 1000) - 1
+        retry_time = datetime.now(timezone.utc) + timedelta(seconds=retry_time_seconds)
+        retry_timestamp = int(retry_time.timestamp())
 
-    # Verify retry_timestamp is in the future (1 minute added)
-    retry_time = datetime.fromtimestamp(result["retryTimestamp"], tz=timezone.utc)
-    assert retry_time > datetime.now(timezone.utc)
+        # Prepare the expected retry message
+        expected_retry_message = {
+            "activityId": activity_id,
+            "requestParams": request_params,
+            "segmentIds": segment_ids,
+            "groupId": group_id,
+            "retryTimestamp": retry_timestamp,
+            "retries": retries + 1
+        }
 
-def test_prepare_retry_message_long():
-    activity_id = 12345
-    segment_ids = ["1234-1", "1234-2"]
-    request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
-    short = False
-    reference_point_id = "1_4"
-
-    # Call the function
-    result = prepare_retry_message(activity_id, segment_ids, reference_point_id, request_params, short)
-
-    # Verify the structure of the returned dictionary
-    assert "activityId" in result
-    assert result["activityId"] == activity_id
-    assert "requestParams" in result
-    assert result["requestParams"] == request_params
-    assert "segmentIds" in result
-    assert result["segmentIds"] == segment_ids  
-    assert "groupId" in result
-    assert result["groupId"] == reference_point_id
-    assert "retryTimestamp" in result
-    # Verify retry_timestamp is at the start of the next day (00:00 UTC)
-    retry_time = datetime.fromtimestamp(result["retryTimestamp"], tz=timezone.utc)
-    assert retry_time.hour == 0
-    assert retry_time.minute == 0
-    assert retry_time.second == 0
-    assert retry_time > datetime.now(timezone.utc)
+        # Check that producer.send was called with the correct parameters
+        mock_producer_send.assert_called_once_with(
+            KAFKA_TOPIC_RETRY,  
+            key=activity_id,  
+            value=expected_retry_message 
+        )
+        # Check that producer.flush is called once
+        mock_producer_flush.assert_called_once
