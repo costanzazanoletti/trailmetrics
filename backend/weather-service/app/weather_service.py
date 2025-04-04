@@ -151,7 +151,7 @@ def get_weather_info(activity_start_date, compressed_segments, activity_id):
         # Create an id for this block of segments
         reference_point_id = str(index + 1) + '_' + str(len(reference_points_df))
         # Call weather API and handle success and error response
-        get_weather_data_from_api(activity_id, segment_ids, request_params, reference_point_id, retries = 1)
+        get_weather_data_from_api(activity_id, segment_ids, request_params, reference_point_id, retries = 0)
 
 def get_weather_data_from_api(activity_id, segment_ids, request_params, reference_point_id, retries):
     try:
