@@ -78,14 +78,6 @@ CREATE TABLE segments (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE weather_status_tracking (
-    activity_id BIGINT,
-    group_id INT,
-    total_groups INT,
-    received BOOLEAN DEFAULT FALSE,
-    PRIMARY KEY (activity_id, group_id)
-);
-
 CREATE TABLE activity_status_tracker (
     activity_id BIGINT PRIMARY KEY,
     segment_status BOOLEAN DEFAULT FALSE,
