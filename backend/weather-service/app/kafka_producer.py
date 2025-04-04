@@ -58,9 +58,9 @@ def send_weather_output(activity_id, weather_df, reference_point_id):
     try:
         producer.send(KAFKA_TOPIC_OUTPUT, key=activity_id, value=kafka_message)
         producer.flush()  
-        logger.info(f"Sent weather info Kafka message for Activity ID: {activity_id}: {len(weather_df)} segments")
+        logger.info(f"Sent weather info Kafka message for Activity ID: {activity_id} group {reference_point_id}: {len(weather_df)} segments")
     except Exception as e:
-        logger.error(f"Error sending weather info for Activity ID {activity_id}: {e}")
+        logger.error(f"Error sending weather info for Activity ID {activity_id}: {e} group {reference_point_id}")
 
 def send_retry_message(activity_id, segment_ids, group_id, request_params, retries):
     """Prepare the retry message with the reference point and request params and the retry timestamp"""
