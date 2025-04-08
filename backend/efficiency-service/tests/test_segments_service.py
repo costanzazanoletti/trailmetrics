@@ -2,10 +2,11 @@ import pytest
 import json
 import os
 import pandas as pd
+import numpy as np
 from unittest.mock import Mock, patch
 import base64
 from datetime import datetime, timezone
-from app.segments_service import process_segments
+from app.segments_service import process_segments, calculate_metrics, compute_efficiency_score
 from app.exceptions import DatabaseException
 from database import get_db_connection, delete_all_data
 
@@ -125,3 +126,50 @@ def test_process_segments_for_existing_activity(load_sample_segments, set_up):
     
     cursor.close()
     conn.close()        
+
+def test_calculate_metrics():
+    # Sample data
+    segment = {
+        "segment_length": 100,
+        "start_time": 0,
+        "end_time": 45,
+        "start_altitude": 100,
+        "end_altitude": 110,
+        "start_heartrate": 120,
+        "end_heartrate": 130
+    }
+    segment_df = pd.DataFrame([segment])
+    
+    # Call function
+    result_segment = calculate_metrics(segment_df.iloc[0])
+
+    # Assertions
+    expected_avg_speed = 100/45
+    assert np.isclose(result_segment["avg_speed"], expected_avg_speed), f"Expected {expected_avg_speed}, got {result_segment['avg_speed']}"
+    expected_elevation_gain = 10
+    assert np.isclose(result_segment["elevation_gain"], expected_elevation_gain), f"Expected {expected_elevation_gain}, got {result_segment['elevation_gain']}"
+    expected_hr_drift = (130  - 120) / 120
+    assert np.isclose(result_segment["hr_drift"], expected_hr_drift), f"Expected {expected_hr_drift}, got {result_segment['hr_drift']}"
+
+def test_compute_efficiency_score():
+    # Sample data
+    data = {
+        "avg_speed": [1, 1, 1],
+        "elevation_gain": [10, 10, -10],
+        "segment_length": [100, 100, 100],
+        "avg_heartrate": [150, 150, 150],
+        "hr_drift": [0.5, 0.0, -0.5]
+    }
+    
+    df = pd.DataFrame(data)
+
+    # Paramters
+    s = 10.0
+    k = 1
+    m = 1
+
+    result_df = compute_efficiency_score(df, s, k, m)
+    
+    print(result_df)
+
+
