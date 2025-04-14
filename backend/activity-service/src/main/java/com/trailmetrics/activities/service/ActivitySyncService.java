@@ -9,7 +9,9 @@ import com.trailmetrics.activities.repository.ActivityRepository;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +40,8 @@ public class ActivitySyncService {
 
   /**
    * Fetches activities for a user from Strava, saves them in the database, processes the latest
-   * ones instantly, and queues the rest for background processing.
+   * ones instantly, and queues the rest for background processing. Tracks and removes the
+   * activities that were in the database but are no longer synchronized.
    */
   @Transactional
   public void syncUserActivities(@NonNull String userIdString, @NonNull String accessToken) {
@@ -56,6 +59,11 @@ public class ActivitySyncService {
     int page = 1;
     boolean hasMore = true;
 
+    // Retrieve all user activities to track changes
+    Set<Long> existingActivityIds = activityRepository.findActivityIdsByAthleteId(userId);
+    // Track current activity ids from API
+    Set<Long> currentActivityIds = new HashSet<>();
+
     while (hasMore) {
       try {
         log.info("Fetching page {} of activities for user {}", page, userIdString);
@@ -67,13 +75,15 @@ public class ActivitySyncService {
         if (activities.isEmpty()) {
           hasMore = false;
         } else {
-
           for (ActivityDTO activity : activities) {
             if (!isAllowedActivity(activity)) {
               log.info("Skipping activity ID {} ({}) as it's not in allowed sport types",
                   activity.getId(), activity.getSportType());
               continue;
             }
+
+            currentActivityIds.add(activity.getId()); // Track the activity
+
             if (activityRepository.existsById(activity.getId())) {
               log.debug("Activity ID {} already exists, skipping processing.", activity.getId());
               continue;
@@ -84,15 +94,25 @@ public class ActivitySyncService {
             log.info("Queuing activity ID {} for background sync", activity.getId());
             kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
           }
+
           page++;
         }
       } catch (HttpClientErrorException.TooManyRequests e) {
         log.warn("Rate limit reached for user {}. Re-queueing full sync.", userId);
-
+        // Schedule a full sync for the current user
         kafkaRetryService.scheduleUserSyncRetry(userIdString, e);
 
         return;
       }
+    }
+    // Identify activities that were in DB but not in the sync
+    Set<Long> activitiesToDelete = new HashSet<>(existingActivityIds);
+    activitiesToDelete.removeAll(currentActivityIds);
+
+    if (!activitiesToDelete.isEmpty()) {
+      log.info("Found {} activities to delete for user {}", activitiesToDelete.size(), userId);
+      // Delete activities from DB and associated streams
+      activityRepository.deleteByIdIn(activitiesToDelete);
     }
   }
 

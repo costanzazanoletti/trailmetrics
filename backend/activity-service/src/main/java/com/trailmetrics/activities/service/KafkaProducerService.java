@@ -18,9 +18,7 @@ public class KafkaProducerService {
   private static final String ACTIVITY_PROCESSED_TOPIC = "activity-stream-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
 
-  /**
-   * Publishes an activity for background processing.
-   */
+  
   public void publishActivityImport(Long activityId, String userId) {
     ActivitySyncMessage message = new ActivitySyncMessage(userId, activityId, Instant.now());
     log.info("Publishing activity import to Kafka: {}", message);

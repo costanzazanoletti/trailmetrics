@@ -18,7 +18,9 @@ import com.trailmetrics.activities.repository.ActivityRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -91,6 +93,74 @@ class ActivitySyncServiceTest {
 
     activitySyncService.syncUserActivities(userId, accessToken);
 
+    verify(activityRepository, times(2)).save(any(Activity.class));
+    verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(), eq(userId));
+  }
+
+  @Test
+  void shouldHandleActivityDeletion() {
+    String userId = "123";
+    String accessToken = "mockAccessToken";
+
+    ActivityDTO activity1 = new ActivityDTO();
+    activity1.setId(1L);
+    activity1.setType("Run");
+
+    ActivityDTO activity2 = new ActivityDTO();
+    activity2.setId(2L);
+    activity2.setType("Walk");
+
+    List<ActivityDTO> mockActivities = Arrays.asList(activity1, activity2);
+    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
+        .thenReturn(mockActivities)  // First page with activities
+        .thenReturn(List.of());  // Empty list on second page (end of data)
+
+    // Existing activity IDs in the database (activity 1 is already in DB, activity 3 was deleted)
+    when(activityRepository.findActivityIdsByAthleteId(anyLong()))
+        .thenReturn(new HashSet<>(Arrays.asList(1L, 3L)));  // ID 3 will be removed
+
+    when(activityRepository.existsById(anyLong())).thenReturn(false);
+    when(activityRepository.save(any(Activity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    activitySyncService.syncUserActivities(userId, accessToken);
+
+    // Verify that activity 3 is deleted because it's no longer in the sync data
+    verify(activityRepository, times(1)).deleteByIdIn(eq(new HashSet<>(Set.of(3L))));
+    verify(activityRepository, times(2)).save(any(Activity.class));
+    verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(), eq(userId));
+  }
+
+  @Test
+  void shouldNotDeleteExistingActivities() {
+    String userId = "123";
+    String accessToken = "mockAccessToken";
+
+    ActivityDTO activity1 = new ActivityDTO();
+    activity1.setId(1L);
+    activity1.setType("Run");
+
+    ActivityDTO activity2 = new ActivityDTO();
+    activity2.setId(2L);
+    activity2.setType("Walk");
+
+    List<ActivityDTO> mockActivities = Arrays.asList(activity1, activity2);
+    when(stravaClient.fetchUserActivities(anyString(), any(), any(), anyInt(), anyInt()))
+        .thenReturn(mockActivities)
+        .thenReturn(List.of());
+
+    // Existing activity IDs in the database
+    when(activityRepository.findActivityIdsByAthleteId(anyLong()))
+        .thenReturn(new HashSet<>(Arrays.asList(1L, 2L)));  // No deletions
+
+    when(activityRepository.existsById(anyLong())).thenReturn(false);
+    when(activityRepository.save(any(Activity.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    activitySyncService.syncUserActivities(userId, accessToken);
+
+    // Verify no deletion of activities
+    verify(activityRepository, never()).deleteByIdIn(any());
     verify(activityRepository, times(2)).save(any(Activity.class));
     verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(), eq(userId));
   }
