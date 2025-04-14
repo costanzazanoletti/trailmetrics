@@ -7,7 +7,7 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 from app.exceptions import DatabaseException
-from database import segments_batch_insert_and_update_status
+from database import segments_batch_insert_and_update_status, engine
 from app.utilities import parse_compressed_data
 
 logger = logging.getLogger("app")
@@ -18,7 +18,7 @@ EFFICIENCY_FACTOR_SCALE=float(os.getenv("EFFICIENCY_FACTOR_SCALE", "10.0"))
 EFFICIENCY_ELEVATION_WEIGHT=float(os.getenv("EFFICIENCY_FACTOR_SCALE", "1.0"))
 EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT=float(os.getenv("EFFICIENCY_FACTOR_SCALE", "1.0"))
 
-def process_segments(activity_id, compressed_segments):
+def process_segments(activity_id, compressed_segments, engine):
     """Processes segments and compute efficiency metrics and score"""
     try:
         # Extract segments DataFrame from Kafka message
@@ -34,7 +34,7 @@ def process_segments(activity_id, compressed_segments):
         segments_df = compute_efficiency_score(segments_df, EFFICIENCY_FACTOR_SCALE, EFFICIENCY_ELEVATION_WEIGHT, EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT)
 
         # Store segments into database and update activity status
-        segments_batch_insert_and_update_status(segments_df, activity_id)
+        segments_batch_insert_and_update_status(segments_df, activity_id,engine)
         logger.info(f"Stored {len(segments_df)} segments for activity {activity_id} into database")
     
     except DatabaseException as de:

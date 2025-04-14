@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from app.segments_service import process_segments
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
+from database import engine
 
 
 # Load environment variables
@@ -52,7 +53,7 @@ def process_segments_message(message):
             return
             
         logger.info(f"Processing segments for activity {activity_id}")
-        process_segments(activity_id, compressed_segments)
+        process_segments(activity_id, compressed_segments, engine)
 
     except Exception as e:
         logger.error(f"Error processing segments message: {e}")
@@ -69,7 +70,7 @@ def process_terrain_message(message):
             return
 
         logger.info(f"Processing terrain info for activity {activity_id}")
-        process_terrain_info(activity_id, compressed_terrain_info)
+        process_terrain_info(activity_id, compressed_terrain_info, engine)
 
     except Exception as e:
         logger.error(f"Error processing terrain message: {e}")
@@ -87,7 +88,7 @@ def process_weather_message(message):
             return
 
         logger.info(f"Processing weather info for activity {activity_id}")
-        process_weather_info(activity_id, group_id, compressed_weather_info)
+        process_weather_info(activity_id, group_id, compressed_weather_info, engine)
 
     except Exception as e:
         logger.error(f"Error processing weather message: {e}")

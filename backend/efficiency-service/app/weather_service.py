@@ -8,12 +8,10 @@ from database import weather_batch_insert_and_update_status
 
 logger = logging.getLogger("app")
 
-def process_weather_info(activity_id, group_id, compressed_weather_info):
+def process_weather_info(activity_id, group_id, compressed_weather_info, engine):
     """Processes weather info"""
     try:
         weather_df = parse_compressed_data(compressed_weather_info)
-        # DEBUG
-        #logger.info(f"Activity {activity_id}, group {group_id}, weather info\n{weather_df.head()}")
         
         # Keep only columns that are actually stored
         columns_to_keep = ['segment_id','temp', 'feels_like', 'humidity', 'wind', 'weather_id', 'weather_main', 'weather_description']
@@ -24,9 +22,9 @@ def process_weather_info(activity_id, group_id, compressed_weather_info):
         
         # Get number of groups
         total_groups = int(group_id.split("_")[1])
-
+        
         # Store segments into database and update activity status
-        weather_batch_insert_and_update_status(weather_df, activity_id, group_id, total_groups)
+        weather_batch_insert_and_update_status(weather_df, activity_id, group_id, total_groups, engine)
         logger.info(f"Stored {len(weather_df)} segment weather info for activity {activity_id}, group {group_id} into database")
     
     except DatabaseException as de:

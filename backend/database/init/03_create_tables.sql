@@ -98,3 +98,23 @@ CREATE TABLE weather_data_progress (
     PRIMARY KEY (activity_id, group_id),      
     CONSTRAINT check_group_order CHECK (CAST(SPLIT_PART(group_id, '_', 1) AS INT) <= total_groups) 
 );
+
+CREATE TABLE segment_similarity (
+    segment_id_1 VARCHAR(50) NOT NULL,
+    segment_id_2 VARCHAR(50) NOT NULL,
+    similarity_score REAL NOT NULL,
+    calculated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    -- Optional: Add information about the similarity calculation method or parameters
+    -- calculation_method VARCHAR(255),
+    -- calculation_params JSONB,
+    FOREIGN KEY (segment_id_1) REFERENCES segments(segment_id),
+    FOREIGN KEY (segment_id_2) REFERENCES segments(segment_id),
+    PRIMARY KEY (segment_id_1, segment_id_2)
+);
+
+-- Index for faster lookups based on either segment ID
+CREATE INDEX idx_segment_similarity_1 ON segment_similarity (segment_id_1);
+CREATE INDEX idx_segment_similarity_2 ON segment_similarity (segment_id_2);
+
+-- Optional index for querying by similarity score
+CREATE INDEX idx_segment_similarity_score ON segment_similarity (similarity_score DESC);
