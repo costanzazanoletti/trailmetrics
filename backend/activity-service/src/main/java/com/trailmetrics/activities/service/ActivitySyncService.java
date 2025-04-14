@@ -30,6 +30,7 @@ public class ActivitySyncService {
   private final ActivityRepository activityRepository;
   private final KafkaProducerService kafkaProducerService;
   private final KafkaRetryService kafkaRetryService;
+  private final ActivitySyncLogService activitySyncLogService;
 
 
   @Value("${strava.api.max-per-page}")
@@ -59,10 +60,9 @@ public class ActivitySyncService {
     int page = 1;
     boolean hasMore = true;
 
-    // Retrieve all user activities to track changes
     Set<Long> existingActivityIds = activityRepository.findActivityIdsByAthleteId(userId);
-    // Track current activity ids from API
     Set<Long> currentActivityIds = new HashSet<>();
+    Set<Long> newActivitiesThisSync = new HashSet<>();
 
     while (hasMore) {
       try {
@@ -82,7 +82,7 @@ public class ActivitySyncService {
               continue;
             }
 
-            currentActivityIds.add(activity.getId()); // Track the activity
+            currentActivityIds.add(activity.getId());
 
             if (activityRepository.existsById(activity.getId())) {
               log.debug("Activity ID {} already exists, skipping processing.", activity.getId());
@@ -93,6 +93,7 @@ public class ActivitySyncService {
             // Send Kafka message for activity processing
             log.info("Queuing activity ID {} for background sync", activity.getId());
             kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
+            newActivitiesThisSync.add(activity.getId());
           }
 
           page++;
@@ -108,12 +109,10 @@ public class ActivitySyncService {
     // Identify activities that were in DB but not in the sync
     Set<Long> activitiesToDelete = new HashSet<>(existingActivityIds);
     activitiesToDelete.removeAll(currentActivityIds);
+    deleteRemovedActivities(activitiesToDelete, userId);
 
-    if (!activitiesToDelete.isEmpty()) {
-      log.info("Found {} activities to delete for user {}", activitiesToDelete.size(), userId);
-      // Delete activities from DB and associated streams
-      activityRepository.deleteByIdIn(activitiesToDelete);
-    }
+    // Record the sync log
+    activitySyncLogService.recordSyncLog(userId, newActivitiesThisSync, activitiesToDelete);
   }
 
 
@@ -136,5 +135,15 @@ public class ActivitySyncService {
     log.info("Saved basic activity ID {} for user {}", activity.getId(), userId);
   }
 
+  /**
+   * Deletes from database activities
+   */
+  private void deleteRemovedActivities(Set<Long> activitiesToDelete, Long userId) {
+    if (!activitiesToDelete.isEmpty()) {
+      log.info("Found {} activities to delete for user {}", activitiesToDelete.size(), userId);
+      // Delete activities from DB and associated streams
+      activityRepository.deleteByIdIn(activitiesToDelete);
+    }
+  }
 
 }

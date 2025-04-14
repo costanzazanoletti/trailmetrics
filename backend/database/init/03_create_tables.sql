@@ -39,6 +39,29 @@ CREATE TABLE user_preferences (
     time_zone VARCHAR(255)
 );
 
+CREATE TABLE activity_sync_log (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    sync_timestamp TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+CREATE TABLE new_activities (
+    sync_log_id BIGINT NOT NULL,
+    activity_id BIGINT NOT NULL,
+    FOREIGN KEY (sync_log_id) REFERENCES activity_sync_log(id) ON DELETE CASCADE,
+    PRIMARY KEY (sync_log_id, activity_id)
+);
+
+CREATE TABLE deleted_activities (
+    sync_log_id BIGINT NOT NULL,
+    activity_id BIGINT NOT NULL,
+    FOREIGN KEY (sync_log_id) REFERENCES activity_sync_log(id) ON DELETE CASCADE,
+    PRIMARY KEY (sync_log_id, activity_id)
+);
+
+CREATE INDEX idx_activity_sync_log_user_timestamp ON activity_sync_log (user_id, sync_timestamp);
+CREATE INDEX idx_activity_sync_log_timestamp ON activity_sync_log (sync_timestamp);
+
 -- Connect to analytics_service database
 \c analytics_service;
 

@@ -136,7 +136,7 @@ This document defines the Kafka topics and messages used in the application for 
   ```json
   {
     "activityId": 13484124195,
-    "startDate": 1740680048.270867
+    "startDate": 1740680048.270867,
     "processedAt": 1740680048.270867000,
     "compressedStream": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
   }
@@ -215,18 +215,20 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
-### `activity-processed-queue`
+### `user-activities-changed-queue`
 
-**Description:** All required data for efficiency computation is available  
-**Producer Service:** `efficiency-service-group`
-**Consumer Service:** TO BE DEFINED
+**Description:** There are changes in a user's activities 
+**Producer Service:** `activity-service-group`
+**Consumer Service:** `efficiency-service`
 **Consumer Group:** `efficiency-service-group`  
-**Key:** `activityId`  
+**Key:** `userId`  
 **Value JSON:**
 
 ```json
 {
-  "activityId": 13484124195,
-  "completedAt": 1740680052.987654
+  "userId": "28658549",
+  "checkedAt": 1740680052.987654,
+  "newActivityIds": [1234, 5678],
+  "deletedActivityIds": [4321, 8765]
 }
 ```

@@ -7,9 +7,11 @@ import static org.mockito.Mockito.verify;
 
 import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.UserActivityChangesMessage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Set;
 import java.util.zip.GZIPOutputStream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,11 +27,14 @@ class KafkaProducerServiceTest {
 
   private static final String ACTIVITY_PROCESSED_TOPIC = "activity-stream-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
+  private static final String USER_ACTIVITY_CHANGES_TOPIC = "user-activities-changed-queue";
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private KafkaTemplate<String, UserActivityChangesMessage> kafkaUserActivityChangesTemplate;
 
 
   private byte[] compressJson(String json) throws Exception {
@@ -52,6 +57,9 @@ class KafkaProducerServiceTest {
         kafkaActivitySyncTemplate);
     ReflectionTestUtils.setField(kafkaProducerService, "kafkaActivityProcessedTemplate",
         kafkaActivityProcessedTemplate);
+
+    ReflectionTestUtils.setField(kafkaProducerService, "kafkaUserActivityChangesTemplate",
+        kafkaUserActivityChangesTemplate);
   }
 
   @Test
@@ -113,5 +121,28 @@ class KafkaProducerServiceTest {
     assertEquals(activityId, capturedMessage.getActivityId());
     assertNotNull(capturedMessage.getProcessedAt());
     assertEquals(compressedJson.length, capturedMessage.getCompressedStream().length);
+  }
+
+  @Test
+  void shouldPublishUserActivityChanges() {
+    // Given
+    Long userId = 1234L;
+    Set<Long> newActivityIds = Set.of(1L, 2L);
+    Set<Long> deletedActivityIds = Set.of(3L, 4L);
+    //When
+    kafkaProducerService.publishUserActivityChanges(userId, newActivityIds, deletedActivityIds);
+
+    // Then
+    ArgumentCaptor<UserActivityChangesMessage> messageCaptor = ArgumentCaptor.forClass(
+        UserActivityChangesMessage.class);
+    verify(kafkaUserActivityChangesTemplate).send(eq(USER_ACTIVITY_CHANGES_TOPIC),
+        eq(String.valueOf(userId)),
+        messageCaptor.capture());
+
+    UserActivityChangesMessage capturedMessage = messageCaptor.getValue();
+    assertEquals(userId, capturedMessage.getUserId());
+    assertNotNull(capturedMessage.getCheckedAt());
+    assertEquals(newActivityIds, capturedMessage.getNewActivityIds());
+    assertEquals(deletedActivityIds, capturedMessage.getDeletedActivityIds());
   }
 }

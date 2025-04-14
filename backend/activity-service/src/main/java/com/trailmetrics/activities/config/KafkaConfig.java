@@ -3,6 +3,7 @@ package com.trailmetrics.activities.config;
 import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivityRetryMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.UserActivityChangesMessage;
 import com.trailmetrics.activities.dto.UserSyncRetryMessage;
 import java.util.HashMap;
 import java.util.Map;
@@ -113,6 +114,16 @@ public class KafkaConfig {
   @Bean
   public KafkaTemplate<String, ActivityProcessedMessage> activityProcessedKafkaTemplate() {
     ProducerFactory<String, ActivityProcessedMessage> factory =
+        new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
+    return new KafkaTemplate<>(factory);
+  }
+
+  /**
+   * Creates a strongly-typed KafkaTemplate for UserActivityChangesMessage.
+   */
+  @Bean
+  public KafkaTemplate<String, UserActivityChangesMessage> userActivityChangesKafkaTemplate() {
+    ProducerFactory<String, UserActivityChangesMessage> factory =
         new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
     return new KafkaTemplate<>(factory);
   }
