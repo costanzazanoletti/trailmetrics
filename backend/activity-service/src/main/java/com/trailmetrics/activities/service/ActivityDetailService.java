@@ -56,7 +56,8 @@ public class ActivityDetailService {
         log.info("Successfully processed activity ID: {}", activityId);
 
         // Publish activity processed to Kafka
-        kafkaProducerService.publishActivityProcessed(activity.getId(), activity.getStartDate(),
+        kafkaProducerService.publishActivityProcessed(activity.getId(), userId,
+            activity.getStartDate(),
             compressedJson);
       } else {
         log.info("Activity ID {} already processed or streams are empty", activityId);

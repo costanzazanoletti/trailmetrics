@@ -114,7 +114,7 @@ class ActivityDetailServiceTest {
     // Then
     verify(activityStreamRepository, times(1)).saveAll(mockStreams);
     verify(kafkaProducerService, times(1)).publishActivityProcessed(eq(mockActivity.getId()),
-        eq(mockActivity.getStartDate()),
+        eq(userId), eq(mockActivity.getStartDate()),
         any(byte[].class));
     verify(kafkaRetryService, never()).scheduleActivityRetry(anyString(), anyLong(), anyInt(),
         any());
@@ -147,7 +147,8 @@ class ActivityDetailServiceTest {
     // Then
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
         eq(retryCount), eq(tooManyRequestsException));
-    verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), any(), any());
+    verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), anyString(), any(),
+        any());
   }
 
   @Test
@@ -165,7 +166,8 @@ class ActivityDetailServiceTest {
     // Then
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
         eq(retryCount), eq(null));
-    verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), any(), any());
+    verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), anyString(), any(),
+        any());
   }
 
   @Test
@@ -193,6 +195,7 @@ class ActivityDetailServiceTest {
     // Then
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
         eq(retryCount), eq(null));
-    verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), any(), any());
+    verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), anyString(), any(),
+        any());
   }
 }

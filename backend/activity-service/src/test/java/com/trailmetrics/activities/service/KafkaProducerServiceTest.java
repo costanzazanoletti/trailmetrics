@@ -87,6 +87,7 @@ class KafkaProducerServiceTest {
   void shouldSendActivityProcessedEvent() throws Exception {
     // Given
     Long activityId = 456L;
+    String userId = "123";
     Instant startDate = Instant.now().minusSeconds(999999999L);
 
     String sampleJson = """
@@ -108,7 +109,7 @@ class KafkaProducerServiceTest {
     byte[] compressedJson = compressJson(sampleJson);
 
     // When
-    kafkaProducerService.publishActivityProcessed(activityId, startDate, compressedJson);
+    kafkaProducerService.publishActivityProcessed(activityId, userId, startDate, compressedJson);
 
     // Then
     ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(
@@ -119,6 +120,7 @@ class KafkaProducerServiceTest {
 
     ActivityProcessedMessage capturedMessage = messageCaptor.getValue();
     assertEquals(activityId, capturedMessage.getActivityId());
+    assertEquals(userId, capturedMessage.getUserId());
     assertNotNull(capturedMessage.getProcessedAt());
     assertEquals(compressedJson.length, capturedMessage.getCompressedStream().length);
   }

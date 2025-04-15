@@ -136,6 +136,7 @@ This document defines the Kafka topics and messages used in the application for 
   ```json
   {
     "activityId": 13484124195,
+    "userId": 12345,
     "startDate": 1740680048.270867,
     "processedAt": 1740680048.270867000,
     "compressedStream": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
@@ -154,6 +155,7 @@ This document defines the Kafka topics and messages used in the application for 
 ```json
 {
   "activityId": 13484124195,
+  "userId": 12345,
   "startDate": 1740680048.270867,
   "processedAt": 1740680048.270867,
   "compressedSegments": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"

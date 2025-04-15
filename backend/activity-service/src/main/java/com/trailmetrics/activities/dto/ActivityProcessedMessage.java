@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 public class ActivityProcessedMessage {
 
   private Long activityId;
+  private String userId;
   private Instant startDate;
   private Instant processedAt;
   private byte[] compressedStream;
