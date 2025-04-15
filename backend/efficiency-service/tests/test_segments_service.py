@@ -35,9 +35,10 @@ def load_sample_segments():
     mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
     data = mock_message.value if isinstance(mock_message.value, dict) else json.loads(mock_message.value)
     activity_id = data.get("activityId")
+    user_id = data.get("userId")
     compressed_segments = data.get("compressedSegments")
 
-    return activity_id, compressed_segments
+    return activity_id, user_id, compressed_segments
 
 def test_process_segments(load_sample_segments, set_up):
     """
@@ -45,7 +46,7 @@ def test_process_segments(load_sample_segments, set_up):
     Stores data into the test Database.
     """
     # Load sample data
-    activity_id, compressed_segments = load_sample_segments
+    activity_id, user_id, compressed_segments = load_sample_segments
 
     # Use SQLAlchemy connection
     with engine.connect() as connection:
@@ -56,7 +57,7 @@ def test_process_segments(load_sample_segments, set_up):
         ).scalar_one()
 
         # Call process_segments (assuming it now uses the engine)
-        process_segments(activity_id, compressed_segments, engine=engine)
+        process_segments(activity_id, user_id, compressed_segments, engine=engine)
 
         # Check the number of segments after execution
         final_count = connection.execute(
@@ -79,7 +80,7 @@ def test_process_segments_with_database_exception(load_sample_segments, set_up):
     """Tests that process_segments_message doesn't store any data when it handles a DatabaseException."""
     with patch('app.segments_service.segments_batch_insert_and_update_status') as mock_store_segments:
         # Load sample data
-        activity_id, compressed_segments = load_sample_segments
+        activity_id, user_id, compressed_segments = load_sample_segments
 
         # Configure mock to raise a DatabaseException
         mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting segments.")
@@ -93,7 +94,7 @@ def test_process_segments_with_database_exception(load_sample_segments, set_up):
             ).scalar_one()
 
             # Call process_segments (assuming it now uses the engine and handles exceptions)
-            process_segments(activity_id, compressed_segments, engine=engine)
+            process_segments(activity_id, user_id, compressed_segments, engine=engine)
 
             # Check the number of segments after execution
             final_count = connection.execute(
@@ -109,12 +110,12 @@ def test_process_segments_for_existing_activity(load_sample_segments, set_up):
     Tests process_segments_message when the activity has already been processed.
     """
     # Load sample data
-    activity_id, compressed_segments = load_sample_segments
+    activity_id, user_id, compressed_segments = load_sample_segments
 
     # Use SQLAlchemy connection
     with engine.connect() as connection:
         # Call process_segments (first time)
-        process_segments(activity_id, compressed_segments, engine=engine)
+        process_segments(activity_id, user_id, compressed_segments, engine=engine)
 
         # Check the number of segments before the second call
         initial_count = connection.execute(
@@ -123,7 +124,7 @@ def test_process_segments_for_existing_activity(load_sample_segments, set_up):
         ).scalar_one()
 
         # Call process_segments a second time
-        process_segments(activity_id, compressed_segments, engine=engine)
+        process_segments(activity_id, user_id, compressed_segments, engine=engine)
 
         # Check the number of segments after the second call
         final_count = connection.execute(

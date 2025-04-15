@@ -46,6 +46,7 @@ def process_segments_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        user_id = data.get("userId")
         compressed_segments = data.get("compressedSegments")
 
         if not activity_id or not compressed_segments:
@@ -53,7 +54,7 @@ def process_segments_message(message):
             return
             
         logger.info(f"Processing segments for activity {activity_id}")
-        process_segments(activity_id, compressed_segments, engine)
+        process_segments(activity_id, user_id, compressed_segments, engine)
 
     except Exception as e:
         logger.error(f"Error processing segments message: {e}")

@@ -93,12 +93,13 @@ def create_sample_data():
     }
 
     activity_id = 987
+    user_id = "123"
     group_id = ["1_2", "2_2"]
     compressed_weather_info = [dataframe_to_compressed_json(pd.DataFrame(weather_data_1)),
                                dataframe_to_compressed_json(pd.DataFrame(weather_data_2))]
     compressed_terrain_info = dataframe_to_compressed_json(pd.DataFrame(terrain_data))
     compressed_segments_info = dataframe_to_compressed_json(pd.DataFrame(segments_data))
-    return activity_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info
+    return activity_id, user_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info
 
 
 def test_process_segments_terrain_weather(set_up, create_sample_data):
@@ -106,7 +107,7 @@ def test_process_segments_terrain_weather(set_up, create_sample_data):
     Tests processing the same activity.
     Stores data into the test Database and updates the activity_status_tracker.
     """
-    activity_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info = create_sample_data
+    activity_id, user_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info = create_sample_data
 
     # Check the number of segments before execution
     with engine.connect() as connection:
@@ -116,7 +117,7 @@ def test_process_segments_terrain_weather(set_up, create_sample_data):
         ).scalar_one()
 
         # Call all services
-        process_segments(activity_id, compressed_segments_info, engine=engine)
+        process_segments(activity_id, user_id, compressed_segments_info, engine=engine)
         process_terrain_info(activity_id, compressed_terrain_info, engine=engine)  
         process_weather_info(activity_id, group_id[0], compressed_weather_info[0], engine=engine)  
         process_weather_info(activity_id, group_id[1], compressed_weather_info[1], engine=engine)  
@@ -149,7 +150,7 @@ def test_process_weather_segments_terrain_weather(set_up, create_sample_data):
     Tests processing the same activity with a different order of service calls.
     Stores data into the test Database and updates the activity_status_tracker.
     """
-    activity_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info = create_sample_data
+    activity_id, user_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info = create_sample_data
 
     # Check the number of segments before execution
     with engine.connect() as connection:
@@ -160,7 +161,7 @@ def test_process_weather_segments_terrain_weather(set_up, create_sample_data):
 
         # Call all services in a different order
         process_weather_info(activity_id, group_id[0], compressed_weather_info[0], engine=engine) 
-        process_segments(activity_id, compressed_segments_info, engine=engine)
+        process_segments(activity_id, user_id, compressed_segments_info, engine=engine)
         process_terrain_info(activity_id, compressed_terrain_info, engine=engine)
         process_weather_info(activity_id, group_id[1], compressed_weather_info[1], engine=engine) 
 

@@ -73,19 +73,20 @@ def delete_all_data(engine):
 
 def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
     """Batch insert segments and update activity status in transaction using SQLAlchemy."""
+    
     try:
         with engine.begin() as connection:
             upsert_query = text("""
-                INSERT INTO segments (segment_id,activity_id, start_distance, end_distance, segment_length,
+                INSERT INTO segments (segment_id, activity_id,  start_distance, end_distance, segment_length,
                     avg_gradient, avg_cadence, movement_type, "type", grade_category,
                     start_lat, start_lng, end_lat, end_lng, start_altitude, end_altitude,
                     start_time, end_time, start_heartrate, end_heartrate, avg_heartrate,
-                    avg_speed, elevation_gain, hr_drift, efficiency_score)
+                    avg_speed, elevation_gain, hr_drift, efficiency_score, user_id)
                 VALUES (:segment_id, :activity_id, :start_distance, :end_distance, :segment_length,
                         :avg_gradient, :avg_cadence, :movement_type, :type, :grade_category,
                         :start_lat, :start_lng, :end_lat, :end_lng, :start_altitude, :end_altitude,
                         :start_time, :end_time, :start_heartrate, :end_heartrate, :avg_heartrate,
-                        :avg_speed, :elevation_gain, :hr_drift, :efficiency_score)
+                        :avg_speed, :elevation_gain, :hr_drift, :efficiency_score, :user_id)
                 ON CONFLICT (segment_id)
                 DO UPDATE
                 SET
@@ -113,6 +114,7 @@ def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
                     elevation_gain = EXCLUDED.elevation_gain,
                     hr_drift = EXCLUDED.hr_drift,
                     efficiency_score = EXCLUDED.efficiency_score,
+                    user_id = EXCLUDED.user_id,                    
                     last_updated = CURRENT_TIMESTAMP
             """)
             segments_data = segments_df.to_dict(orient='records')

@@ -68,6 +68,7 @@ CREATE INDEX idx_activity_sync_log_timestamp ON activity_sync_log (sync_timestam
 CREATE TABLE segments (
     segment_id VARCHAR(50) PRIMARY KEY,
     activity_id BIGINT NOT NULL,
+    user_id VARCHAR(255),
     start_distance INTEGER,
     end_distance INTEGER,
     segment_length INTEGER,
