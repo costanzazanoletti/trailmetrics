@@ -26,10 +26,11 @@ def sample_segments_df():
 def test_prepare_segmentation_message(sample_segments_df):
     """Test if the message is generated with compressed segments."""
     activity_id = 123456
+    user_id = "123456"
     start_date = 1741183458.000000000
     processed_at = 1741769162.4793878
 
-    message = prepare_segmentation_message(activity_id, sample_segments_df, processed_at, start_date)
+    message = prepare_segmentation_message(activity_id, user_id, sample_segments_df, processed_at, start_date)
 
     # Check the required fields
     assert "activityId" in message

@@ -43,6 +43,7 @@ def process_message(message):
             data = message.value  
 
         activity_id = data.get("activityId")
+        user_id = data.get("userid")
         start_date = data.get("startDate")
         processed_at = data.get("processedAt")
         compressed_stream = data.get("compressedStream")
@@ -65,7 +66,7 @@ def process_message(message):
             logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
             
             # Produce Kafka message of segmentation output
-            send_segmentation_output(activity_id, segments_df, processed_at, start_date)
+            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date)
         else:
             logger.warning(f"Empty segments for Activity ID: {activity_id}")
     except Exception as e:
