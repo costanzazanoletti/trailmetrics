@@ -3,7 +3,6 @@ package com.trailmetrics.activities.service;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -52,8 +51,6 @@ class ActivitySyncServiceTest {
   @Mock
   private KafkaRetryService kafkaRetryService;
 
-  @Mock
-  private ActivitySyncLogService activitySyncLogService;
 
   @BeforeEach
   void setUp() {
@@ -72,7 +69,7 @@ class ActivitySyncServiceTest {
   }
 
   @Test
-  void shouldSyncAndSaveActivitiesAndLogThem() {
+  void shouldSyncAndSaveActivities() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -99,12 +96,11 @@ class ActivitySyncServiceTest {
 
     verify(activityRepository, times(2)).save(any(Activity.class));
     verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(), eq(userId));
-    verify(activitySyncLogService, times(1))
-        .recordSyncLog(eq(123L), eq(Set.of(1L, 2L)), eq(Set.of()));
+    verify(kafkaProducerService, never()).publishActivitiesDeleted(anyString(), any());
   }
 
   @Test
-  void shouldHandleActivityDeletionAndLogThem() {
+  void shouldHandleActivityDeletion() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -135,12 +131,11 @@ class ActivitySyncServiceTest {
     verify(activityRepository, times(1)).deleteByIdIn(eq(new HashSet<>(Set.of(3L))));
     verify(activityRepository, times(2)).save(any(Activity.class));
     verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(), eq(userId));
-    verify(activitySyncLogService, times(1))
-        .recordSyncLog(eq(123L), eq(Set.of(1L, 2L)), eq(Set.of(3L)));
+    verify(kafkaProducerService, times(1)).publishActivitiesDeleted(eq(userId), eq(Set.of(3L)));
   }
 
   @Test
-  void shouldNotDeleteExistingActivitiesAndLogNoChanges() {
+  void shouldNotDeleteExistingActivities() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -171,12 +166,11 @@ class ActivitySyncServiceTest {
     verify(activityRepository, never()).deleteByIdIn(any());
     verify(activityRepository, times(2)).save(any(Activity.class));
     verify(kafkaProducerService, times(2)).publishActivityImport(anyLong(), eq(userId));
-    verify(activitySyncLogService, times(1))
-        .recordSyncLog(eq(123L), eq(Set.of(1L, 2L)), eq(Set.of()));
+    verify(kafkaProducerService, never()).publishActivitiesDeleted(anyString(), any());
   }
 
   @Test
-  void shouldHandleEmptyActivityListAndLogNoChanges() {
+  void shouldHandleEmptyActivityList() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -187,12 +181,11 @@ class ActivitySyncServiceTest {
 
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-    verify(activitySyncLogService, times(1))
-        .recordSyncLog(eq(123L), eq(Set.of()), eq(Set.of()));
+    verify(kafkaProducerService, never()).publishActivitiesDeleted(anyString(), any());
   }
 
   @Test
-  void shouldNotSaveExistingActivitiesAndLogNoChanges() {
+  void shouldNotSaveExistingActivities() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -210,12 +203,11 @@ class ActivitySyncServiceTest {
 
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-    verify(activitySyncLogService, times(1))
-        .recordSyncLog(eq(123L), eq(Set.of()), eq(Set.of()));
+    verify(kafkaProducerService, never()).publishActivitiesDeleted(anyString(), any());
   }
 
   @Test
-  void shouldSkipActivitiesWithInvalidSportTypeAndLogNoChanges() {
+  void shouldSkipActivitiesWithInvalidSportType() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -231,12 +223,11 @@ class ActivitySyncServiceTest {
 
     verify(activityRepository, never()).save(any(Activity.class));
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
-    verify(activitySyncLogService, times(1))
-        .recordSyncLog(eq(123L), eq(Set.of()), eq(Set.of()));
+    verify(kafkaProducerService, never()).publishActivitiesDeleted(anyString(), any());
   }
 
   @Test
-  void shouldHandleRateLimitAndRetryFullSyncAndNotLogChanges() {
+  void shouldHandleRateLimitAndRetryFullSync() {
     String userId = "123";
     String accessToken = "mockAccessToken";
 
@@ -256,6 +247,7 @@ class ActivitySyncServiceTest {
         any());
     verify(kafkaProducerService, never()).publishActivityImport(anyLong(), anyString());
     verify(activityRepository, never()).save(any(Activity.class));
-    verify(activitySyncLogService, never()).recordSyncLog(anyLong(), anySet(), anySet());
+    verify(kafkaProducerService, never()).publishActivitiesDeleted(anyString(), any());
+    
   }
 }

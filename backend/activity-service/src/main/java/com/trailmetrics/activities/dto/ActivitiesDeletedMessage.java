@@ -9,10 +9,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class UserActivityChangesMessage {
+public class ActivitiesDeletedMessage {
 
-  private Long userId;
+  private String userId;
   private Instant checkedAt;
-  private Set<Long> newActivityIds;
   private Set<Long> deletedActivityIds;
 }

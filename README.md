@@ -217,9 +217,9 @@ This document defines the Kafka topics and messages used in the application for 
 }
 ```
 
-### `user-activities-changed-queue`
+### `activities-deleted-queue`
 
-**Description:** There are changes in a user's activities 
+**Description:** List of deleted activities
 **Producer Service:** `activity-service-group`
 **Consumer Service:** `efficiency-service`
 **Consumer Group:** `efficiency-service-group`  
@@ -230,7 +230,6 @@ This document defines the Kafka topics and messages used in the application for 
 {
   "userId": "28658549",
   "checkedAt": 1740680052.987654,
-  "newActivityIds": [1234, 5678],
   "deletedActivityIds": [4321, 8765]
 }
 ```

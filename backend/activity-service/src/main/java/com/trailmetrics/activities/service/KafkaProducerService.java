@@ -1,8 +1,8 @@
 package com.trailmetrics.activities.service;
 
+import com.trailmetrics.activities.dto.ActivitiesDeletedMessage;
 import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
-import com.trailmetrics.activities.dto.UserActivityChangesMessage;
 import java.time.Instant;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,10 @@ public class KafkaProducerService {
 
   private final KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
   private final KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
-  private final KafkaTemplate<String, UserActivityChangesMessage> kafkaUserActivityChangesTemplate;
+  private final KafkaTemplate<String, ActivitiesDeletedMessage> kafkaUserActivityChangesTemplate;
   private static final String ACTIVITY_PROCESSED_TOPIC = "activity-stream-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
-  private static final String USER_ACTIVITY_CHANGES_TOPIC = "user-activities-changed-queue";
+  private static final String ACTIVITIES_DELETED_TOPIC = "activities-deleted-queue";
 
 
   public void publishActivityImport(Long activityId, String userId) {
@@ -41,15 +41,15 @@ public class KafkaProducerService {
         ACTIVITY_PROCESSED_TOPIC);
   }
 
-  public void publishUserActivityChanges(Long userId, Set<Long> newActivityIds,
+  public void publishActivitiesDeleted(String userId,
       Set<Long> deletedActivityIds) {
-    UserActivityChangesMessage message = new UserActivityChangesMessage(userId, Instant.now(),
-        newActivityIds, deletedActivityIds);
+    ActivitiesDeletedMessage message = new ActivitiesDeletedMessage(userId, Instant.now(),
+        deletedActivityIds);
 
-    kafkaUserActivityChangesTemplate.send(USER_ACTIVITY_CHANGES_TOPIC, String.valueOf(userId),
+    kafkaUserActivityChangesTemplate.send(ACTIVITIES_DELETED_TOPIC, String.valueOf(userId),
         message);
-    log.info("Published activity changes to Kafka {} for user {}: new={}, deleted={}",
-        USER_ACTIVITY_CHANGES_TOPIC,
-        userId, newActivityIds, deletedActivityIds);
+    log.info("Published deleted activities to Kafka {} for user {}: {}",
+        ACTIVITIES_DELETED_TOPIC,
+        userId, deletedActivityIds);
   }
 }

@@ -30,7 +30,6 @@ public class ActivitySyncService {
   private final ActivityRepository activityRepository;
   private final KafkaProducerService kafkaProducerService;
   private final KafkaRetryService kafkaRetryService;
-  private final ActivitySyncLogService activitySyncLogService;
 
 
   @Value("${strava.api.max-per-page}")
@@ -62,7 +61,6 @@ public class ActivitySyncService {
 
     Set<Long> existingActivityIds = activityRepository.findActivityIdsByAthleteId(userId);
     Set<Long> currentActivityIds = new HashSet<>();
-    Set<Long> newActivitiesThisSync = new HashSet<>();
 
     while (hasMore) {
       try {
@@ -93,7 +91,6 @@ public class ActivitySyncService {
             // Send Kafka message for activity processing
             log.info("Queuing activity ID {} for background sync", activity.getId());
             kafkaProducerService.publishActivityImport(activity.getId(), userIdString);
-            newActivitiesThisSync.add(activity.getId());
           }
 
           page++;
@@ -109,10 +106,13 @@ public class ActivitySyncService {
     // Identify activities that were in DB but not in the sync
     Set<Long> activitiesToDelete = new HashSet<>(existingActivityIds);
     activitiesToDelete.removeAll(currentActivityIds);
-    deleteRemovedActivities(activitiesToDelete, userId);
+    if (!activitiesToDelete.isEmpty()) {
+      // Remove activities from database
+      deleteRemovedActivities(activitiesToDelete, userId);
+      // publish Kafka message
+      kafkaProducerService.publishActivitiesDeleted(String.valueOf(userId), activitiesToDelete);
+    }
 
-    // Record the sync log
-    activitySyncLogService.recordSyncLog(userId, newActivitiesThisSync, activitiesToDelete);
   }
 
 

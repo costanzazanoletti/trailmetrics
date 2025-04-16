@@ -1,9 +1,9 @@
 package com.trailmetrics.activities.config;
 
+import com.trailmetrics.activities.dto.ActivitiesDeletedMessage;
 import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivityRetryMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
-import com.trailmetrics.activities.dto.UserActivityChangesMessage;
 import com.trailmetrics.activities.dto.UserSyncRetryMessage;
 import java.util.HashMap;
 import java.util.Map;
@@ -119,11 +119,11 @@ public class KafkaConfig {
   }
 
   /**
-   * Creates a strongly-typed KafkaTemplate for UserActivityChangesMessage.
+   * Creates a strongly-typed KafkaTemplate for ActivitiesDeletedMessage.
    */
   @Bean
-  public KafkaTemplate<String, UserActivityChangesMessage> userActivityChangesKafkaTemplate() {
-    ProducerFactory<String, UserActivityChangesMessage> factory =
+  public KafkaTemplate<String, ActivitiesDeletedMessage> userActivityChangesKafkaTemplate() {
+    ProducerFactory<String, ActivitiesDeletedMessage> factory =
         new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
     return new KafkaTemplate<>(factory);
   }

@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
+import com.trailmetrics.activities.dto.ActivitiesDeletedMessage;
 import com.trailmetrics.activities.dto.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.ActivitySyncMessage;
-import com.trailmetrics.activities.dto.UserActivityChangesMessage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -27,14 +27,14 @@ class KafkaProducerServiceTest {
 
   private static final String ACTIVITY_PROCESSED_TOPIC = "activity-stream-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
-  private static final String USER_ACTIVITY_CHANGES_TOPIC = "user-activities-changed-queue";
+  private static final String ACTIVITIES_DELETED_TOPIC = "activities-deleted-queue";
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private KafkaTemplate<String, UserActivityChangesMessage> kafkaUserActivityChangesTemplate;
+  private KafkaTemplate<String, ActivitiesDeletedMessage> kafkaUserActivityChangesTemplate;
 
 
   private byte[] compressJson(String json) throws Exception {
@@ -126,25 +126,23 @@ class KafkaProducerServiceTest {
   }
 
   @Test
-  void shouldPublishUserActivityChanges() {
+  void shouldSendActivityDeletedEvent() {
     // Given
-    Long userId = 1234L;
-    Set<Long> newActivityIds = Set.of(1L, 2L);
+    String userId = "1234L";
     Set<Long> deletedActivityIds = Set.of(3L, 4L);
     //When
-    kafkaProducerService.publishUserActivityChanges(userId, newActivityIds, deletedActivityIds);
+    kafkaProducerService.publishActivitiesDeleted(userId, deletedActivityIds);
 
     // Then
-    ArgumentCaptor<UserActivityChangesMessage> messageCaptor = ArgumentCaptor.forClass(
-        UserActivityChangesMessage.class);
-    verify(kafkaUserActivityChangesTemplate).send(eq(USER_ACTIVITY_CHANGES_TOPIC),
-        eq(String.valueOf(userId)),
+    ArgumentCaptor<ActivitiesDeletedMessage> messageCaptor = ArgumentCaptor.forClass(
+        ActivitiesDeletedMessage.class);
+    verify(kafkaUserActivityChangesTemplate).send(eq(ACTIVITIES_DELETED_TOPIC),
+        eq(userId),
         messageCaptor.capture());
 
-    UserActivityChangesMessage capturedMessage = messageCaptor.getValue();
+    ActivitiesDeletedMessage capturedMessage = messageCaptor.getValue();
     assertEquals(userId, capturedMessage.getUserId());
     assertNotNull(capturedMessage.getCheckedAt());
-    assertEquals(newActivityIds, capturedMessage.getNewActivityIds());
     assertEquals(deletedActivityIds, capturedMessage.getDeletedActivityIds());
   }
 }
