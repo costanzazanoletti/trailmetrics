@@ -3,7 +3,12 @@ import logging
 import threading
 import sys
 import signal
-from app.kafka_consumer import start_kafka_segments_consumer, start_kafka_terrain_consumer, start_kafka_weather_consumer
+from app.kafka_consumer import (
+    start_kafka_segments_consumer, 
+    start_kafka_terrain_consumer, 
+    start_kafka_weather_consumer, 
+    start_kafka_deleted_activities_consumer
+)
 
 logger = logging.getLogger("app")
 logger.info("Efficiency service started successfully")
@@ -16,17 +21,20 @@ def start_consumers():
     segment_consumer_thread = threading.Thread(target=start_kafka_segments_consumer, args=(shutdown_event,))
     terrain_consumer_thread = threading.Thread(target=start_kafka_terrain_consumer, args=(shutdown_event,))
     weather_consumer_thread = threading.Thread(target=start_kafka_weather_consumer, args=(shutdown_event,))
+    deletion_consumer_thread = threading.Thread(target=start_kafka_deleted_activities_consumer, args=(shutdown_event,))
     
     # Start all consumer threads
     segment_consumer_thread.start()
     terrain_consumer_thread.start()
     weather_consumer_thread.start()
+    deletion_consumer_thread.start()
 
     # Wait for all threads to finish
     try:
         segment_consumer_thread.join()
         terrain_consumer_thread.join()
         weather_consumer_thread.join()
+        deletion_consumer_thread.join()
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received. Shutting down...")
         graceful_shutdown(None, None)

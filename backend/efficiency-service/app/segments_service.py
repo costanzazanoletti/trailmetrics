@@ -7,7 +7,7 @@ import numpy as np
 import os
 from dotenv import load_dotenv
 from app.exceptions import DatabaseException
-from database import segments_batch_insert_and_update_status, engine
+from database import segments_batch_insert_and_update_status, delete_all_data_by_activity_ids
 from app.utilities import parse_compressed_data
 
 logger = logging.getLogger("app")
@@ -65,3 +65,9 @@ def calculate_metrics(segment):
     segment["hr_drift"] = (segment["end_heartrate"] - segment["start_heartrate"])/segment["start_heartrate"]
     return segment
 
+def process_deleted_activities(user_id, deleted_activity_ids):
+    try:
+        delete_all_data_by_activity_ids(deleted_activity_ids)
+        logger.info(f"Deleted all data for activity ids {deleted_activity_ids} of user {user_id}")
+    except DatabaseException as e:
+        logger.error(f"Unable to delete data for activity ids {deleted_activity_ids}: {e}")

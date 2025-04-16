@@ -7,20 +7,14 @@ from unittest.mock import Mock, patch
 import base64
 from datetime import datetime, timezone
 from sqlalchemy import text
-from app.segments_service import process_segments, calculate_metrics, compute_efficiency_score
+from app.segments_service import process_segments, calculate_metrics, compute_efficiency_score, process_deleted_activities
 from app.exceptions import DatabaseException
-from database import engine 
+from database import engine, execute_sql, delete_all_data, fetch_all_sql, fetch_one_sql  
 
 @pytest.fixture
 def set_up(autouse=True):
     print("\nTEST SET UP: Clear all data from database\n")
-    with engine.connect() as connection:
-        connection.execute(text("DELETE FROM segments"))
-        connection.execute(text("DELETE FROM activity_status_tracker"))
-        connection.execute(text("DELETE FROM weather_data_progress"))
-        connection.execute(text("DELETE FROM segment_similarity"))
-        connection.commit()
-
+    delete_all_data(engine)
 
 @pytest.fixture
 def load_sample_segments():
@@ -179,3 +173,51 @@ def test_compute_efficiency_score():
     result_df = compute_efficiency_score(df, s, k, m)
 
     print(result_df)
+
+def insert_test_data(activity_ids):
+    """Helper function to insert activity data"""
+    with engine.connect() as connection:
+        for activity_id in activity_ids:
+            execute_sql(connection, "INSERT INTO segments (activity_id, segment_id) VALUES (:activity_id, :segment_id)", {"activity_id": activity_id, "segment_id": (str(activity_id) + "-1")})
+            execute_sql(connection, "INSERT INTO segments (activity_id, segment_id) VALUES (:activity_id, :segment_id)", {"activity_id": activity_id, "segment_id": (str(activity_id) + "-2")})
+                       
+            execute_sql(connection, """
+                INSERT INTO segment_similarity (segment_id_1, segment_id_2, similarity_score)
+                VALUES (
+                    (SELECT segment_id FROM segments WHERE activity_id = :activity_id LIMIT 1),
+                    (SELECT segment_id FROM segments WHERE activity_id = :activity_id ORDER BY segment_id DESC LIMIT 1),
+                    0.8
+                )
+            """, {"activity_id": activity_id})
+            execute_sql(connection, "INSERT INTO activity_status_tracker (activity_id) VALUES (:activity_id)", {"activity_id": activity_id})
+            execute_sql(connection, "INSERT INTO weather_data_progress (activity_id, group_id, total_groups) VALUES (:activity_id, :group_id, :total_groups)", {"activity_id": activity_id, "group_id": "1_1", "total_groups": 1})
+        connection.commit()
+
+def test_success_process_deleted_activities(set_up):
+    """
+    Tests process_deleted_activities when the activity has already been processed.
+    """
+    # Prepare test data
+    user_id = 123
+    deleted_activity_ids = [100, 200]
+    insert_test_data(deleted_activity_ids)
+
+    # Call the function
+    process_deleted_activities(user_id, deleted_activity_ids)
+
+    # Assertions
+    with engine.connect() as connection:
+            segment_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM segments WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
+            similarity_count = fetch_one_sql(connection, """
+                SELECT COUNT(*) FROM segment_similarity
+                WHERE segment_id_1 IN (SELECT segment_id FROM segments WHERE activity_id IN :ids)
+                OR segment_id_2 IN (SELECT segment_id FROM segments WHERE activity_id IN :ids)
+            """, {"ids": deleted_activity_ids})
+            status_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM activity_status_tracker WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
+            weather_progress_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM weather_data_progress WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
+
+            assert segment_count == 0
+            assert similarity_count == 0
+            assert status_count == 0
+            assert weather_progress_count == 0
+    

@@ -2,7 +2,7 @@ import os
 import sys
 import logging
 import logging_setup
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, bindparam
 from dotenv import load_dotenv
 from app.exceptions import DatabaseException
 from sqlalchemy.exc import SQLAlchemyError
@@ -20,63 +20,90 @@ if not DATABASE_URL:
 
 print(f"Database URL: {DATABASE_URL}")
 
+# Use parameter echo=True to log the queries
 engine = create_engine(DATABASE_URL)
 
-def get_db_engine():
-    """Returns the SQLAlchemy engine (connection is handled within the function)."""
-    return engine
-
-def execute_sql(query, params=None):
-    """Helper function to execute SQL using SQLAlchemy."""
-    conn = engine.connect()
-    try:
-        conn.execute(text(query), params)
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        raise DatabaseException(f"Database error: {e}")
-    finally:
-        conn.close()
-
+# Helper functions to handle connection and transactions
 def execute_sql(connection, query, params=None):
-    """Helper function to execute SQL using SQLAlchemy with a provided connection."""
+    """Helper function to execute SQL using SQLAlchemy with a provided connection.
+    Automatically handles expanding bind parameters for lists (for use with IN clauses).
+    """
     try:
-        connection.execute(text(query), params)
+        stmt = text(query) 
+        if params:
+            for key, value in params.items():
+                if isinstance(value, (list, tuple)):
+                    stmt = stmt.bindparams(bindparam(key, expanding=True))
+        connection.execute(stmt, params)
     except Exception as e:
         raise DatabaseException(f"Database error: {e}")
 
 def fetch_one_sql(connection, query, params=None):
     """Helper function to fetch one result using SQLAlchemy with a provided connection."""
     try:
-        result = connection.execute(text(query), params).fetchone()
-        return result
+        stmt = text(query)
+        if params:
+            for key, value in params.items():
+                if isinstance(value, (list, tuple)):
+                    stmt = stmt.bindparams(bindparam(key, expanding=True)) 
+        result = connection.execute(stmt, params).fetchone()
+        return result[0] if result else None
     except Exception as e:
         raise DatabaseException(f"Database error: {e}")
 
 def fetch_all_sql(connection, query, params=None):
     """Helper function to fetch all results using SQLAlchemy with a provided connection."""
     try:
-        result = connection.execute(text(query), params).fetchall()
+        stmt = text(query)
+        if params:
+            for key, value in params.items():
+                if isinstance(value, (list, tuple)):
+                    stmt = stmt.bindparams(bindparam(key, expanding=True))
+        result = connection.execute(stmt, params).fetchall()
         return result
     except Exception as e:
         raise DatabaseException(f"Database error: {e}")
 
+# Custom functions
 def delete_all_data(engine):
     """Delete all segments and activity_status_tracker using SQLAlchemy."""
-    with engine.begin() as connection:
-        query_segments = "DELETE FROM segments WHERE activity_id IS NOT NULL"
-        query_status = "DELETE FROM activity_status_tracker WHERE activity_id IS NOT NULL"
-        query_weather_progress = "DELETE FROM weather_data_progress WHERE activity_id IS NOT NULL"
-        execute_sql(connection, query_segments)
-        execute_sql(connection, query_status)
-        execute_sql(connection, query_weather_progress)
+    try:
+        with engine.begin() as connection:
+            query_similarity = "DELETE FROM segment_similarity WHERE segment_id_1 IS NOT NULL"
+            query_segments = "DELETE FROM segments WHERE activity_id IS NOT NULL"
+            query_status = "DELETE FROM activity_status_tracker WHERE activity_id IS NOT NULL"
+            query_weather_progress = "DELETE FROM weather_data_progress WHERE activity_id IS NOT NULL"
+            execute_sql(connection, query_similarity)
+            execute_sql(connection, query_segments)
+            execute_sql(connection, query_status)
+            execute_sql(connection, query_weather_progress)
+    except SQLAlchemyError as e:
+        raise DatabaseException(f"Database error: {e}")
+    
+def delete_all_data_by_activity_ids(activity_ids, engine=engine):
+    """Delete all segments and activity_status_tracker and similarity data."""
+    try:
+        with engine.begin() as connection:
+            query_similarity = """
+                                DELETE FROM segment_similarity
+                                WHERE segment_id_1 IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
+                                OR segment_id_2 IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
+                            """
+            query_segments = "DELETE FROM segments WHERE activity_id in :activity_ids"
+            query_status = "DELETE FROM activity_status_tracker WHERE activity_id in :activity_ids"
+            query_weather_progress = "DELETE FROM weather_data_progress WHERE activity_id in :activity_ids"
+            execute_sql(connection, query_similarity, {"activity_ids": activity_ids})
+            execute_sql(connection, query_segments, {"activity_ids": activity_ids})
+            execute_sql(connection, query_status, {"activity_ids": activity_ids})
+            execute_sql(connection, query_weather_progress, {"activity_ids": activity_ids})
+    except SQLAlchemyError as e:
+        raise DatabaseException(f"Database error: {e}")
 
 def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
     """Batch insert segments and update activity status in transaction using SQLAlchemy."""
-    
     try:
         with engine.begin() as connection:
-            upsert_query = text("""
+            query = text("""
                 INSERT INTO segments (segment_id, activity_id,  start_distance, end_distance, segment_length,
                     avg_gradient, avg_cadence, movement_type, "type", grade_category,
                     start_lat, start_lng, end_lat, end_lng, start_altitude, end_altitude,
@@ -118,7 +145,7 @@ def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
                     last_updated = CURRENT_TIMESTAMP
             """)
             segments_data = segments_df.to_dict(orient='records')
-            connection.execute(upsert_query, segments_data)
+            connection.execute(query, segments_data)
             logger.info(f"Executed segments batch store for activity {activity_id}")
 
             update_status_query = text("""
@@ -132,17 +159,16 @@ def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
             """)
             connection.execute(update_status_query, {"activity_id": activity_id})
             logger.info(f"Updated segment status for activity {activity_id}")
-            connection.commit()  # Commit within the transaction context
+            
     except SQLAlchemyError as e:
         connection.rollback()
         raise DatabaseException(f"An error occurred: {e}")
-
 
 def terrain_batch_insert_and_update_status(segments_df, activity_id, engine):
     """Batch insert segment terrain info and update activity status in transaction using SQLAlchemy."""
     try:
         with engine.begin() as connection:  # Use context manager for transaction
-            upsert_query = text("""
+            query = text("""
                 INSERT INTO segments (segment_id, road_type, surface_type, activity_id)
                 VALUES (:segment_id, :highway, :surface, :activity_id)
                 ON CONFLICT (segment_id)
@@ -157,7 +183,8 @@ def terrain_batch_insert_and_update_status(segments_df, activity_id, engine):
             segments_data = segments_df[['segment_id', 'highway', 'surface']].to_dict(orient='records')
             for row in segments_data:
                 row['activity_id'] = activity_id
-                connection.execute(upsert_query, row)
+                
+            connection.execute(query, segments_data)
 
             logger.info(f"Executed segment terrain info batch store for activity {activity_id}")
 
@@ -185,7 +212,7 @@ def weather_batch_insert_and_update_status(weather_df, activity_id, group_id, to
     try:
         with engine.begin() as connection:
             # Insert or update weather data in segments table
-            upsert_weather_query = text("""
+            query = text("""
                 INSERT INTO segments (segment_id, temperature, feels_like, humidity, wind,
                                       weather_id, weather_main, weather_description, activity_id)
                 VALUES (:segment_id, :temp, :feels_like, :humidity, :wind,
@@ -207,7 +234,8 @@ def weather_batch_insert_and_update_status(weather_df, activity_id, group_id, to
             weather_data_records = weather_df.to_dict(orient='records')
             for record in weather_data_records:
                 record['activity_id'] = activity_id
-                connection.execute(upsert_weather_query, record)
+                
+            connection.execute(query, weather_data_records)
 
             logger.info(f"Executed segment weather info batch store for activity {activity_id} group {group_id}")
 
@@ -252,28 +280,53 @@ def weather_batch_insert_and_update_status(weather_df, activity_id, group_id, to
         logger.error(f"Error saving weather data to database: {e}")
         raise DatabaseException(f"An error occurred while saving weather data: {e}")
 
-def save_similarity_matrix(similarity_data, engine):
+def save_similarity_matrix(connection, similarity_data):
     """
     Saves the computed similarity data to the segment_similarity table using SQLAlchemy.
     """
-    if similarity_data:
-        try:
-            with engine.connect() as connection: # This one is okay as it's a standalone operation
-                stmt = text("""
-                    INSERT INTO segment_similarity (segment_id_1, segment_id_2, similarity_score)
-                    VALUES (:segment_id_1, :segment_id_2, :similarity_score)
-                    ON CONFLICT (segment_id_1, segment_id_2) DO UPDATE
-                    SET similarity_score = EXCLUDED.similarity_score,
-                        calculated_at = DEFAULT
-                """)
-                connection.execute(
-                    stmt,
-                    similarity_data
-                )
-                connection.commit()
-            logger.info(f"Successfully saved {len(similarity_data)} similarity scores to the database.")
-        except Exception as e:
-            logger.error(f"Error saving similarity matrix to database: {e}")
-            raise DatabaseException(f"Error saving similarity matrix: {e}")
-    else:
-        logger.info("No similarity scores to save.")
+    query = """
+                INSERT INTO segment_similarity (segment_id_1, segment_id_2, similarity_score)
+                VALUES (:segment_id_1, :segment_id_2, :similarity_score)
+                ON CONFLICT (segment_id_1, segment_id_2) DO UPDATE
+                SET similarity_score = EXCLUDED.similarity_score,
+                    calculated_at = DEFAULT
+            """
+    execute_sql(connection, query, similarity_data)
+
+def get_user_segments(connection, user_id):
+    """
+    Retrieves all segments associated with a given user ID from the database and returns a Pandas DataFrame.
+    """
+    query = """
+                SELECT 
+                    segment_id, 
+                    activity_id, 
+                    grade_category,
+                    segment_length,        
+                    start_distance,       
+                    start_time,           
+                    start_altitude,       
+                    elevation_gain,       
+                    avg_gradient,    
+                    road_type,       
+                    surface_type,      
+                    temperature,         
+                    humidity,             
+                    wind,              
+                    weather_id
+                FROM segments
+                WHERE user_id = :user_id
+            """
+    return fetch_all_sql(connection, query, {"user_id": user_id})
+    
+def delete_similarity_by_user_segments(connection, user_id):
+    """
+    Deletes similarity scores from the segment_similarity table
+    where either segment_id_1 or segment_id_2 belongs to the given user's segments.
+    """
+    query = """
+                DELETE FROM segment_similarity
+                WHERE segment_id_1 IN (SELECT segment_id FROM segment WHERE user_id = :user_id)
+                   OR segment_id_2 IN (SELECT segment_id FROM segment WHERE user_id = :user_id)
+            """
+    execute_sql(connection, query, {"user_id": user_id})

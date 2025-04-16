@@ -6,7 +6,7 @@ import logging_setup
 import time
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
-from app.segments_service import process_segments
+from app.segments_service import process_segments, process_deleted_activities
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
 from database import engine
@@ -21,8 +21,9 @@ KAFKA_CONSUMER_GROUP = os.getenv("KAFKA_CONSUMER_GROUP")
 KAFKA_TOPIC_SEGMENTS = os.getenv("KAFKA_TOPIC_SEGMENTS")
 KAFKA_TOPIC_TERRAIN = os.getenv("KAFKA_TOPIC_TERRAIN")
 KAFKA_TOPIC_WEATHER = os.getenv("KAFKA_TOPIC_WEATHER")
+KAFKA_TOPIC_DELETED_ACTIVITIES = os.getenv("KAFKA_TOPIC_DELETED_ACTIVITIES")
 
-if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_SEGMENTS,KAFKA_TOPIC_TERRAIN,KAFKA_TOPIC_WEATHER]):
+if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_SEGMENTS,KAFKA_TOPIC_TERRAIN,KAFKA_TOPIC_WEATHER, KAFKA_TOPIC_DELETED_ACTIVITIES]):
     raise ValueError("Kafka environment variables are not set properly")
 
 
@@ -94,15 +95,33 @@ def process_weather_message(message):
     except Exception as e:
         logger.error(f"Error processing weather message: {e}")
 
+def process_deleted_activities_message(message):
+    """Processes a single Kafka message with deleted activity ids."""
+    try:
+        data = message.value if isinstance(message.value, dict) else json.loads(message.value)
+        user_id = data.get("userId")
+        checked_at = data.get("checkedAt")
+        deleted_activity_ids = data.get("deletedActivityIds")
+  
+        if not user_id or not deleted_activity_ids:
+            logger.warning("Received user activities changes message without valid 'userId' or deleted activity ids")
+            return
+            
+        logger.info(f"Processing {len(deleted_activity_ids)} deleted activities for user {user_id} checked at {checked_at}")
+        process_deleted_activities(user_id, deleted_activity_ids)
+
+    except Exception as e:
+        logger.error(f"Error processing deleted activities message: {e}")
+
 def start_kafka_segments_consumer(shutdown_event):
     """Starts the Kafka consumer for segmentation output."""
     consumer = create_kafka_consumer(KAFKA_TOPIC_SEGMENTS)
-    logger.info(f"Kafka Retry Consumer is listening on topic '{KAFKA_TOPIC_SEGMENTS}'...")
+    logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_SEGMENTS}'...")
     try:
         while not shutdown_event.is_set():
             for message in consumer:
                 process_segments_message(message)
-                #consumer.commit()
+                consumer.commit()
         logger.info("Shutting down Kafka segments consumer...")
     finally:
         consumer.close()
@@ -110,12 +129,12 @@ def start_kafka_segments_consumer(shutdown_event):
 def start_kafka_terrain_consumer(shutdown_event):
     """Starts the Kafka consumer for terrain output."""
     consumer = create_kafka_consumer(KAFKA_TOPIC_TERRAIN)
-    logger.info(f"Kafka Retry Consumer is listening on topic '{KAFKA_TOPIC_TERRAIN}'...")
+    logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_TERRAIN}'...")
     try:
         while not shutdown_event.is_set():
             for message in consumer:
                 process_terrain_message(message)
-                #consumer.commit()
+                consumer.commit()
         logger.info("Shutting down Kafka terrain consumer...")
     finally:
         consumer.close()
@@ -123,12 +142,25 @@ def start_kafka_terrain_consumer(shutdown_event):
 def start_kafka_weather_consumer(shutdown_event):
     """Starts the Kafka consumer for terrain output."""
     consumer = create_kafka_consumer(KAFKA_TOPIC_WEATHER)
-    logger.info(f"Kafka Retry Consumer is listening on topic '{KAFKA_TOPIC_WEATHER}'...")
+    logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_WEATHER}'...")
     try:
         while not shutdown_event.is_set():
             for message in consumer:
                 process_weather_message(message)
-                #consumer.commit()
+                consumer.commit()
         logger.info("Shutting down Kafka weather consumer...")
+    finally:
+        consumer.close()
+
+def start_kafka_deleted_activities_consumer(shutdown_event):
+    """Starts the Kafka consumer for deleted activities."""
+    consumer = create_kafka_consumer(KAFKA_TOPIC_DELETED_ACTIVITIES)
+    logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_DELETED_ACTIVITIES}'...")
+    try:
+        while not shutdown_event.is_set():
+            for message in consumer:
+                process_deleted_activities_message(message)
+                consumer.commit()
+        logger.info("Shutting down Kafka changes consumer...")
     finally:
         consumer.close()

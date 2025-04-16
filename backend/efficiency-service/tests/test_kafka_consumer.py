@@ -5,7 +5,12 @@ import pandas as pd
 from unittest.mock import Mock, patch
 import time
 from datetime import datetime, timezone
-from app.kafka_consumer import process_segments_message, process_terrain_message, process_weather_message
+from app.kafka_consumer import (
+    process_segments_message, 
+    process_terrain_message, 
+    process_weather_message, 
+    process_deleted_activities_message
+)
 
 
 @pytest.fixture
@@ -40,9 +45,17 @@ def test_terrain_message(load_test_message):
     mock_process_terrain.assert_called_once
 
 @pytest.mark.parametrize('load_test_message', ['mock_weather.json'], indirect=True)
-def test_terrain_message(load_test_message):
+def test_weather_message(load_test_message):
     """Tests process_weather_message with a real Kafka message."""
     with patch('app.kafka_consumer.process_weather_info') as mock_process_weather:
         process_weather_message(load_test_message)
     # Assertions
     mock_process_weather.assert_called_once
+
+@pytest.mark.parametrize('load_test_message', ['mock_deleted_activities.json'], indirect=True)
+def test_deleted_activities_message(load_test_message):
+    """Tests process_deleted_activities_message with a real Kafka message."""
+    with patch('app.kafka_consumer.process_deleted_activities') as mock_process_deleted:
+        process_deleted_activities_message(load_test_message)
+    # Assertions
+    mock_process_deleted.assert_called_once
