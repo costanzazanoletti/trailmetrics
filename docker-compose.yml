@@ -113,7 +113,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
       - AUTH_SERVICE_URL=http://auth-service:8080
       - AUTH_SERVICE_PUBLIC_KEY_URL=http://auth-service:8080/internal/public-key
-      - DB_URL=jdbc:postgresql://postgres:5432/activity_service
+      - DB_URL=jdbc:postgresql://postgres:5432/trailmetrics
       - FRONTEND_URL=http://localhost:3000
 
   segmentation-service:
@@ -144,7 +144,7 @@ services:
       - ./backend/efficiency-service/.env
     environment:
       - KAFKA_BROKER=broker:29092
-      - DATABASE_URL=postgresql://analytics_user:103QKa3O4kpDnZA@postgres:5432/analytics_service
+      - DATABASE_URL=postgresql://analytics_user:103QKa3O4kpDnZA@postgres:5432/trailmetrics
     command: ['python', 'app.py']
 
   terrain-service:
