@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from sqlalchemy import text
 from app.segments_service import process_segments, calculate_metrics, compute_efficiency_score, process_deleted_activities
 from app.exceptions import DatabaseException
-from database import engine, execute_sql, delete_all_data, fetch_all_sql, fetch_one_sql  
+from database import engine, execute_sql, delete_all_data, fetch_one_sql  
 
 @pytest.fixture
 def set_up(autouse=True):
@@ -216,8 +216,8 @@ def test_success_process_deleted_activities(set_up):
             status_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM activity_status_tracker WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
             weather_progress_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM weather_data_progress WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
 
-            assert segment_count == 0
-            assert similarity_count == 0
-            assert status_count == 0
-            assert weather_progress_count == 0
+            assert segment_count[0] == 0
+            assert similarity_count[0] == 0
+            assert status_count[0] == 0
+            assert weather_progress_count[0] == 0
     

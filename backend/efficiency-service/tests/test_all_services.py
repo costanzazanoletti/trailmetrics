@@ -10,6 +10,7 @@ from sqlalchemy import text
 from app.weather_service import process_weather_info
 from app.terrain_service import process_terrain_info
 from app.segments_service import process_segments
+from app.similarity_service import run_similarity_computation
 from app.exceptions import DatabaseException
 from database import delete_all_data, engine  
 
@@ -24,13 +25,11 @@ def set_up(autouse=True):
         connection.execute(text("DELETE FROM segment_similarity"))
         connection.commit()
 
-
 def dataframe_to_compressed_json(df):
     json_data = df.to_dict(orient="records")
     json_str = json.dumps(json_data).encode("utf-8")
     compressed_json = gzip.compress(json_str)
     return base64.b64encode(compressed_json).decode("utf-8")
-
 
 @pytest.fixture
 def create_sample_data():
@@ -101,7 +100,6 @@ def create_sample_data():
     compressed_segments_info = dataframe_to_compressed_json(pd.DataFrame(segments_data))
     return activity_id, user_id, group_id, compressed_weather_info, compressed_terrain_info, compressed_segments_info
 
-
 def test_process_segments_terrain_weather(set_up, create_sample_data):
     """
     Tests processing the same activity.
@@ -144,7 +142,6 @@ def test_process_segments_terrain_weather(set_up, create_sample_data):
     assert status_result is not None, f"No result found for activity_id {activity_id}"
     assert all(status == True for status in status_result), "One or more statuses are False"
 
-
 def test_process_weather_segments_terrain_weather(set_up, create_sample_data):
     """
     Tests processing the same activity with a different order of service calls.
@@ -186,3 +183,39 @@ def test_process_weather_segments_terrain_weather(set_up, create_sample_data):
     assert (final_count - initial_count) == expected_rows, "Segments were not inserted into the database"
     assert status_result is not None, f"No result found for activity_id {activity_id}"
     assert all(status == True for status in status_result), "One or more statuses are False"
+
+@pytest.fixture
+def setup_test_data(engine=engine):
+    user_id = "9999"  # Use a fixed test ID to clean easily
+    with engine.begin() as conn:
+        # Insert segments
+        conn.execute(text("""
+            INSERT INTO segments (
+                segment_id, activity_id, user_id, grade_category,
+                segment_length, start_distance, start_time, start_altitude,
+                elevation_gain, avg_gradient, road_type, surface_type,
+                temperature, humidity, wind, weather_id
+            ) VALUES 
+            ('seg1', 1, :user_id, 1.5, 100, 0, 123456, 10,
+             20, 1.5, 'asphalt', 'smooth', 20, 50, 1.8, 100),
+            ('seg2', 1, :user_id, 1.5, 120, 100, 789456, 12,
+             18, 1.2, 'asphalt', 'smooth', 21, 52, 0, 1)
+        """), {"user_id": user_id})
+    yield user_id
+    # Teardown
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM segment_similarity WHERE segment_id_1 IN ('seg1', 'seg2') OR segment_id_2 IN ('seg1', 'seg2')"))
+        conn.execute(text("DELETE FROM segments WHERE user_id = :user_id"), {"user_id": user_id})
+
+def test_run_similarity_computation_with_db(set_up, setup_test_data):
+    """
+    Tests computing and saving to database the similarity matrix for a given user.
+    """
+    user_id = setup_test_data
+
+    run_similarity_computation(user_id)
+
+    with engine.begin() as conn:
+        result = conn.execute(text("SELECT * FROM segment_similarity WHERE segment_id_1 = 'seg1' OR segment_id_2 = 'seg2'")).fetchall()
+        assert result  # Make sure similarity was inserted
+        assert all('similarity_score' in dict(row._mapping) for row in result)

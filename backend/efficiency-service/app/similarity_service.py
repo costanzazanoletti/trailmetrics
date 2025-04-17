@@ -1,9 +1,21 @@
 import logging
 import logging_setup
+import threading
+import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import pairwise_distances
+from database import (
+    engine, 
+    get_activity_status_fingerprint, 
+    get_similarity_status_fingerprint, 
+    update_similarity_status_fingerprint,
+    get_user_segments,
+    delete_user_similarity_data,
+    save_similarity_data,
+    update_similarity_status_in_progress
+)
 
 logger = logging.getLogger("app")
 
@@ -94,3 +106,67 @@ def merge_similarity_matrices_with_original_df(similarity_matrices, df):
                     'similarity_score': similarity_score
                 })
     return all_similarity_data
+
+def run_similarity_computation(user_id):
+    try:
+        with engine.begin() as connection:
+            # Get user's segments from database
+            user_segments_df = get_user_segments(connection, user_id)
+            if not user_segments_df.empty:
+                logger.info(f"Computing similarity matrix for user {user_id} with {len(user_segments_df)} segments,")
+                # Call compute_similarity_matrix
+                similarity_data = compute_similarity_matrix(user_segments_df)
+                logger.info(f"Similarity matrix for user {user_id} successfully computed.")
+                # Clean old data and save new similarity_matrix
+                delete_user_similarity_data(connection, user_id)
+                save_similarity_data(connection, similarity_data)
+            else:
+                logger.info(f"No segments for user {user_id} to compute similarity matrix.")
+    except Exception as e:
+        logger.error(f"Similarity computation failed for user {user_id}: {e}.")
+    finally:
+        update_similarity_status_in_progress(engine, user_id, False)
+
+def should_compute_similarity_for_user(engine, user_id):
+    """
+    Check and possibly trigger similarity computation for a user, if:
+    - the total user activities match with the completed activities 
+    - there is not a similarity matrix yet or there is one with a different fingerprint
+    - the similarity computation is not currently in progress
+    """
+    try:
+        with engine.begin() as connection:
+            current_status = get_activity_status_fingerprint(connection, user_id)
+            stored_fingerprint = get_similarity_status_fingerprint(connection, user_id)
+
+            if not current_status:
+                logger.info(f"Should not compute similarity matrix for user {user_id}. No activity status.")
+                return False
+
+            total, completed, current_fp = current_status
+            if total == 0 or total != completed:
+                logger.info(f"Should not compute similarity matrix for user {user_id}. Total activities: {total}, completed {completed}.")
+                return False
+
+            if stored_fingerprint:
+                stored_fp, in_progress = stored_fingerprint
+                if current_fp == stored_fp or in_progress:
+                    logger.info(f"Should not compute similarity matrix for user {user_id}. Activities not changed or already in progress.")
+                    return False
+
+            # At this point, we are good to trigger computation
+            logger.info(f"Start computing similarity matrix for user {user_id}")
+            # Update DB to mark computation as in progress
+            update_similarity_status_fingerprint(connection, user_id, current_fp)
+             # Launch background thread for similarity computation
+            thread = threading.Thread(
+                target=run_similarity_computation,
+                args=(user_id,),
+                daemon=True
+            )
+            thread.start()
+
+            return True
+        
+    except Exception as e:
+        raise RuntimeError(f"Error checking similarity computation need for user {user_id}: {e}")

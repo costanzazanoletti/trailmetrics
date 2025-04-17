@@ -121,5 +121,6 @@ CREATE INDEX idx_segment_similarity_score ON segment_similarity (similarity_scor
 CREATE TABLE similarity_status_fingerprint (
     user_id BIGINT PRIMARY KEY,
     similarity_calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    activity_fingerprint TEXT NOT NULL
+    activity_fingerprint TEXT NOT NULL,
+    in_progress BOOLEAN DEFAULT FALSE
 );

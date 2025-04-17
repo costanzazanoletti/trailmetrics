@@ -1,9 +1,21 @@
 import pytest
 import pandas as pd
 import numpy as np
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from sklearn.metrics import pairwise_distances
-from app.similarity_service import preprocess_data, compute_similarity, compute_similarity_matrix
+from app.similarity_service import (
+    preprocess_data, 
+    compute_similarity, 
+    compute_similarity_matrix,
+    should_compute_similarity_for_user,
+    run_similarity_computation
+    )
+
+@pytest.fixture
+def mock_engine():
+    # Mock the engine that would be passed to the function
+    mock_engine = MagicMock()
+    return mock_engine
 
 @pytest.fixture
 def sample_segments():
@@ -191,3 +203,142 @@ def test_compute_similarity_matrix(mock_compute_similarity, mock_preprocess_data
 
     # Verify compute_similarity was called twice (the side_effect implicitly checks the arguments)
     assert mock_compute_similarity.call_count == 2
+
+@patch('app.similarity_service.run_similarity_computation')
+@patch('app.similarity_service.update_similarity_status_fingerprint')
+@patch('app.similarity_service.get_similarity_status_fingerprint')
+@patch('app.similarity_service.get_activity_status_fingerprint')
+def test_should_compute_similarity_for_user(
+    mock_get_activity_status_fingerprint,
+    mock_get_similarity_status_fingerprint,
+    mock_update_similarity_status_fingerprint,
+    mock_run_similarity_computation,
+    mock_engine
+):
+    # Mock the return values
+    mock_get_activity_status_fingerprint.return_value = (5, 5, 'fp1')
+    mock_get_similarity_status_fingerprint.return_value = ('fp2', False)
+
+    # Call the function
+    user_id = 123
+    result = should_compute_similarity_for_user(mock_engine, user_id=user_id)
+
+    assert result is True
+    mock_update_similarity_status_fingerprint.assert_called_once()
+    mock_run_similarity_computation.assert_called_once_with(user_id)
+
+@patch('app.similarity_service.run_similarity_computation')
+@patch('app.similarity_service.update_similarity_status_fingerprint')
+@patch('app.similarity_service.get_similarity_status_fingerprint')
+@patch('app.similarity_service.get_activity_status_fingerprint')
+def test_should_not_compute_similarity_if_no_activities(
+    mock_get_activity_status_fingerprint,
+    mock_get_similarity_status_fingerprint,
+    mock_update_similarity_status_fingerprint,
+    mock_run_similarity_computation,
+    mock_engine
+):
+    # Mock the return values
+    mock_get_activity_status_fingerprint.return_value = (0, 0, None)
+    mock_get_similarity_status_fingerprint.return_value = ('fp2', False)
+
+    # Call the function
+    user_id = 123
+    result = should_compute_similarity_for_user(mock_engine, user_id=user_id)
+
+    assert result is False
+    mock_update_similarity_status_fingerprint.assert_not_called()
+    mock_run_similarity_computation.assert_not_called()
+
+@patch('app.similarity_service.run_similarity_computation')
+@patch('app.similarity_service.update_similarity_status_fingerprint')
+@patch('app.similarity_service.get_similarity_status_fingerprint')
+@patch('app.similarity_service.get_activity_status_fingerprint')
+def test_should_not_compute_similarity_if_same_fingerprint(
+    mock_get_activity_status_fingerprint,
+    mock_get_similarity_status_fingerprint,
+    mock_update_similarity_status_fingerprint,
+    mock_run_similarity_computation,
+    mock_engine
+):
+    # Mock the return values
+    mock_get_activity_status_fingerprint.return_value = (10, 10, 'fp1')
+    mock_get_similarity_status_fingerprint.return_value = ('fp1', False)
+
+    # Call the function
+    user_id = 123
+    result = should_compute_similarity_for_user(mock_engine, user_id=user_id)
+
+    assert result is False
+    mock_update_similarity_status_fingerprint.assert_not_called()
+    mock_run_similarity_computation.assert_not_called()
+
+@patch('app.similarity_service.run_similarity_computation')
+@patch('app.similarity_service.update_similarity_status_fingerprint')
+@patch('app.similarity_service.get_similarity_status_fingerprint')
+@patch('app.similarity_service.get_activity_status_fingerprint')
+def test_should_not_compute_similarity_if_in_progress(
+    mock_get_activity_status_fingerprint,
+    mock_get_similarity_status_fingerprint,
+    mock_update_similarity_status_fingerprint,
+    mock_run_similarity_computation,
+    mock_engine
+):
+    # Mock the return values
+    mock_get_activity_status_fingerprint.return_value = (10, 10, 'fp2')
+    mock_get_similarity_status_fingerprint.return_value = ('fp1', True)
+
+    # Call the function
+    user_id = 123
+    result = should_compute_similarity_for_user(mock_engine, user_id=user_id)
+
+    assert result is False
+    mock_update_similarity_status_fingerprint.assert_not_called()
+    mock_run_similarity_computation.assert_not_called()
+
+@patch("app.similarity_service.engine")
+@patch("app.similarity_service.update_similarity_status_in_progress")
+@patch("app.similarity_service.save_similarity_data")
+@patch("app.similarity_service.delete_user_similarity_data")
+@patch("app.similarity_service.compute_similarity_matrix")
+@patch("app.similarity_service.get_user_segments")
+def test_run_similarity_computation_with_segments(
+    mock_get_user_segments,
+    mock_compute_similarity_matrix,
+    mock_delete_user_similarity_data,
+    mock_save_similarity_data,
+    mock_update_similarity_status,
+    mock_engine
+):
+    mock_connection = MagicMock()
+    mock_engine.begin.return_value.__enter__.return_value = mock_connection
+
+    mock_get_user_segments.return_value = ["segment1", "segment2"]
+    mock_compute_similarity_matrix.return_value = [{"segment_id_1": "a", "segment_id_2": "b", "similarity_score": 0.9}]
+
+    user_id = 42
+    run_similarity_computation(user_id)
+
+    mock_get_user_segments.assert_called_once_with(mock_connection, user_id)
+    mock_compute_similarity_matrix.assert_called_once()
+    mock_delete_user_similarity_data.assert_called_once_with(mock_connection, user_id)
+    mock_save_similarity_data.assert_called_once()
+    mock_update_similarity_status.assert_called_once_with(mock_engine, user_id, False)
+
+@patch("app.similarity_service.update_similarity_status_in_progress")
+@patch("app.similarity_service.get_user_segments")
+@patch("app.similarity_service.engine")
+def test_run_similarity_computation_no_segments(
+    mock_engine,
+    mock_get_user_segments,
+    mock_update_similarity_status,
+):
+    mock_connection = MagicMock()
+    mock_engine.begin.return_value.__enter__.return_value = mock_connection
+
+    mock_get_user_segments.return_value = []  # No segments
+    user_id = 99
+    run_similarity_computation(user_id)
+
+    mock_get_user_segments.assert_called_once()
+    mock_update_similarity_status.assert_called_once_with(mock_engine, user_id, False)
