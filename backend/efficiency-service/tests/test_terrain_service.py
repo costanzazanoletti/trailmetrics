@@ -73,31 +73,27 @@ def test_process_terrain_info(load_sample_segments, set_up):
         assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
         assert terrain_status is True
 
-def test_process_terrain_info_with_database_exception(load_sample_segments, set_up):
+@patch('app.terrain_service.terrain_batch_insert_and_update_status')
+def test_process_terrain_info_with_database_exception(mock_store_segments, load_sample_segments, set_up):
     """Tests that process_terrain_info doesn't store any data when it handles a DatabaseException."""
-    with patch('app.terrain_service.terrain_batch_insert_and_update_status') as mock_store_segments:
-        # Load sample data
-        activity_id, compressed_terrain_info = load_sample_segments
+    # Load sample data
+    activity_id, compressed_terrain_info = load_sample_segments
 
-        # Configure mock to raise a DatabaseException
-        mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting terrain info.")
+    # Configure mock to raise a DatabaseException
+    mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting terrain info.")
 
-        # Use SQLAlchemy connection
-        with engine.connect() as connection:
-            # Check the number of segments before execution
-            initial_count = connection.execute(
-                text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
-                {"activity_id": activity_id}
-            ).scalar_one()
+    # Use SQLAlchemy connection
+    with engine.connect() as connection:
+        initial_count = connection.execute(
+            text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
+            {"activity_id": activity_id}
+        ).scalar_one()
 
-            # Call process_terrain_info (assuming it now uses the engine and handles exceptions)
-            process_terrain_info(activity_id, compressed_terrain_info, engine=engine)
+        process_terrain_info(activity_id, compressed_terrain_info, engine=engine)
 
-            # Check the number of segments after execution
-            final_count = connection.execute(
-                text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
-                {"activity_id": activity_id}
-            ).scalar_one()
+        final_count = connection.execute(
+            text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
+            {"activity_id": activity_id}
+        ).scalar_one()
 
-            # Assertion
-            assert final_count == initial_count, "Segments with terrain info were inserted into the database"
+        assert final_count == initial_count, "Segments with terrain info were inserted into the database"

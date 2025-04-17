@@ -1,9 +1,8 @@
 {
-    "key":"13484124195",
+    "key":"123",
     "value":
     {
-        "activityId": 13484124195,
-        "userId": "999",
+        "activityId": 123,
         "groupId": "5_5",
         "compressedWeatherInfo": "H4sIADHC62cC/+WPTQ6CMBCFr9J0jQ2lhbZuPYYxBOkoE8pPoMQY491tZaFuPIAuv+9N8ubtb3SGcwe9L9HSLaFcSC15JrnJN1lOE0Jd5UMgC5bqVEUe+sCaZcqYgDamXAnNc6NFHoyHbgzOMCUDnQDcXDps4eWapUOL/hpMwQNfsI/lnKUiElS+gWl9SH+orsJYTnduWOxM3xILcz3h6PH5HT1OQws9qde7e0K+7iz+ZKf6lZ2HBxs4ONG4AgAA"
         }

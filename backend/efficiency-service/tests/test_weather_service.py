@@ -78,39 +78,40 @@ def test_process_weather_info(load_sample_weather, set_up):
         elif weather_status is not None:
             assert weather_status is False # If not all groups, status should remain False or be set to False
 
-def test_process_weather_info_with_database_exception(load_sample_weather, set_up):
+@patch('app.weather_service.weather_batch_insert_and_update_status')
+def test_process_weather_info_with_database_exception(mock_store_weather, load_sample_weather, set_up):
     """Tests that process_weather_info handles DatabaseException gracefully."""
-    with patch('app.weather_service.weather_batch_insert_and_update_status') as mock_store_weather:
-        # Load sample data
-        activity_id, group_id, compressed_weather_info, total_groups = load_sample_weather
+    
+    # Load sample data
+    activity_id, group_id, compressed_weather_info, total_groups = load_sample_weather
 
-        # Configure mock to raise a DatabaseException
-        mock_store_weather.side_effect = DatabaseException("Database error occurred while saving weather data.")
+    # Configure mock to raise a DatabaseException
+    mock_store_weather.side_effect = DatabaseException("Database error occurred while saving weather data.")
 
-        # Use SQLAlchemy connection
-        with engine.connect() as connection:
-            # Check the number of segments before execution
-            initial_count = connection.execute(
-                text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id AND temperature IS NOT NULL"),
-                {"activity_id": activity_id}
-            ).scalar_one()
+    # Use SQLAlchemy connection
+    with engine.connect() as connection:
+        # Check the number of segments before execution
+        initial_count = connection.execute(
+            text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id AND temperature IS NOT NULL"),
+            {"activity_id": activity_id}
+        ).scalar_one()
 
-            # Call process_weather_info
-            process_weather_info(activity_id, group_id, compressed_weather_info, engine=engine)
+        # Call process_weather_info
+        process_weather_info(activity_id, group_id, compressed_weather_info, engine=engine)
 
-            # Check the number of segments after execution
-            final_count = connection.execute(
-                text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id AND temperature IS NOT NULL"),
-                {"activity_id": activity_id}
-            ).scalar_one()
+        # Check the number of segments after execution
+        final_count = connection.execute(
+            text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id AND temperature IS NOT NULL"),
+            {"activity_id": activity_id}
+        ).scalar_one()
 
-            # Check activity_status_tracker
-            weather_status = connection.execute(
-                text("SELECT weather_status FROM activity_status_tracker WHERE activity_id = :activity_id"),
-                {"activity_id": activity_id}
-            ).scalar_one_or_none()
+        # Check activity_status_tracker
+        weather_status = connection.execute(
+            text("SELECT weather_status FROM activity_status_tracker WHERE activity_id = :activity_id"),
+            {"activity_id": activity_id}
+        ).scalar_one_or_none()
 
-            # Assertion
-            assert final_count == initial_count, "Weather info was inserted despite the exception"
-            if weather_status is not None:
-                assert weather_status is False
+        # Assertion
+        assert final_count == initial_count, "Weather info was inserted despite the exception"
+        if weather_status is not None:
+            assert weather_status is False

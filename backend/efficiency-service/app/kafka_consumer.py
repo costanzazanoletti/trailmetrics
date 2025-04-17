@@ -10,7 +10,7 @@ from app.segments_service import process_segments, process_deleted_activities
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
 from app.similarity_service import should_compute_similarity_for_user
-from database import engine
+from database import engine, get_user_id_from_activity
 
 
 # Load environment variables
@@ -88,7 +88,7 @@ def process_weather_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
-        user_id = data.get("userId")
+        user_id = get_user_id_from_activity(engine, activity_id)
         group_id = data.get("groupId")
         compressed_weather_info = data.get("compressedWeatherInfo")
 
@@ -115,7 +115,7 @@ def process_deleted_activities_message(message):
             logger.warning("Received user activities changes message without valid 'userId' or deleted activity ids")
             return
             
-        logger.info(f"Processing {len(deleted_activity_ids)} deleted activities for user {user_id} checked at {checked_at}")
+        logger.info(f"Processing {len(deleted_activity_ids)} deleted activities for user {user_id}")
         process_deleted_activities(user_id, deleted_activity_ids)
         # Check if similarity matrix should be computed
         should_compute_similarity_for_user(engine, user_id)

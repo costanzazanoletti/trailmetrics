@@ -64,7 +64,7 @@ def test_process_message(load_test_message):
 
     with patch('app.kafka_consumer.get_weather_info') as mock_get_weather_info:
             process_message(load_test_message)
-            mock_get_weather_info.assert_called_once
+            mock_get_weather_info.assert_called_once()
 
 
 def test_retry_message_processing_with_delay():

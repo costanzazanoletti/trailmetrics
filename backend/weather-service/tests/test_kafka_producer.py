@@ -90,4 +90,4 @@ def test_send_retry_message():
             value=expected_retry_message 
         )
         # Check that producer.flush is called once
-        mock_producer_flush.assert_called_once
+        mock_producer_flush.assert_called_once()
