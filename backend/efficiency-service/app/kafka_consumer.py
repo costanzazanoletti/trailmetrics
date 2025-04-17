@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from app.segments_service import process_segments, process_deleted_activities
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
+from app.similarity_service import should_compute_similarity_for_user
 from database import engine
 
 
@@ -56,6 +57,8 @@ def process_segments_message(message):
             
         logger.info(f"Processing segments for activity {activity_id}")
         process_segments(activity_id, user_id, compressed_segments, engine)
+        # Check if similarity matrix should be computed
+        should_compute_similarity_for_user(engine, user_id)
 
     except Exception as e:
         logger.error(f"Error processing segments message: {e}")
@@ -65,6 +68,7 @@ def process_terrain_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        user_id = data.get("userId")
         compressed_terrain_info = data.get("compressedTerrainInfo")
 
         if not activity_id or not compressed_terrain_info:
@@ -73,6 +77,8 @@ def process_terrain_message(message):
 
         logger.info(f"Processing terrain info for activity {activity_id}")
         process_terrain_info(activity_id, compressed_terrain_info, engine)
+        # Check if similarity matrix should be computed
+        should_compute_similarity_for_user(engine, user_id)
 
     except Exception as e:
         logger.error(f"Error processing terrain message: {e}")
@@ -82,6 +88,7 @@ def process_weather_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        user_id = data.get("userId")
         group_id = data.get("groupId")
         compressed_weather_info = data.get("compressedWeatherInfo")
 
@@ -91,7 +98,8 @@ def process_weather_message(message):
 
         logger.info(f"Processing weather info for activity {activity_id}")
         process_weather_info(activity_id, group_id, compressed_weather_info, engine)
-
+        # Check if similarity matrix should be computed
+        should_compute_similarity_for_user(engine, user_id)
     except Exception as e:
         logger.error(f"Error processing weather message: {e}")
 
@@ -109,6 +117,8 @@ def process_deleted_activities_message(message):
             
         logger.info(f"Processing {len(deleted_activity_ids)} deleted activities for user {user_id} checked at {checked_at}")
         process_deleted_activities(user_id, deleted_activity_ids)
+        # Check if similarity matrix should be computed
+        should_compute_similarity_for_user(engine, user_id)
 
     except Exception as e:
         logger.error(f"Error processing deleted activities message: {e}")

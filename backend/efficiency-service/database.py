@@ -399,5 +399,3 @@ def save_similarity_data(connection, similarity_data):
     """
     result = connection.execute(text(query), similarity_data)
     logger.info(f"Saved similarity data: {result.rowcount} rows affected.")
-
-

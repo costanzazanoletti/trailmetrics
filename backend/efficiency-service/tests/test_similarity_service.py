@@ -313,7 +313,10 @@ def test_run_similarity_computation_with_segments(
     mock_connection = MagicMock()
     mock_engine.begin.return_value.__enter__.return_value = mock_connection
 
-    mock_get_user_segments.return_value = ["segment1", "segment2"]
+    mock_get_user_segments.return_value = pd.DataFrame([
+    {"segment_id": "seg1", "grade_category": 1.5},
+    {"segment_id": "seg2", "grade_category": 2.0},
+])
     mock_compute_similarity_matrix.return_value = [{"segment_id_1": "a", "segment_id_2": "b", "similarity_score": 0.9}]
 
     user_id = 42
