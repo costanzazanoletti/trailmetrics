@@ -5,16 +5,6 @@ import base64
 import pandas as pd
 from app.kafka_producer import prepare_terrain_message 
 
-@pytest.fixture
-def sample_segments_df():
-    """Create a test DataFrame"""
-    data = {
-        "segment_id": ["2767750533-1", "2767750533-2", "2767750533-3"],
-        "highway": ["residential", "residential","secondary"],
-        "surface": ["sett","asphalt", None]
-    }
-    return pd.DataFrame(data)
-
 def test_prepare_terrain_message(sample_segments_df):
     """Test if the message is generated with compressed segments."""
     activity_id = 123456

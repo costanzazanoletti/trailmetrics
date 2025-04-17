@@ -9,24 +9,6 @@ from app.kafka_producer import prepare_message, send_retry_message
 
 logging.config.fileConfig("./logging.conf")
 
-@pytest.fixture
-def sample_df():
-    sample_data =  {
-        'segment_id': ["1234-1", "1234-2"],
-        'lat': [47.11, 47.11],
-        'lon': [8.68, 8.68],
-        'dt': [1709510400, 1709510400],
-        'temp': [273.1, 273.1],
-        'feels_like': [272.5, 272.5],
-        'humidity': [80, 80],
-        'wind': [5.2, 5.2],
-        'weather_id': [500, 500],
-        'weather_main': ['Rain', 'Rain'],
-        'weather_description': ['light rain', 'light rain']
-    }
-    return pd.DataFrame(sample_data)
-
-
 def test_prepare_message(sample_df):
     """Test prepared_message with controlled parameters"""
     # Define input parameters

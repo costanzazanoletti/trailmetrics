@@ -7,21 +7,6 @@ import time
 from datetime import datetime, timezone
 from app.kafka_consumer import process_message, process_retry_message
 
-
-@pytest.fixture
-def load_test_message(request):
-    """Loads a real Kafka message from a JSON file."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir,request.param)
-    with open(file_path, "r") as file:
-        message_data = json.load(file)
-    
-    mock_message = Mock()
-    mock_message.key = message_data["key"].encode("utf-8")
-    mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
-
-    return mock_message
-
 @patch('app.kafka_consumer.get_weather_info')
 @pytest.mark.parametrize('load_test_message', ['mock_segments_message.json'], indirect=True)
 def test_process_message(mock_get_weather_info, load_test_message):

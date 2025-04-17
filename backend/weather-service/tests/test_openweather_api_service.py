@@ -9,32 +9,6 @@ from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
 
-@pytest.fixture
-def create_sample_dataframe():
-    # Create a sample DataFrame
-    data = {
-        'lat': [46.000000, 46.109305, 46.106291, 46.106291],
-        'lng': [8.000000, 8.287756, 8.287467, 8.287467],
-        'distance': [0, 1000, 2000, 2000],
-        'altitude':[100,200, 300, 300],
-        'timestamp': ['2021-10-07 08:28:00', '2021-10-07 08:32:41', '2021-10-07 08:40:09', '2021-10-07 08:40:09'],
-        'distance:traveled': [0,1000,1000,0],
-        'time_elapsed':[0.0, 281.0, 448.0, 0.0],
-        'elevation_change':[0,100,100,0]
-    }
-    data['timestamp'] = pd.to_datetime(data['timestamp'])
-    return pd.DataFrame(data)
-
-@pytest.fixture
-def create_sample_params():
-    return {
-            "lat": 47.1,
-            "lon": 8.6,
-            "dt": 1709510400,
-            "units": "metric",  
-            "appid": 'fake_api_key'  
-        }
-
 def test_generate_request_parameters(create_sample_dataframe):
     reference_point = create_sample_dataframe.iloc[0]
     # Call the function

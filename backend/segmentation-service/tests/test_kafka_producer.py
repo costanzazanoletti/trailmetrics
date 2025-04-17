@@ -5,24 +5,6 @@ import base64
 import pandas as pd
 from app.kafka_producer import prepare_segmentation_message  
 
-@pytest.fixture
-def sample_segments_df():
-    """Create a test DataFrame"""
-    data = {
-        "start_distance": [0.0, 50.0],
-        "end_distance": [50.0, 100.0],
-        "segment_length": [50.0, 50.0],
-        "avg_gradient": [-5.0, 2.0],
-        "avg_cadence": [80, 85],
-        "type": ["downhill", "uphill"],
-        "grade_category": [-5, 2],
-        "start_lat": [46.1, 46.2],
-        "start_lng": [8.4, 8.5],
-        "end_lat": [46.15, 46.25],
-        "end_lng": [8.45, 8.55],
-    }
-    return pd.DataFrame(data)
-
 def test_prepare_segmentation_message(sample_segments_df):
     """Test if the message is generated with compressed segments."""
     activity_id = 123456

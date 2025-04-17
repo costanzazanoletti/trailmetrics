@@ -1,31 +1,7 @@
 import pytest
 import pandas as pd
 import numpy as np
-import json
-import gzip
 from app.segmentation_service import preprocess_streams, create_segments, segment_activity, parse_kafka_stream
-
-@pytest.fixture
-def sample_compressed_stream():
-    """
-    Creates a sample compressed JSON stream similar to the data received from Kafka.
-    """
-    sample_stream = [
-        {"type": "time", "data": [0, 1, 5, 9, 20]},
-        {"type": "distance", "data": [0.0, 20.3, 50.4, 135.9, 255.5]},
-        {"type": "altitude", "data": [300, 310, 320, 330, 340]},
-        {"type": "cadence", "data": [80, 82, 83, 85, 88]},
-        {"type": "latlng", "data": [[46.142836, 8.469562], [46.142853, 8.469612], [46.142875, 8.469717], 
-                                        [46.142875, 8.469759], [46.142875, 8.469759]]},
-        {"type": "velocity_smooth", "data": [0.0, 0.0, 0.7, 0.97, 1.21]},
-        {"type": "grade_smooth", "data": [10.0, 10.0, 10.6, 0.8, 0.4]},
-        {"type": "heartrate", "data":[115, 117, 125, 130, 130]}
-    ]
-    
-    json_data = json.dumps(sample_stream)
-    compressed_data = gzip.compress(json_data.encode("utf-8"))
-    
-    return compressed_data
 
 def test_parse_kafka_stream(sample_compressed_stream):
     """
