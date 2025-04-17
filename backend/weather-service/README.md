@@ -53,7 +53,7 @@ python app.py
 To run the service inside a Docker container:
 
 ```bash
-docker-compose up --build terrain-service
+docker-compose up --build weather-service
 ```
 
 If you made changes to `requirements.txt` or `Dockerfile`, rebuild:

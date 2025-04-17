@@ -1,4 +1,3 @@
--- Connect to activity_service database
 \c trailmetrics;
 
 CREATE TABLE activities (

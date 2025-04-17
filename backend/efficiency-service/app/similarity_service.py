@@ -91,6 +91,7 @@ def compute_similarity_matrix(df):
     return merge_similarity_matrices_with_original_df(similarity_matrices, df)
 
 def merge_similarity_matrices_with_original_df(similarity_matrices, df):
+    """Combine similarity matrices with original segment IDs into a flat list of similarity scores between segment pairs."""
     all_similarity_data = []
     for grade_category, similarity_matrix in similarity_matrices.items():
         segments_in_category = df[df['grade_category'] == grade_category]['segment_id'].tolist()  
@@ -108,6 +109,12 @@ def merge_similarity_matrices_with_original_df(similarity_matrices, df):
     return all_similarity_data
 
 def run_similarity_computation(user_id):
+    """Run the full similarity computation pipeline for a user: 
+    - fetch segments,
+    - compute similarity,
+    - clean old data,
+    - save new data,
+    - and update status."""
     try:
         with engine.begin() as connection:
             # Get user's segments from database
