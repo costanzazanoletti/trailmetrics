@@ -24,7 +24,7 @@ producer = KafkaProducer(
 )
 
 
-def prepare_terrain_message(activity_id, segments_df, processed_at):
+def prepare_terrain_message(activity_id, user_id, segments_df, processed_at):
     """Prepare the output message with compressed terrain info"""
     
     # Keep only required columns
@@ -38,15 +38,16 @@ def prepare_terrain_message(activity_id, segments_df, processed_at):
     # Return message
     return {
         "activityId": activity_id,
+        "userId": user_id,
         "processedAt": processed_at,
         "compressedTerrainInfo": encoded_segments
     }
 
-def send_terrain_output(activity_id, terrain_df, processed_at):
+def send_terrain_output(activity_id, user_id, terrain_df, processed_at):
     """Send terrain output message to Kafka."""
     
     # Prepare message with compressed segments
-    kafka_message = prepare_terrain_message(activity_id, terrain_df, processed_at)
+    kafka_message = prepare_terrain_message(activity_id, user_id, terrain_df, processed_at)
 
     # Send message to Kafka
     producer.send(KAFKA_TOPIC_OUTPUT, key=str(activity_id), value=kafka_message)

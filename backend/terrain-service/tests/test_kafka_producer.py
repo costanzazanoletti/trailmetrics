@@ -9,7 +9,7 @@ from app.kafka_producer import prepare_terrain_message
 def sample_segments_df():
     """Create a test DataFrame"""
     data = {
-        "segment-id": ["2767750533-1", "2767750533-2", "2767750533-3"],
+        "segment_id": ["2767750533-1", "2767750533-2", "2767750533-3"],
         "highway": ["residential", "residential","secondary"],
         "surface": ["sett","asphalt", None]
     }
@@ -18,12 +18,14 @@ def sample_segments_df():
 def test_prepare_terrain_message(sample_segments_df):
     """Test if the message is generated with compressed segments."""
     activity_id = 123456
+    user_id = "999"
     processed_at = 1741769162.4793878
 
-    message = prepare_terrain_message(activity_id, sample_segments_df, processed_at)
+    message = prepare_terrain_message(activity_id, user_id, sample_segments_df, processed_at)
 
     # Check the required fields
     assert "activityId" in message
+    assert "userId" in message
     assert "processedAt" in message
     assert "compressedTerrainInfo" in message
 

@@ -43,8 +43,8 @@ def process_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
 
-
         activity_id = data.get("activityId")
+        user_id = data.get("userId")
         processed_at = data.get("processedAt")
         compressed_segments = data.get("compressedSegments")
 
@@ -62,7 +62,7 @@ def process_message(message):
         terrain_df = get_terrain_info(activity_id, compressed_segments)
 
         # Send Kafka message with terrain info
-        send_terrain_output(activity_id, terrain_df, processed_at)
+        send_terrain_output(activity_id, user_id, terrain_df, processed_at)
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
