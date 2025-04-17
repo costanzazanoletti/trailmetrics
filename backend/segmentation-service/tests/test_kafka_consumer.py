@@ -20,11 +20,8 @@ def load_test_message():
     mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
 
     return mock_message
-
-def test_process_message(load_test_message):
-    """Tests process_message with a real Kafka message."""
-
-    with patch("app.kafka_consumer.send_segmentation_output") as mock_send:
-               
-        process_message(load_test_message)
-        mock_send.assert_called_once()
+@patch("app.kafka_consumer.send_segmentation_output")
+def test_process_message(mock_send, load_test_message):
+    """Tests process_message with a real Kafka message."""           
+    process_message(load_test_message)
+    mock_send.assert_called_once()
