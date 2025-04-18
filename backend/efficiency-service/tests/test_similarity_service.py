@@ -11,32 +11,8 @@ from app.similarity_service import (
     run_similarity_computation
     )
 
-@pytest.fixture
-def mock_engine():
-    # Mock the engine that would be passed to the function
-    mock_engine = MagicMock()
-    return mock_engine
-
-@pytest.fixture
-def sample_segments():
-    return pd.DataFrame({
-        'segment_id' : ["123-456", "123-789"],
-        'grade_category': [0.0, 0.0],
-        'segment_length': [10, 20],
-        'start_distance': [100, 200],
-        'start_time': [3600, 7200],
-        'start_altitude': [300, 500],
-        'elevation_gain': [100, 200],
-        'avg_gradient': [0.05, 0.10],
-        'road_type': ['asphalt', 'gravel'],
-        'surface_type': ['smooth', 'rough'],
-        'temperature': [25, 30],
-        'humidity': [60, 70],
-        'wind': [5, 10],
-        'weather_id': [1, 2]
-    })
-
 def test_preprocess_data(sample_segments):
+    """Test pre process data for similarity computation"""
     # Numeric and categorical features
     numeric_features = ['segment_length', 'start_distance', 'start_time', 'start_altitude',
                         'elevation_gain', 'avg_gradient', 'temperature', 'humidity', 'wind']
@@ -70,15 +46,6 @@ def test_preprocess_data(sample_segments):
     assert X_processed[0, road_type_asphalt_index] == 1.0  # 'asphalt' -> one-hot encoding should give 1.0
     assert X_processed[1, road_type_asphalt_index] == 0.0  # 'gravel' -> one-hot encoding should give 0.0
 
-@pytest.fixture
-def sample_grade_category_data():
-    return np.array([
-        [1.0, 2.0, 0.5],
-        [1.5, 2.5, 0.6],
-        [0.2, 0.1, 1.0],
-        [0.3, 0.2, 0.9]
-    ])
-
 def test_compute_similarity(sample_grade_category_data):
     """Test the compute_similarity function."""
     similarity_matrix = compute_similarity(sample_grade_category_data)
@@ -105,25 +72,6 @@ def test_compute_similarity(sample_grade_category_data):
     expected_distance_2_3 = np.sqrt(0.03)
     assert np.isclose(similarity_matrix[2, 3], expected_distance_2_3)
     assert np.isclose(similarity_matrix[3, 2], expected_distance_2_3)
-
-@pytest.fixture
-def sample_df_for_similarity_matrix():
-    return pd.DataFrame({
-        'segment_id': ["123-456", "123-789", "456-789", "789-123"],
-        'grade_category': [0.0, 0.0, 1.0, 1.0],
-        'segment_length': [10, 20, 15, 25],
-        'start_distance': [100, 200, 150, 250],
-        'start_time': [3600, 7200, 5400, 9000],
-        'start_altitude': [300, 500, 350, 550],
-        'elevation_gain': [100, 200, 120, 220],
-        'avg_gradient': [0.05, 0.10, 0.07, 0.12],
-        'road_type': ['asphalt', 'gravel', 'asphalt', 'dirt'],
-        'surface_type': ['smooth', 'rough', 'smooth', 'rough'],
-        'temperature': [25, 30, 27, 32],
-        'humidity': [60, 70, 65, 75],
-        'wind': [5, 10, 7, 12],
-        'weather_id': [100, 200, 100, 300]
-    })
 
 @patch('app.similarity_service.preprocess_data')
 @patch('app.similarity_service.compute_similarity')

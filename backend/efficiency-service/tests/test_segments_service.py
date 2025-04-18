@@ -11,29 +11,6 @@ from app.segments_service import process_segments, calculate_metrics, compute_ef
 from app.exceptions import DatabaseException
 from database import engine, execute_sql, delete_all_data, fetch_one_sql  
 
-@pytest.fixture
-def set_up(autouse=True):
-    print("\nTEST SET UP: Clear all data from database\n")
-    delete_all_data(engine)
-
-@pytest.fixture
-def load_sample_segments():
-    """Loads a real segments from a JSON file."""
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir, 'mock_segmentation.json')
-    with open(file_path, "r") as file:
-        message_data = json.load(file)
-
-    mock_message = Mock()
-    mock_message.key = message_data["key"].encode("utf-8")
-    mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
-    data = mock_message.value if isinstance(mock_message.value, dict) else json.loads(mock_message.value)
-    activity_id = data.get("activityId")
-    user_id = data.get("userId")
-    compressed_segments = data.get("compressedSegments")
-
-    return activity_id, user_id, compressed_segments
-
 def test_process_segments(load_sample_segments, set_up):
     """
     Tests process_segments_message.
@@ -94,7 +71,6 @@ def test_process_segments_with_database_exception(mock_store_segments, load_samp
         ).scalar_one()
 
         assert final_count == initial_count, "Segments were inserted into the database"
-
 
 def test_process_segments_for_existing_activity(load_sample_segments, set_up):
     """

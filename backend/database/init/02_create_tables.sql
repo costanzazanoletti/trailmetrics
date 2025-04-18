@@ -84,6 +84,7 @@ CREATE TABLE activity_status_tracker (
     segment_status BOOLEAN DEFAULT FALSE,
     terrain_status BOOLEAN DEFAULT FALSE,
     weather_status BOOLEAN DEFAULT FALSE,
+    not_processable BOOLEAN DEFAULT FALSE,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

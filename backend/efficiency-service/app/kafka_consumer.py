@@ -10,7 +10,7 @@ from app.segments_service import process_segments, process_deleted_activities
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
 from app.similarity_service import should_compute_similarity_for_user
-from database import engine, get_user_id_from_activity
+from database import engine, get_user_id_from_activity, insert_not_processable_actitivity_status
 
 
 # Load environment variables
@@ -49,14 +49,25 @@ def process_segments_message(message):
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
         user_id = data.get("userId")
+        status = data.get("status")
         compressed_segments = data.get("compressedSegments")
 
-        if not activity_id or not compressed_segments:
-            logger.warning("Received segments message without valid 'activityId' or 'compressedSegments'")
+        # Check if the message is valid
+        if not activity_id:
+            logger.warning("Received segments message without valid 'activityId', ignoring...'")
             return
-            
-        logger.info(f"Processing segments for activity {activity_id}")
-        process_segments(activity_id, user_id, compressed_segments, engine)
+        
+        # Check if the activity is not processable
+        if not compressed_segments or not status or status == 'failure':
+            logger.info(f"Received not processable activity {activity_id}")
+            # Insert into activity status tracker the activity with not_processable 
+            insert_not_processable_actitivity_status(activity_id, engine)
+            logger.info(f"Saved activity status not processable for activity {activity_id}")
+        else:
+            # Process segments
+            logger.info(f"Processing segments for activity {activity_id}")
+            process_segments(activity_id, user_id, compressed_segments, engine)
+        
         # Check if similarity matrix should be computed
         should_compute_similarity_for_user(engine, user_id)
 

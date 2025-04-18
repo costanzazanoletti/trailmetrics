@@ -167,6 +167,24 @@ def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
         connection.rollback()
         raise DatabaseException(f"An error occurred: {e}")
 
+def insert_not_processable_actitivity_status(activity_id, engine):
+    try:
+        with engine.begin() as connection:
+            query = """
+                    INSERT INTO activity_status_tracker(activity_id, not_processable)
+                    VALUES (:activity_id, TRUE)
+                    ON CONFLICT (activity_id)
+                    DO UPDATE
+                    SET
+                        not_processable = TRUE,
+                        last_updated = CURRENT_TIMESTAMP;
+        
+                """
+
+            execute_sql(connection, query, {"activity_id": activity_id})
+    except SQLAlchemyError as e:
+        raise DatabaseException(f"An error occurred: {e}")
+
 def terrain_batch_insert_and_update_status(segments_df, activity_id, engine):
     """Batch insert segment terrain info and update activity status in transaction using SQLAlchemy."""
     try:
@@ -315,11 +333,13 @@ def get_activity_status_fingerprint(connection, user_id):
                 SELECT
                     COUNT(*) AS total_activities,
                     COUNT(*) FILTER (
-                        WHERE segment_status AND terrain_status AND weather_status
+                        WHERE 
+                            (segment_status AND terrain_status AND weather_status)
+                            OR not_processable
                     ) AS completed_activities,
                     md5(string_agg(activity_id::TEXT, ',' ORDER BY activity_id)) AS fingerprint
                 FROM (
-                    SELECT DISTINCT a.id AS activity_id, ast.segment_status, ast.terrain_status, ast.weather_status
+                    SELECT DISTINCT a.id AS activity_id, ast.segment_status, ast.terrain_status, ast.weather_status, ast.not_processable
                     FROM activities a
                     LEFT JOIN activity_status_tracker ast ON ast.activity_id = a.id
                     WHERE a.athlete_id = :user_id

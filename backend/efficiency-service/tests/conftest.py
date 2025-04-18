@@ -3,6 +3,9 @@ import json
 import gzip
 import base64
 import pandas as pd
+import numpy as np
+import os
+from unittest.mock import Mock, MagicMock
 from sqlalchemy import text
 from database import engine
 
@@ -116,3 +119,88 @@ def setup_similarity_test_data(engine=engine):
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM segment_similarity WHERE segment_id_1 IN ('seg1', 'seg2') OR segment_id_2 IN ('seg1', 'seg2')"))
         conn.execute(text("DELETE FROM segments WHERE user_id = :user_id"), {"user_id": user_id})
+
+@pytest.fixture
+def load_test_message(request):
+    """Loads a real Kafka message from a JSON file."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, request.param)
+    with open(file_path, "r") as file:
+        message_data = json.load(file)
+    
+    mock_message = Mock()
+    mock_message.key = message_data["key"].encode("utf-8")
+    mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
+    return mock_message
+
+@pytest.fixture
+def load_sample_segments():
+    """Loads a real segments from a JSON file."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, 'mock_segmentation.json')
+    with open(file_path, "r") as file:
+        message_data = json.load(file)
+
+    mock_message = Mock()
+    mock_message.key = message_data["key"].encode("utf-8")
+    mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
+    data = mock_message.value if isinstance(mock_message.value, dict) else json.loads(mock_message.value)
+    activity_id = data.get("activityId")
+    user_id = data.get("userId")
+    compressed_segments = data.get("compressedSegments")
+
+    return activity_id, user_id, compressed_segments
+
+@pytest.fixture
+def mock_engine():
+    # Mock the engine that would be passed to the function
+    mock_engine = MagicMock()
+    return mock_engine
+
+@pytest.fixture
+def sample_grade_category_data():
+    return np.array([
+        [1.0, 2.0, 0.5],
+        [1.5, 2.5, 0.6],
+        [0.2, 0.1, 1.0],
+        [0.3, 0.2, 0.9]
+    ])
+
+@pytest.fixture
+def sample_segments():
+    return pd.DataFrame({
+        'segment_id' : ["123-456", "123-789"],
+        'grade_category': [0.0, 0.0],
+        'segment_length': [10, 20],
+        'start_distance': [100, 200],
+        'start_time': [3600, 7200],
+        'start_altitude': [300, 500],
+        'elevation_gain': [100, 200],
+        'avg_gradient': [0.05, 0.10],
+        'road_type': ['asphalt', 'gravel'],
+        'surface_type': ['smooth', 'rough'],
+        'temperature': [25, 30],
+        'humidity': [60, 70],
+        'wind': [5, 10],
+        'weather_id': [1, 2]
+    })
+
+@pytest.fixture
+def sample_df_for_similarity_matrix():
+    return pd.DataFrame({
+        'segment_id': ["123-456", "123-789", "456-789", "789-123"],
+        'grade_category': [0.0, 0.0, 1.0, 1.0],
+        'segment_length': [10, 20, 15, 25],
+        'start_distance': [100, 200, 150, 250],
+        'start_time': [3600, 7200, 5400, 9000],
+        'start_altitude': [300, 500, 350, 550],
+        'elevation_gain': [100, 200, 120, 220],
+        'avg_gradient': [0.05, 0.10, 0.07, 0.12],
+        'road_type': ['asphalt', 'gravel', 'asphalt', 'dirt'],
+        'surface_type': ['smooth', 'rough', 'smooth', 'rough'],
+        'temperature': [25, 30, 27, 32],
+        'humidity': [60, 70, 65, 75],
+        'wind': [5, 10, 7, 12],
+        'weather_id': [100, 200, 100, 300]
+    })
+
