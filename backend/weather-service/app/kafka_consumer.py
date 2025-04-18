@@ -77,11 +77,11 @@ def process_message(message):
 
         activity_id = data.get("activityId")
         start_date = data.get("startDate")
-        processed_at = data.get("processedAt")
+        status = data.get("status")
         compressed_segments = data.get("compressedSegments")
 
-        if not activity_id or not compressed_segments or not start_date:
-            logger.warning("Received message without valid 'activityId' , 'startDate' or payload, ignoring...")
+        if not activity_id or not compressed_segments or not start_date or not status or status == 'failure':
+            logger.warning("Received message without valid 'activityId' or payload, ignoring...")
             return
         
         # Decode the base64 value if it's a string
