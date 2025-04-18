@@ -173,7 +173,7 @@ services:
       - ./backend/weather-service/.env
     environment:
       - KAFKA_BROKER=broker:29092
-      - DAILY_REQUEST_LIMIT=500
+      - DAILY_REQUEST_LIMIT=1000
       - KAFKA_RETRY_MAX_POLL_INTERVAL_MS=3600000
     command: ['python', 'app.py']
 

@@ -61,5 +61,5 @@ strava:
 
 
 sync:
-  default-sync-years: ${SYNC_DEFAULT_SYNC_YEARS:6}
+  default-sync-years: ${SYNC_DEFAULT_SYNC_YEARS:8}
   default-zone: ${SYNC_DEFAULT_ZONE}
