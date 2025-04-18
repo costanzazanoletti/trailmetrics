@@ -145,7 +145,7 @@ This document defines the Kafka topics and messages used in the application for 
   
 ### `segmentation-output-queue`
 
-**Description:** An activity has been segmented  
+**Description:** An activity has been segmented  (or status: failure if unable to process)
 **Producer Service:** `segmentation-service`  
 **Consumer Service:** `terrain-service`, `weather-service`, `efficiency-service`  
 **Consumer Group:** `terrain-service-group`,`weather-service-group`, `efficiency-service-group`  
@@ -158,6 +158,7 @@ This document defines the Kafka topics and messages used in the application for 
   "userId": 12345,
   "startDate": 1740680048.270867,
   "processedAt": 1740680048.270867,
+  "status":"success",
   "compressedSegments": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
 }
 ```
