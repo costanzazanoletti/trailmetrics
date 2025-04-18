@@ -2,6 +2,7 @@ import json
 import os
 import base64
 import logging
+import pandas as pd
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from app.segmentation_service import segment_activity
@@ -43,13 +44,18 @@ def process_message(message):
             data = message.value  
 
         activity_id = data.get("activityId")
-        user_id = data.get("userid")
+        user_id = data.get("userId")
         start_date = data.get("startDate")
         processed_at = data.get("processedAt")
         compressed_stream = data.get("compressedStream")
 
-        if not activity_id or not compressed_stream:
-            logger.warning("Received message without valid 'activityId' or payload, ignoring...")
+        if not activity_id:
+            logger.warning("Received message without valid 'activityId', ignoring...")
+            return
+        if not compressed_stream:
+            logger.warning("Received message without compressed stream")
+             # Produce Kafka message of segmentation output failure
+            send_segmentation_output(activity_id, user_id, pd.DataFrame(), processed_at, start_date, status='failure')
             return
         
         # Decode the base64 value if it's a string
@@ -65,13 +71,15 @@ def process_message(message):
             segment_count = len(segments_df)
             logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
             
-            # Produce Kafka message of segmentation output
-            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date)
+            # Produce Kafka message of segmentation output success
+            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, status='success')
         else:
             logger.warning(f"Empty segments for Activity ID: {activity_id}")
+             # Produce Kafka message of segmentation output failure
+            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, status='failure')
+    
     except Exception as e:
         logger.error(f"Error processing message: {e}")
-
 
 def start_kafka_consumer():
     """Starts the Kafka consumer and processes messages."""

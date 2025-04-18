@@ -11,13 +11,15 @@ def test_prepare_segmentation_message(sample_segments_df):
     user_id = "123456"
     start_date = 1741183458.000000000
     processed_at = 1741769162.4793878
+    status = 'success'
 
-    message = prepare_segmentation_message(activity_id, user_id, sample_segments_df, processed_at, start_date)
+    message = prepare_segmentation_message(activity_id, user_id, sample_segments_df, processed_at, start_date, status)
 
     # Check the required fields
     assert "activityId" in message
     assert "startDate" in message
     assert "processedAt" in message
+    assert "status" in message
     assert "compressedSegments" in message
 
     # Decode and decompress to check validity
