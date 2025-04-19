@@ -6,6 +6,7 @@ import os
 import pandas as pd
 from shapely.geometry import LineString
 from dotenv import load_dotenv
+from collections import defaultdict
 
 
 # Setup logging
@@ -14,6 +15,10 @@ logger = logging.getLogger("app")
 load_dotenv()
 
 OVERPASS_URL = os.getenv("OVERPASS_API_URL")
+
+# Initialize the cache for most frequent surface by highway
+surface_cache = defaultdict(lambda: defaultdict(int))
+most_frequent_surface = {}
 
 def fetch_overpass_data(query, max_retries=3):
     """Sends a request to Overpass API and returns the response JSON."""
@@ -49,6 +54,14 @@ def build_overpass_query(min_lat, min_lng, max_lat, max_lng):
     """
     return query
 
+def update_surface_cache(highway, surface):
+    if highway and surface:
+        surface_cache[highway][surface] += 1
+
+def get_most_frequent_surface(highway):
+    if highway in surface_cache and surface_cache[highway]:
+        return max(surface_cache[highway], key=surface_cache[highway].get)
+    return None
 
 def assign_terrain_info(df_segments, way_geometries):
     """Assigns Overpass terrain data (highway, surface) to segments in the DataFrame."""
@@ -72,6 +85,11 @@ def assign_terrain_info(df_segments, way_geometries):
         if closest_way:
             df.at[index, "highway"] = closest_way["highway"]
             df.at[index, "surface"] = closest_way["surface"]
+            if pd.isna(df.at[index, "surface"]) and closest_way["highway"]:
+                inferred_surface = get_most_frequent_surface(closest_way["highway"])
+                if inferred_surface:
+                    logger.info(f"Infer surface from highway {closest_way["highway"]}: {inferred_surface}")
+                    df.at[index, "surface"] = inferred_surface
 
     return df
 
@@ -91,15 +109,23 @@ def extract_way_geometries(terrain_data):
 
     # Process each way
     for element in terrain_data:
-        if element["type"] == "way" and "nodes" in element:
+        if element["type"] == "way" and "nodes" in element and "tags" in element:
+            highway = element["tags"].get("highway")
+            surface = element["tags"].get("surface")
+            if highway and surface:
+                update_surface_cache(highway, surface)
+
             coords = [node_coords[nid] for nid in element["nodes"] if nid in node_coords]
-            
-            if len(coords) >= 2:  # At least two points to form a line
+
+            if len(coords) >= 2:
                 way_geometries.append({
                     "way_id": element["id"],
                     "geometry": LineString(coords),
-                    "highway": element["tags"].get("highway", None),
-                    "surface": element["tags"].get("surface", None)
+                    "highway": highway,
+                    "surface": surface
                 })
+    # After processing all ways, calculate the most frequent surface for each highway
+    for highway, surface_counts in surface_cache.items():
+        most_frequent_surface[highway] = max(surface_counts, key=surface_counts.get)
 
     return way_geometries
