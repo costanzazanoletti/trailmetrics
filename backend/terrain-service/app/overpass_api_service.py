@@ -88,7 +88,7 @@ def assign_terrain_info(df_segments, way_geometries):
             if pd.isna(df.at[index, "surface"]) and closest_way["highway"]:
                 inferred_surface = get_most_frequent_surface(closest_way["highway"])
                 if inferred_surface:
-                    logger.info(f"Infer surface from highway {closest_way["highway"]}: {inferred_surface}")
+                    logger.info(f"Infer surface from highway {closest_way['highway']}: {inferred_surface}")
                     df.at[index, "surface"] = inferred_surface
 
     return df
