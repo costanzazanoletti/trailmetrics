@@ -69,7 +69,7 @@ def process_segments_message(message):
             process_segments(activity_id, user_id, compressed_segments, engine)
         
         # Check if similarity matrix should be computed
-        should_compute_similarity_for_user(engine, user_id)
+        should_compute_similarity_for_user(engine, str(user_id))
 
     except Exception as e:
         logger.error(f"Error processing segments message: {e}")
