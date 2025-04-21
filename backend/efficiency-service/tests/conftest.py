@@ -117,7 +117,7 @@ def setup_similarity_test_data(engine=engine):
     yield user_id
     # Teardown
     with engine.begin() as conn:
-        conn.execute(text("DELETE FROM segment_similarity WHERE segment_id_1 IN ('seg1', 'seg2') OR segment_id_2 IN ('seg1', 'seg2')"))
+        conn.execute(text("DELETE FROM segment_similarity WHERE segment_id IN ('seg1', 'seg2') OR similar_segment_id IN ('seg1', 'seg2')"))
         conn.execute(text("DELETE FROM segments WHERE user_id = :user_id"), {"user_id": user_id})
 
 @pytest.fixture

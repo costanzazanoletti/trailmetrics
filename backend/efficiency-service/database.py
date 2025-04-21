@@ -72,7 +72,7 @@ def delete_all_data(engine):
     """Delete all segments and activity_status_tracker using SQLAlchemy."""
     try:
         with engine.begin() as connection:
-            query_similarity = "DELETE FROM segment_similarity WHERE segment_id_1 IS NOT NULL"
+            query_similarity = "DELETE FROM segment_similarity WHERE segment_id IS NOT NULL"
             query_segments = "DELETE FROM segments WHERE activity_id IS NOT NULL"
             query_status = "DELETE FROM activity_status_tracker WHERE activity_id IS NOT NULL"
             query_weather_progress = "DELETE FROM weather_data_progress WHERE activity_id IS NOT NULL"
@@ -89,8 +89,8 @@ def delete_all_data_by_activity_ids(activity_ids, engine=engine):
         with engine.begin() as connection:
             query_similarity = """
                                 DELETE FROM segment_similarity
-                                WHERE segment_id_1 IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
-                                OR segment_id_2 IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
+                                WHERE segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
+                                OR similar_segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
                             """
             query_segments = "DELETE FROM segments WHERE activity_id in :activity_ids"
             query_status = "DELETE FROM activity_status_tracker WHERE activity_id in :activity_ids"
@@ -365,7 +365,7 @@ def update_similarity_status_fingerprint(connection, user_id, activity_fingerpri
             similarity_calculated_at = now(),
             activity_fingerprint = EXCLUDED.activity_fingerprint;
     """
-    execute_sql(connection, query, {"user_id": user_id, "activity_fingerprint": activity_fingerprint})
+    execute_sql(connection, query, {"user_id": user_id, "fingerprint": activity_fingerprint})
 
 def update_similarity_status_in_progress(engine, user_id, in_progress):
     try:
@@ -384,41 +384,58 @@ def update_similarity_status_in_progress(engine, user_id, in_progress):
 def delete_user_similarity_data(connection, user_id):
     """
     Deletes similarity scores from the segment_similarity table
-    where either segment_id_1 or segment_id_2 belongs to the given user's segments.
+    where either segment_id or similar_segment_id belongs to the given user's segments.
     """
     query = """
             DELETE FROM segment_similarity
-            WHERE segment_id_1 IN (SELECT segment_id FROM segments WHERE user_id = :user_id)
-            OR segment_id_2 IN (SELECT segment_id FROM segments WHERE user_id = :user_id)
+            WHERE segment_id IN (SELECT segment_id FROM segments WHERE user_id = :user_id)
+            OR similar_segment_id IN (SELECT segment_id FROM segments WHERE user_id = :user_id)
     """
     result = execute_sql(connection, query, {"user_id": user_id})
     logger.info(f"Deleted similarity data: {result.rowcount} rows affected.")
 
+def chunked(iterable, size=5000):
+    """Yield successive chunks from iterable."""
+    for i in range(0, len(iterable), size):
+        yield iterable[i:i + size]
+
 def save_similarity_data(connection, similarity_data):
     """
-    Bulk insert similarity data into the segment_similarity table.
+    Bulk insert similarity data into the segment_similarity table in chunks.
     """
-    if not similarity_data:
+    if similarity_data.empty:
         logger.info("No similarity data to insert")
-        return  # Nothing to insert
+        return
 
-    # Ensure all values are native Python types
-    for row in similarity_data:
-        row['similarity_score'] = float(row['similarity_score'])
-        
-    query = """
+    data_to_insert = []
+    for index, row in similarity_data.iterrows():
+        data_to_insert.append({
+            'segment_id': row['segment_id'],
+            'similar_segment_id': row['similar_segment_id'],
+            'similarity_score': float(row['similarity_score']),
+            'rank': int(row['rank'])
+        })
+
+    query = text("""
         INSERT INTO segment_similarity (
-            segment_id_1, segment_id_2, similarity_score
+            segment_id, similar_segment_id, similarity_score, rank
         )
         VALUES (
-            :segment_id_1, :segment_id_2, :similarity_score
+            :segment_id, :similar_segment_id, :similarity_score, :rank
         )
-        ON CONFLICT (segment_id_1, segment_id_2) DO UPDATE 
+        ON CONFLICT (segment_id, similar_segment_id) DO UPDATE 
         SET similarity_score = EXCLUDED.similarity_score,
+            rank = EXCLUDED.rank,
             calculated_at = CURRENT_TIMESTAMP
-    """
-    result = connection.execute(text(query), similarity_data)
-    logger.info(f"Saved similarity data: {result.rowcount} rows affected.")
+    """)
+
+    total_rows = 0
+    for chunk in chunked(data_to_insert, size=5000):
+        result = connection.execute(query, chunk)
+        total_rows += result.rowcount
+        logger.info(f"Inserted {total_rows} segment similarity rows.")
+
+    logger.info(f"Saved similarity data: {total_rows} rows affected.")
 
 def get_user_id_from_activity(engine, activity_id):
     try:

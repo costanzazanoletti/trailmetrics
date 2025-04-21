@@ -155,11 +155,11 @@ def insert_test_data(activity_ids):
             execute_sql(connection, "INSERT INTO segments (activity_id, segment_id) VALUES (:activity_id, :segment_id)", {"activity_id": activity_id, "segment_id": (str(activity_id) + "-2")})
                        
             execute_sql(connection, """
-                INSERT INTO segment_similarity (segment_id_1, segment_id_2, similarity_score)
+                INSERT INTO segment_similarity (segment_id, similar_segment_id, similarity_score, rank)
                 VALUES (
                     (SELECT segment_id FROM segments WHERE activity_id = :activity_id LIMIT 1),
                     (SELECT segment_id FROM segments WHERE activity_id = :activity_id ORDER BY segment_id DESC LIMIT 1),
-                    0.8
+                    0.8, 1
                 )
             """, {"activity_id": activity_id})
             execute_sql(connection, "INSERT INTO activity_status_tracker (activity_id) VALUES (:activity_id)", {"activity_id": activity_id})
@@ -183,8 +183,8 @@ def test_success_process_deleted_activities(set_up):
             segment_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM segments WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
             similarity_count = fetch_one_sql(connection, """
                 SELECT COUNT(*) FROM segment_similarity
-                WHERE segment_id_1 IN (SELECT segment_id FROM segments WHERE activity_id IN :ids)
-                OR segment_id_2 IN (SELECT segment_id FROM segments WHERE activity_id IN :ids)
+                WHERE segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :ids)
+                OR similar_segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :ids)
             """, {"ids": deleted_activity_ids})
             status_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM activity_status_tracker WHERE activity_id IN :ids", {"ids": deleted_activity_ids})
             weather_progress_count = fetch_one_sql(connection, "SELECT COUNT(*) FROM weather_data_progress WHERE activity_id IN :ids", {"ids": deleted_activity_ids})

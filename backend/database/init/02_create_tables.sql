@@ -99,21 +99,22 @@ CREATE TABLE weather_data_progress (
 );
 
 CREATE TABLE segment_similarity (
-    segment_id_1 VARCHAR(50) NOT NULL,
-    segment_id_2 VARCHAR(50) NOT NULL,
+    segment_id VARCHAR(50) NOT NULL,
+    similar_segment_id VARCHAR(50) NOT NULL,
     similarity_score REAL NOT NULL,
+    rank INT NOT NULL,
     calculated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     -- Optional: Add information about the similarity calculation method or parameters
     -- calculation_method VARCHAR(255),
     -- calculation_params JSONB,
-    FOREIGN KEY (segment_id_1) REFERENCES segments(segment_id),
-    FOREIGN KEY (segment_id_2) REFERENCES segments(segment_id),
-    PRIMARY KEY (segment_id_1, segment_id_2)
+    FOREIGN KEY (segment_id) REFERENCES segments(segment_id),
+    FOREIGN KEY (similar_segment_id) REFERENCES segments(segment_id),
+    PRIMARY KEY (segment_id, similar_segment_id)
 );
 
 -- Index for faster lookups based on either segment ID
-CREATE INDEX idx_segment_similarity_1 ON segment_similarity (segment_id_1);
-CREATE INDEX idx_segment_similarity_2 ON segment_similarity (segment_id_2);
+CREATE INDEX idx_segment_similarity_1 ON segment_similarity (segment_id);
+CREATE INDEX idx_segment_similarity_2 ON segment_similarity (similar_segment_id);
 
 -- Optional index for querying by similarity score
 CREATE INDEX idx_segment_similarity_score ON segment_similarity (similarity_score DESC);

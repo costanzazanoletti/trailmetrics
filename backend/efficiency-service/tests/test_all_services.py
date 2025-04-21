@@ -106,6 +106,7 @@ def test_run_similarity_computation_with_db(set_up, setup_similarity_test_data):
     run_similarity_computation(user_id)
 
     with engine.begin() as conn:
-        result = conn.execute(text("SELECT * FROM segment_similarity WHERE segment_id_1 = 'seg1' OR segment_id_2 = 'seg2'")).fetchall()
+        result = conn.execute(text("SELECT * FROM segment_similarity WHERE segment_id = 'seg1' OR similar_segment_id = 'seg2'")).fetchall()
         assert result  # Make sure similarity was inserted
         assert all('similarity_score' in dict(row._mapping) for row in result)
+        assert all('rank' in dict(row._mapping) for row in result)
