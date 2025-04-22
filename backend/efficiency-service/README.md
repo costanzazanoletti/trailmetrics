@@ -1,7 +1,7 @@
 # Efficiency Service
 
 ## Overview
-The **Efficiency Service** is a microservice responsible for collecting all the information from the other services (segments, terrain, weather), save the information into the database and compute the efficiency metrics, the similarity within segments and the performance zones.
+The **Efficiency Service** is a microservice responsible for collecting all the information from the other services (segments, terrain, weather), save the information into the database. The service is also responsible of computing the efficiency score for each segment and the similarity within a user activities' segments belonging to the same grade category.
 
 ## Setup
 
@@ -29,6 +29,8 @@ KAFKA_TOPIC_DELETED_ACTIVITIES=activities-deleted-queue
 EFFICIENCY_FACTOR_SCALE=10
 EFFICIENCY_ELEVATION_WEIGHT=1
 EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT=1
+TOP_K_SIMILAR_SEGMENTS=10
+SIMILARITY_COMPUTATION_METHOD=euclidean
 
 ## Database connection
 The service connects to the application PostgreSQL database with a dedicated user (**analytics_user**).
