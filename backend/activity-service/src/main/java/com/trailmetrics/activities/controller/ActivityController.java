@@ -1,13 +1,20 @@
 package com.trailmetrics.activities.controller;
 
 import com.trailmetrics.activities.dto.ActivityDTO;
+import com.trailmetrics.activities.dto.ActivityDetailsDTO;
+import com.trailmetrics.activities.exception.ResourceNotFoundException;
+import com.trailmetrics.activities.exception.TrailmetricsAuthServiceException;
+import com.trailmetrics.activities.exception.UnauthorizedAccessException;
+import com.trailmetrics.activities.mapper.ActivityDetailsMapper;
 import com.trailmetrics.activities.mapper.ActivityMapper;
 import com.trailmetrics.activities.model.Activity;
+import com.trailmetrics.activities.model.ActivityStream;
 import com.trailmetrics.activities.response.ApiResponse;
 import com.trailmetrics.activities.response.ApiResponseFactory;
 import com.trailmetrics.activities.service.ActivityService;
 import com.trailmetrics.activities.service.ActivitySyncService;
 import com.trailmetrics.activities.service.UserAuthService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,6 +25,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,6 +39,7 @@ public class ActivityController {
   private final ActivitySyncService activitySyncService;
   private final UserAuthService userAuthService;
   private final ActivityService activityService;
+  private final ActivityMapper activityMapper;
 
 
   @GetMapping
@@ -38,42 +47,79 @@ public class ActivityController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "15") int size
   ) {
-    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-    if (authentication == null || !authentication.isAuthenticated()) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
-
-    Long userId = Long.valueOf(authentication.getName());
     try {
+      // Get userId
+      Long userId = Long.parseLong(getAuthenticatedUserId());
       // Create Pageable instance using page and size (default sorting by start date descending)
       Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startDate"));
       // Fetch paginated activities
       Page<Activity> activitiesPage = activityService.fetchUserActivities(userId, pageable);
       Page<ActivityDTO> activityDTOPage = activitiesPage.map(ActivityMapper::convertToDTO);
-      
+
       // Return the paginated result
       return ApiResponseFactory.ok(activityDTOPage, "Fetched activities");
+
+    } catch (TrailmetricsAuthServiceException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
     } catch (Exception e) {
-      return ApiResponseFactory.error("Failed to fetch activities");
+      return ApiResponseFactory.error("Failed to fetch activities",
+          HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 
   @GetMapping("/sync")
   public ResponseEntity<ApiResponse<Object>> syncActivities() {
+    try {
+      String userId = getAuthenticatedUserId();
+      String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
+
+      if (accessToken == null) {
+        throw new TrailmetricsAuthServiceException("Unauthorized");
+      }
+
+      // Synchronize Strava activities
+      activitySyncService.syncUserActivities(userId, accessToken);
+
+      return ApiResponseFactory.ok(null, "Synchronization started");
+    } catch (TrailmetricsAuthServiceException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+    } catch (Exception e) {
+      return ApiResponseFactory.error("Failed to start activity sync",
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @GetMapping("/{activityId}")
+  public ResponseEntity<ApiResponse<ActivityDetailsDTO>> getActivityDetails(
+      @PathVariable Long activityId) {
+    try {
+      // Fetch activity and check that it belongs to the authenticated user
+      Long userId = Long.parseLong(getAuthenticatedUserId());
+      Activity activity = activityService.getUserActivityById(activityId, userId);
+      // Fetch activity streams
+      List<ActivityStream> streams = activity.getStreams();
+      ActivityDetailsDTO activityDetailsDTO = ActivityDetailsMapper.toDetailsDto(activity, streams);
+
+      return ApiResponseFactory.ok(activityDetailsDTO, "Fetched activity details");
+      
+    } catch (TrailmetricsAuthServiceException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+    } catch (UnauthorizedAccessException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+    } catch (ResourceNotFoundException e) {
+      return ApiResponseFactory.error("Activity not found", HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return ApiResponseFactory.error("Failed to fetch activity details",
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  private String getAuthenticatedUserId() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
     if (authentication == null || !authentication.isAuthenticated()) {
-      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+      throw new TrailmetricsAuthServiceException("Unauthorized");
     }
-
-    String userId = authentication.getName();
-    String accessToken = userAuthService.fetchAccessTokenFromAuthService(userId);
-    if (accessToken == null) {
-      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
-    }
-
-    // Synchronize Strava activities
-    activitySyncService.syncUserActivities(userId, accessToken);
-
-    return ApiResponseFactory.ok(null, "Synchronization started");
+    return authentication.getName();
   }
+
 }
