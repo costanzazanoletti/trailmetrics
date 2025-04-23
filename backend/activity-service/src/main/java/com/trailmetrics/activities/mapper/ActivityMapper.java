@@ -30,5 +30,25 @@ public class ActivityMapper {
     return activity;
   }
 
-
+  public static ActivityDTO convertToDTO(Activity activity) {
+    ActivityDTO dto = new ActivityDTO();
+    dto.setId(activity.getId());
+    dto.setName(activity.getName());
+    dto.setDistance(activity.getDistance());
+    dto.setMovingTime(activity.getMovingTime());
+    dto.setTotalElevationGain(activity.getTotalElevationGain());
+    dto.setAthleteId(activity.getAthleteId());
+    dto.setType(activity.getType());
+    dto.setSportType(activity.getSportType());
+    dto.setStartDate(activity.getStartDate());
+    dto.setMapPolyline(activity.getMapPolyline());
+    dto.setAverageSpeed(activity.getAverageSpeed());
+    dto.setMaxSpeed(activity.getMaxSpeed());
+    dto.setAverageCadence(activity.getAverageCadence());
+    dto.setAverageTemp(activity.getAverageTemp());
+    dto.setAverageWatts(activity.getAverageWatts());
+    dto.setWeightedAverageWatts(activity.getWeightedAverageWatts());
+    dto.setHasHeartrate(activity.getHasHeartrate());
+    return dto;
+  }
 }

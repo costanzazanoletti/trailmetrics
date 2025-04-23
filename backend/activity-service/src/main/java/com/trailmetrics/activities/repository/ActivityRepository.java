@@ -2,20 +2,19 @@ package com.trailmetrics.activities.repository;
 
 import com.trailmetrics.activities.model.Activity;
 import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 @Repository
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
 
+  @Query("select a.id from Activity a where a.athleteId = :athleteId")
+  Set<Long> findActivityIdsByAthleteId(Long athleteId);
 
-  /**
-   * Finds all activity ids for a given athlete ID.
-   */
-  Set<Long> findActivityIdsByAthleteId(Long userId);
-
-  /**
-   * Deletes activities by id
-   */
   void deleteByIdIn(Set<Long> ids);
+
+  Page<Activity> findByAthleteId(Long athleteId, Pageable pageable);
 }

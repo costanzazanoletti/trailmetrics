@@ -39,7 +39,11 @@ public class UserAuthService {
     try {
       String encryptedToken = internalRestTemplate.getForObject(url, String.class);
       return Optional.ofNullable(encryptedToken).map(textEncryptor::decrypt)
+          .filter(token -> !token.isBlank())
           .orElseThrow(() -> new RuntimeException("Received null token from Auth Service"));
+    } catch (HttpClientErrorException.NotFound e) {
+      log.warn("No access token found in Auth Service for userId={}", userId);
+      throw new TrailmetricsAuthServiceException("Access token not found for user");
     } catch (HttpClientErrorException.Unauthorized e) {
       log.error("Unauthorized: Invalid user credentials or token expired for userId={}", userId);
       throw new TrailmetricsAuthServiceException(
