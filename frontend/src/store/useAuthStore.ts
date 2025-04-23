@@ -16,10 +16,10 @@ const zustandStorage: PersistStorage<AuthState> = {
 };
 
 interface User {
-  id: string;
+  userId: string;
   firstname: string;
   lastname: string;
-  profile: string;
+  profileUrl: string;
 }
 
 interface AuthState {
