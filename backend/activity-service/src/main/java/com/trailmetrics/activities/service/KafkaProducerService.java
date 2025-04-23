@@ -1,8 +1,8 @@
 package com.trailmetrics.activities.service;
 
-import com.trailmetrics.activities.dto.ActivitiesDeletedMessage;
-import com.trailmetrics.activities.dto.ActivityProcessedMessage;
-import com.trailmetrics.activities.dto.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitiesDeletedMessage;
+import com.trailmetrics.activities.dto.kafka.ActivityProcessedMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitySyncMessage;
 import java.time.Instant;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.trailmetrics.activities.dto;
+package com.trailmetrics.activities.dto.kafka;
 
 import java.time.Instant;
 import lombok.AllArgsConstructor;

@@ -1,5 +1,7 @@
 package com.trailmetrics.activities.service;
 
+import com.trailmetrics.activities.exception.ResourceNotFoundException;
+import com.trailmetrics.activities.exception.UnauthorizedAccessException;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.repository.ActivityRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,5 +17,15 @@ public class ActivityService {
 
   public Page<Activity> fetchUserActivities(Long userId, Pageable pageable) {
     return activityRepository.findByAthleteId(userId, pageable);
+  }
+
+  public Activity getUserActivityById(Long activityId, Long userId) {
+    Activity activity = activityRepository.findById(activityId)
+        .orElseThrow(() -> new ResourceNotFoundException("Activity not found"));
+    if (!activity.getAthleteId().equals(userId)) {
+      throw new UnauthorizedAccessException("User unauthorized to view this activity");
+    }
+
+    return activity;
   }
 }

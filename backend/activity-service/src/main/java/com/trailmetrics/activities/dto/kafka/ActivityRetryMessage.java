@@ -1,4 +1,4 @@
-package com.trailmetrics.activities.dto;
+package com.trailmetrics.activities.dto.kafka;
 
 import java.time.Instant;
 import lombok.AllArgsConstructor;
@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ActivityRetryMessage {
+
   private String userId;
   private Long activityId;
   private int retryCount;

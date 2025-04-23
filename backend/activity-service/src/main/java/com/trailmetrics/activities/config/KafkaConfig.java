@@ -1,10 +1,10 @@
 package com.trailmetrics.activities.config;
 
-import com.trailmetrics.activities.dto.ActivitiesDeletedMessage;
-import com.trailmetrics.activities.dto.ActivityProcessedMessage;
-import com.trailmetrics.activities.dto.ActivityRetryMessage;
-import com.trailmetrics.activities.dto.ActivitySyncMessage;
-import com.trailmetrics.activities.dto.UserSyncRetryMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitiesDeletedMessage;
+import com.trailmetrics.activities.dto.kafka.ActivityProcessedMessage;
+import com.trailmetrics.activities.dto.kafka.ActivityRetryMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.kafka.UserSyncRetryMessage;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.kafka.clients.consumer.ConsumerConfig;

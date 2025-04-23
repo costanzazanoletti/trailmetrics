@@ -5,9 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
-import com.trailmetrics.activities.dto.ActivitiesDeletedMessage;
-import com.trailmetrics.activities.dto.ActivityProcessedMessage;
-import com.trailmetrics.activities.dto.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitiesDeletedMessage;
+import com.trailmetrics.activities.dto.kafka.ActivityProcessedMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitySyncMessage;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;

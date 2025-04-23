@@ -8,9 +8,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.trailmetrics.activities.dto.ActivityRetryMessage;
-import com.trailmetrics.activities.dto.ActivitySyncMessage;
-import com.trailmetrics.activities.dto.UserSyncRetryMessage;
+import com.trailmetrics.activities.dto.kafka.ActivityRetryMessage;
+import com.trailmetrics.activities.dto.kafka.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.kafka.UserSyncRetryMessage;
 import java.time.Instant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

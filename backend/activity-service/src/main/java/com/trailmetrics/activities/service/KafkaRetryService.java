@@ -1,7 +1,7 @@
 package com.trailmetrics.activities.service;
 
-import com.trailmetrics.activities.dto.ActivityRetryMessage;
-import com.trailmetrics.activities.dto.UserSyncRetryMessage;
+import com.trailmetrics.activities.dto.kafka.ActivityRetryMessage;
+import com.trailmetrics.activities.dto.kafka.UserSyncRetryMessage;
 import java.time.Duration;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
