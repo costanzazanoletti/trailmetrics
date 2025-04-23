@@ -37,10 +37,13 @@ class JwtUtilsTest {
 
   @Test
   void testGenerateAndParseToken() {
-    String userId = "testuser";
+    String userId = "12345";
+    String firstName = "John";
+    String lastName = "Doe";
+    String profileUrl = "https://trailmetrics.com/user";
 
     // Generate a token
-    String token = jwtUtils.generateToken(userId);
+    String token = jwtUtils.generateToken(userId, firstName, lastName, profileUrl);
     assertNotNull(token);
     System.out.println("Generated Token: " + token);
 
@@ -48,11 +51,14 @@ class JwtUtilsTest {
     Claims claims = jwtUtils.parseToken(token);
     assertNotNull(claims);
     assertEquals(userId, claims.getSubject());
+    assertEquals(firstName, claims.get("firstname"));
+    assertEquals(lastName, claims.get("lastname"));
+    assertEquals(profileUrl, claims.get("profile"));
   }
 
   @Test
   void testTokenExpiration() {
-    String token = jwtUtils.generateToken("testuser");
+    String token = jwtUtils.generateToken("testuser", "john", "doe", "http://picture.com");
 
     // Ensure token is initially valid
     assertTrue(jwtUtils.isTokenValid(token));

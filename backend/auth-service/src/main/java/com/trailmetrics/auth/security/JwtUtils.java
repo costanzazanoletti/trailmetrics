@@ -65,7 +65,7 @@ public class JwtUtils {
   private PublicKey loadPublicKey(String path) throws Exception {
     Path keyPath = Paths.get(path.replace("file:", "")); // Ensure correct path format
     String key = new String(Files.readAllBytes(keyPath));
-  
+
     key = key.replace("-----BEGIN PUBLIC KEY-----", "")
         .replace("-----END PUBLIC KEY-----", "")
         .replaceAll("\\s", ""); // Remove spaces
@@ -75,7 +75,7 @@ public class JwtUtils {
     return KeyFactory.getInstance("RSA").generatePublic(keySpec);
   }
 
-  public String generateToken(String userId) {
+  public String generateToken(String userId, String firstname, String lastname, String profileUrl) {
     Instant now = Instant.now();
     Instant expiration = now.plusSeconds(EXPIRATION_TIME);
 
@@ -83,6 +83,9 @@ public class JwtUtils {
         .setSubject(userId)
         .setIssuedAt(Date.from(now))
         .setExpiration(Date.from(expiration))
+        .claim("firstname", firstname)
+        .claim("lastname", lastname)
+        .claim("profile", profileUrl)
         .signWith(privateKey, SignatureAlgorithm.RS256)
         .compact();
   }
@@ -104,5 +107,22 @@ public class JwtUtils {
       System.out.println("Token is invalid or expired.");
       return false;
     }
+  }
+
+  public String extractUsername(String token) {
+    Claims claims = parseToken(token);
+    return claims.getSubject();
+  }
+
+  public String extractFirstname(String token) {
+    return parseToken(token).get("firstname", String.class);
+  }
+
+  public String extractLastname(String token) {
+    return parseToken(token).get("lastname", String.class);
+  }
+
+  public String extractProfileUrl(String token) {
+    return parseToken(token).get("profile", String.class);
   }
 }
