@@ -4,6 +4,7 @@ import com.trailmetrics.auth.service.UserAuthService;
 import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -60,6 +61,7 @@ public class SecurityConfig {
   private final JwtUtils jwtUtils;
 
   private final ApiKeyAuthFilter apiKeyAuthFilter;
+  private final JwtAuthFilter jwtAuthFilter;
 
   private final CustomAuthenticationEntryPoint authenticationEntryPoint;
   private final CustomAccessDeniedHandler accessDeniedHandler;
@@ -78,10 +80,12 @@ public class SecurityConfig {
 
 
   public SecurityConfig(JwtUtils jwtUtils, ApiKeyAuthFilter apiKeyAuthFilter,
+      JwtAuthFilter jwtAuthFilter,
       CustomAuthenticationEntryPoint authenticationEntryPoint,
       CustomAccessDeniedHandler accessDeniedHandler, UserAuthService userAuthService) {
     this.jwtUtils = jwtUtils;
     this.apiKeyAuthFilter = apiKeyAuthFilter;
+    this.jwtAuthFilter = jwtAuthFilter;
     this.authenticationEntryPoint = authenticationEntryPoint;
     this.accessDeniedHandler = accessDeniedHandler;
     this.userAuthService = userAuthService;
@@ -106,6 +110,8 @@ public class SecurityConfig {
         )
         .addFilterBefore(apiKeyAuthFilter,
             UsernamePasswordAuthenticationFilter.class) // Apply API Key filter
+        .addFilterBefore(jwtAuthFilter,
+            UsernamePasswordAuthenticationFilter.class) // Apply JWT filter
         .sessionManagement(session -> session.disable())
         .exceptionHandling(
             ex -> ex.authenticationEntryPoint(authenticationEntryPoint)
@@ -120,10 +126,14 @@ public class SecurityConfig {
                 OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
                 String userId = authentication.getName(); // This is the Strava user ID
                 log.info("OAuth Success: UserId={}", userId);
+                // Extract attribute from principal
+                Map<String, Object> attributes = oauthToken.getPrincipal().getAttributes();
+                String firstname = (String) attributes.get("firstname");
+                String lastname = (String) attributes.get("lastname");
+                String profile = (String) attributes.get("profile");
 
                 // Generate JWT for frontend authentication
-                String jwtToken = jwtUtils.generateToken(userId);
-
+                String jwtToken = jwtUtils.generateToken(userId, firstname, lastname, profile);
                 // Send JWT in HTTP-only Cookie
                 Cookie jwtCookie = new Cookie(jwtCookieName, jwtToken);
                 jwtCookie.setHttpOnly(true);
