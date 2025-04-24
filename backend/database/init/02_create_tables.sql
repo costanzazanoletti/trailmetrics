@@ -61,7 +61,7 @@ CREATE TABLE segments (
     end_time INTEGER,
     start_heartrate INTEGER,
     end_heartrate INTEGER,
-    avg_heartrate INTEGER,
+    avg_heartrate DOUBLE PRECISION,
     avg_speed DOUBLE PRECISION,
     elevation_gain INTEGER,
     hr_drift DOUBLE PRECISION, 

@@ -26,7 +26,7 @@ def process_segments(activity_id, user_id, compressed_segments, engine):
         # Move column 'segment_id' in first position in the DataFrame
         cols = ['segment_id'] + [col for col in segments_df.columns if col != 'segment_id']
         segments_df = segments_df[cols]
-
+        
         # Compute metrics for efficiency score
         segments_df = segments_df.apply(calculate_metrics, axis=1)
 
