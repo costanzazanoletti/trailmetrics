@@ -17,3 +17,41 @@ export interface Activity {
   weighted_average_watts: number | null;
   has_heartrate: boolean;
 }
+
+export interface ActivityStream {
+  latlng: [number, number][];
+  altitude: number[];
+  heartrate: number[];
+  distance: number[];
+}
+
+export interface Segment {
+  segmentId: string;
+  activityId: number;
+  startDistance: number;
+  endDistance: number;
+  avgGradient: number;
+  avgCadence: number;
+  startLat: number;
+  endLat: number;
+  startLng: number;
+  endLng: number;
+  startAltitude: number;
+  endAltitude: number;
+  startTime: number;
+  endTime: number;
+  avgSpeed: number;
+  elevationGain: number;
+  efficiencyScore: number;
+  startHeartrate: number;
+  endHeartrate: number;
+  avgHeartrate: number;
+  roadType: string;
+  surfaceType: string;
+  temperature: number;
+  humidity: number;
+  wind: number;
+  weatherId: number;
+  weatherMain: string;
+  weatherDescription: string;
+}
