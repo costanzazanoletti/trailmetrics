@@ -25,7 +25,7 @@ public class SegmentDTO {
   private Integer endTime;
 
   private Double avgSpeed;
-  private Double elevationGain;
+  private Integer elevationGain;
   private Double efficiencyScore;
 
   private Integer startHeartrate;

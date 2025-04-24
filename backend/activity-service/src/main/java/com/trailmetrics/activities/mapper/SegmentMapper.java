@@ -28,8 +28,7 @@ public class SegmentMapper {
     dto.setEndTime(segment.getEndTime());
 
     dto.setAvgSpeed(segment.getAvgSpeed());
-    dto.setElevationGain(
-        segment.getElevationGain() != null ? segment.getElevationGain().doubleValue() : null);
+    dto.setElevationGain(segment.getElevationGain());
     dto.setEfficiencyScore(segment.getEfficiencyScore());
 
     dto.setStartHeartrate(segment.getStartHeartrate());
