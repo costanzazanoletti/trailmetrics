@@ -1,36 +1,21 @@
-import { useEffect } from 'react';
-import { useAuthStore } from '../store/useAuthStore';
+import { useEffect} from 'react';
 import { fetchActivities } from '../services/activityService';
 
 const Dashboard = () => {
-  const { user, isAuthenticated, checkAuth } = useAuthStore();
-
   useEffect(() => {
-    if (!isAuthenticated) {
-      checkAuth();
-    } else {
-      fetchActivities()
-        .then((data) => console.log(data))
-        .catch((error) => console.log(error));
-    }
-  }, [isAuthenticated, checkAuth]);
-
-  if (!isAuthenticated) {
-    window.location.href = '/';
-    return null;
-  }
+    fetchActivities()
+      .then((data) => {
+        console.log("Fetched activities:", data);
+      })
+      .catch((error) => {
+        console.error("Error fetching activities:", error);
+      });
+  }, []);
 
   return (
     <div className="container mx-auto p-4">
-      <h1>
-        Welcome, {user?.firstname} {user?.lastname}
-      </h1>
-      <button
-        onClick={() => useAuthStore.getState().logout()}
-        className="bg-red-500 text-white px-4 py-2 rounded-md"
-      >
-        Logout
-      </button>
+      <h1 className="text-2xl font-semibold">Dashboard</h1>
+      <p>Check the console for fetched activities.</p>
     </div>
   );
 };

@@ -16,7 +16,6 @@ const zustandStorage: PersistStorage<AuthState> = {
 };
 
 interface User {
-  userId: string;
   firstname: string;
   lastname: string;
   profileUrl: string;
@@ -50,10 +49,9 @@ export const useAuthStore = create(
         if (data.authenticated) {
           set({
             user: {
-              id: data.userId,
               firstname: data.firstname || '',
               lastname: data.lastname || '',
-              profile: data.profile || '',
+              profileUrl: data.profileUrl || '',
             },
             isAuthenticated: true,
           });
