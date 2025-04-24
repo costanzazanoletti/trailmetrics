@@ -6,8 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ActivityMapper {
-
-
+  
   public static Activity convertToEntity(ActivityDTO dto) {
     Activity activity = new Activity();
     activity.setId(dto.getId());

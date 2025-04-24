@@ -1,14 +1,17 @@
 package com.trailmetrics.activities.controller;
 
 import com.trailmetrics.activities.dto.ActivityDTO;
-import com.trailmetrics.activities.dto.ActivityDetailsDTO;
+import com.trailmetrics.activities.dto.ActivityStreamsDTO;
+import com.trailmetrics.activities.dto.SegmentDTO;
 import com.trailmetrics.activities.exception.ResourceNotFoundException;
 import com.trailmetrics.activities.exception.TrailmetricsAuthServiceException;
 import com.trailmetrics.activities.exception.UnauthorizedAccessException;
-import com.trailmetrics.activities.mapper.ActivityDetailsMapper;
 import com.trailmetrics.activities.mapper.ActivityMapper;
+import com.trailmetrics.activities.mapper.ActivityStreamMapper;
+import com.trailmetrics.activities.mapper.SegmentMapper;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.model.ActivityStream;
+import com.trailmetrics.activities.model.Segment;
 import com.trailmetrics.activities.response.ApiResponse;
 import com.trailmetrics.activities.response.ApiResponseFactory;
 import com.trailmetrics.activities.service.ActivityService;
@@ -39,7 +42,6 @@ public class ActivityController {
   private final ActivitySyncService activitySyncService;
   private final UserAuthService userAuthService;
   private final ActivityService activityService;
-  private final ActivityMapper activityMapper;
 
 
   @GetMapping
@@ -90,26 +92,87 @@ public class ActivityController {
   }
 
   @GetMapping("/{activityId}")
-  public ResponseEntity<ApiResponse<ActivityDetailsDTO>> getActivityDetails(
+  public ResponseEntity<ApiResponse<ActivityDTO>> getActivityDetails(
       @PathVariable Long activityId) {
     try {
       // Fetch activity and check that it belongs to the authenticated user
       Long userId = Long.parseLong(getAuthenticatedUserId());
       Activity activity = activityService.getUserActivityById(activityId, userId);
-      // Fetch activity streams
-      List<ActivityStream> streams = activity.getStreams();
-      ActivityDetailsDTO activityDetailsDTO = ActivityDetailsMapper.toDetailsDto(activity, streams);
 
-      return ApiResponseFactory.ok(activityDetailsDTO, "Fetched activity details");
-      
+      ActivityDTO activityDTO = ActivityMapper.convertToDTO(activity);
+
+      return ApiResponseFactory.ok(activityDTO, "Fetched activity details");
+
     } catch (TrailmetricsAuthServiceException e) {
       return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
     } catch (UnauthorizedAccessException e) {
-      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+      return ApiResponseFactory.error("User doesn't have access to this activity",
+          HttpStatus.FORBIDDEN);
     } catch (ResourceNotFoundException e) {
       return ApiResponseFactory.error("Activity not found", HttpStatus.NOT_FOUND);
     } catch (Exception e) {
       return ApiResponseFactory.error("Failed to fetch activity details",
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @GetMapping("/{activityId}/streams")
+  public ResponseEntity<ApiResponse<ActivityStreamsDTO>> getActivityStreams(
+      @PathVariable Long activityId) {
+    try {
+      // Fetch activity and check that it belongs to the authenticated user
+      Long userId = Long.parseLong(getAuthenticatedUserId());
+      Activity activity = activityService.getUserActivityById(activityId, userId);
+      List<ActivityStream> streams = activityService.getActivityStreams(activity.getId());
+
+      if (streams.isEmpty()) {
+        throw new ResourceNotFoundException("Not found");
+      }
+
+      ActivityStreamsDTO streamsDTO = ActivityStreamMapper.mapToDTO(streams);
+      return ApiResponseFactory.ok(streamsDTO, "Fetched activity streams");
+
+    } catch (TrailmetricsAuthServiceException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+    } catch (UnauthorizedAccessException e) {
+      return ApiResponseFactory.error("User doesn't have access to this activity",
+          HttpStatus.FORBIDDEN);
+    } catch (ResourceNotFoundException e) {
+      return ApiResponseFactory.error("Activity streams not found", HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return ApiResponseFactory.error("Failed to fetch activity streams",
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @GetMapping("/{activityId}/segments")
+  public ResponseEntity<ApiResponse<List<SegmentDTO>>> getActivitySegments(
+      @PathVariable Long activityId) {
+    try {
+      // Fetch activity and check that it belongs to the authenticated user
+      Long userId = Long.parseLong(getAuthenticatedUserId());
+      Activity activity = activityService.getUserActivityById(activityId, userId);
+      List<Segment> segments = activityService.getActivitySegments(activity.getId());
+
+      if (segments.isEmpty()) {
+        throw new ResourceNotFoundException("Not found");
+      }
+
+      List<SegmentDTO> segmentDTOS = segments.stream()
+          .map(SegmentMapper::toDTO)
+          .toList();
+
+      return ApiResponseFactory.ok(segmentDTOS, "Fetched activity segments");
+
+    } catch (TrailmetricsAuthServiceException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+    } catch (UnauthorizedAccessException e) {
+      return ApiResponseFactory.error("User doesn't have access to this activity",
+          HttpStatus.FORBIDDEN);
+    } catch (ResourceNotFoundException e) {
+      return ApiResponseFactory.error("Activity streams not found", HttpStatus.NOT_FOUND);
+    } catch (Exception e) {
+      return ApiResponseFactory.error("Failed to fetch activity streams",
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
