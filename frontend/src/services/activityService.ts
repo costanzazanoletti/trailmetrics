@@ -7,12 +7,31 @@ const apiClient = axios.create({
   withCredentials: true, // Ensures cookies (JWT) are sent with requests
 });
 
-export const fetchActivities = async () => {
+export interface PaginatedActivitiesResponse {
+  content: any[]; 
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number; // current page
+}
+
+export const fetchActivities = async (
+  page = 0,
+  size = 10
+): Promise<PaginatedActivitiesResponse> => {
   try {
-    const res = await apiClient.get('/api/activities');
-    return res.data;
+    const res = await apiClient.get("/api/activities", {
+      params: { page, size },
+    });
+    return res.data.data;
   } catch (error) {
-    console.error('Unable to fetch activities');
-    return [];
+    console.error("Unable to fetch activities", error);
+    throw error;
   }
 };
+
+export const fetchActivityById = async (id: string) => {
+  const res = await apiClient.get(`/api/activities/${id}`);
+  return res.data.data; 
+};
+
