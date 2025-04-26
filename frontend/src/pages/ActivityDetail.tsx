@@ -5,6 +5,7 @@ import { fetchActivityById, fetchActivityStreams, fetchActivitySegments } from "
 import { mapActivityFromApi, CamelCaseActivity } from "../mappers/activityMapper";
 import { ActivityStream, Segment } from "../types/activity";
 import { MapWithTrack } from "../components/MapWithTrack";
+import { CombinedChart } from "../components/CombinedChart";
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,7 +53,17 @@ const ActivityDetail = () => {
         <div className="mt-6">
           <h2 className="text-lg font-semibold mb-2">Activity Map</h2>
           <MapWithTrack latlng={streams.latlng} />
-        </div>
+          <h2 className="text-lg font-semibold mb-2">Charts</h2>
+          <CombinedChart
+          time={streams.time}
+          altitude={streams.altitude}
+          heartrate={streams.heartrate}
+          cadence={streams.cadence}
+          speed={streams.speed}
+          distance={streams.distance}
+          grade={streams.grade}
+        /> 
+        </div>      
       )}
 
       {segments.length > 0 && (

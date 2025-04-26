@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {useSearchParams, Link} from "react-router-dom";
 import { fetchActivities } from "../services/activityService";
 import { mapActivityFromApi, CamelCaseActivity } from "../mappers/activityMapper";
-import {formatDuration} from "../utils/timeFormat";
+import {formatDuration} from "../utils/formatUtils";
 
 const Dashboard = () => {
   const [activities, setActivities] = useState<CamelCaseActivity[]>([]);

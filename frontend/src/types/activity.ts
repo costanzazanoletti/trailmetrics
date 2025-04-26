@@ -23,6 +23,10 @@ export interface ActivityStream {
   altitude: number[];
   heartrate: number[];
   distance: number[];
+  time: number[];
+  speed: number[];
+  grade: number[];
+  cadence: number[];
 }
 
 export interface Segment {
