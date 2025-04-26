@@ -4,6 +4,7 @@ import {useLocation, useNavigate} from "react-router-dom";
 import { fetchActivityById, fetchActivityStreams, fetchActivitySegments } from "../services/activityService";
 import { mapActivityFromApi, CamelCaseActivity } from "../mappers/activityMapper";
 import { ActivityStream, Segment } from "../types/activity";
+import { MapWithTrack } from "../components/MapWithTrack";
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -48,26 +49,24 @@ const ActivityDetail = () => {
       <p>Duration: {Math.floor(activity.movingTime / 60)} min</p>
       <p>Elevation: {activity.totalElevationGain} m</p>
       {streams && (
-  <div className="mt-6">
-    <h2 className="text-lg font-semibold mb-2">Stream Summary</h2>
-    <p className="text-sm text-gray-700">GPS points: {streams.latlng.length}</p>
-    <p className="text-sm text-gray-700">Altitude points: {streams.altitude.length}</p>
-    <p className="text-sm text-gray-700">Heart rate points: {streams.heartrate.length}</p>
-  </div>
-)}
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-2">Activity Map</h2>
+          <MapWithTrack latlng={streams.latlng} />
+        </div>
+      )}
 
-{segments.length > 0 && (
-  <div className="mt-6">
-    <h2 className="text-lg font-semibold mb-2">Segments</h2>
-    <ul className="text-sm text-gray-700 space-y-1">
-      {segments.map((seg) => (
-        <li key={seg.segmentId} className="border-b pb-2">
-          <span className="font-medium">#{seg.segmentId}</span>, slope {seg.avgGradient.toFixed(1)}%
-        </li>
-      ))}
-    </ul>
-  </div>
-)}
+      {segments.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-2">Segments</h2>
+          <ul className="text-sm text-gray-700 space-y-1">
+            {segments.map((seg) => (
+              <li key={seg.segmentId} className="border-b pb-2">
+                <span className="font-medium">#{seg.segmentId}</span>, slope {seg.avgGradient.toFixed(1)}%
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <button
         onClick={() => navigate(`/dashboard?page=${fromPage}`)} // back to dashboard preserving the page
