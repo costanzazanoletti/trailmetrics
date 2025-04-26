@@ -41,5 +41,6 @@ public class SegmentDTO {
   private Integer weatherId;
   private String weatherMain;
   private String weatherDescription;
+  private String weatherIcon;
 
 }

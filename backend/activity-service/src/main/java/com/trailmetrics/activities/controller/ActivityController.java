@@ -42,6 +42,7 @@ public class ActivityController {
   private final ActivitySyncService activitySyncService;
   private final UserAuthService userAuthService;
   private final ActivityService activityService;
+  private final SegmentMapper segmentMapper;
 
 
   @GetMapping
@@ -159,7 +160,7 @@ public class ActivityController {
       }
 
       List<SegmentDTO> segmentDTOS = segments.stream()
-          .map(SegmentMapper::toDTO)
+          .map(segment -> segmentMapper.toDTO(segment))
           .toList();
 
       return ApiResponseFactory.ok(segmentDTOS, "Fetched activity segments");

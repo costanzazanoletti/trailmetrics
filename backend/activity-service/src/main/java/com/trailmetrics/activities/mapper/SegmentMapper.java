@@ -2,10 +2,17 @@ package com.trailmetrics.activities.mapper;
 
 import com.trailmetrics.activities.dto.SegmentDTO;
 import com.trailmetrics.activities.model.Segment;
+import com.trailmetrics.activities.repository.WeatherIconRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
+@Service
+@RequiredArgsConstructor
 public class SegmentMapper {
 
-  public static SegmentDTO toDTO(Segment segment) {
+  private final WeatherIconRepository weatherIconRepository;
+
+  public SegmentDTO toDTO(Segment segment) {
     SegmentDTO dto = new SegmentDTO();
 
     dto.setSegmentId(segment.getSegmentId());
@@ -44,6 +51,9 @@ public class SegmentMapper {
     dto.setWeatherId(segment.getWeatherId());
     dto.setWeatherMain(segment.getWeatherMain());
     dto.setWeatherDescription(segment.getWeatherDescription());
+
+    weatherIconRepository.findIconByWeatherId(segment.getWeatherId())
+        .ifPresent(dto::setWeatherIcon);
 
     return dto;
   }
