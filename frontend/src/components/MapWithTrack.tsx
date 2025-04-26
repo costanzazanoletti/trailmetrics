@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
 import { LatLngBoundsExpression, LatLngExpression } from "leaflet";
 import { Segment } from "../types/activity";
@@ -7,6 +7,7 @@ interface MapWithTrackProps {
   latlng: [number, number][];
   segments: Segment[];
   selectedSegmentId?: string;
+  onSelectSegment?: (segment: Segment | null) => void;
 }
 
 const tileLayers = {
@@ -43,7 +44,7 @@ function FitBounds({ latlng, selectedSegment }: { latlng: [number, number][]; se
   return null;
 }
 
-export function MapWithTrack({ latlng, segments, selectedSegmentId }: MapWithTrackProps) {
+export function MapWithTrack({ latlng, segments, selectedSegmentId, onSelectSegment }: MapWithTrackProps) {
   const [selectedMap, setSelectedMap] = useState<keyof typeof tileLayers>("OpenStreetMap");
 
   if (latlng.length === 0) {
@@ -53,8 +54,6 @@ export function MapWithTrack({ latlng, segments, selectedSegmentId }: MapWithTra
   const path: LatLngExpression[] = latlng.map(([lat, lng]) => [lat, lng]);
   const center = path[Math.floor(path.length / 2)];
   const selectedSegment = segments.find(seg => seg.segmentId === selectedSegmentId);
-
-console.log("selectedSegmentId:", selectedSegmentId);
 
   return (
     <div className="relative w-full">
@@ -73,27 +72,36 @@ console.log("selectedSegmentId:", selectedSegmentId);
         <Polyline positions={latlng} color="blue" weight={3} />
 
         {/* Segments */}
-        {segments.map(segment => {
-          let isSelected = segment.segmentId.trim() === selectedSegmentId?.trim()
-          return (
-            <Polyline
-              key={`${segment.segmentId}-${selectedSegmentId}`}
-              positions={[
-                [segment.startLat, segment.startLng],
-                [segment.endLat, segment.endLng]
-              ]}
-              color={isSelected ? "red" : "orange"}
-              weight={isSelected ? 6 : 3}
-              dashArray={isSelected ? undefined : "4"}
-            />
-          );
-        })}
+        {segments.map(segment => (
+        <Polyline
+          key={`${segment.segmentId}-${selectedSegmentId}`}
+          positions={[
+            [segment.startLat, segment.startLng],
+            [segment.endLat, segment.endLng]
+          ]}
+          color={segment.segmentId.trim() === selectedSegmentId?.trim() ? "red" : "orange"}
+          weight={segment.segmentId.trim() === selectedSegmentId?.trim() ? 8 : 4}
+          dashArray={segment.segmentId.trim() === selectedSegmentId?.trim() ? undefined : "5"}
+          eventHandlers={{
+            click: () => {
+              if (onSelectSegment) {
+                if (segment.segmentId === selectedSegmentId) {
+                  onSelectSegment(null);
+                } else {
+                  onSelectSegment(segment);
+                }
+              }
+            },
+          }}
+        />
+      ))}
+
         {/* Fit bounds logic */}
         <FitBounds latlng={latlng} selectedSegment={selectedSegment} />
       </MapContainer>
 
       {/* Dropdown sopra la mappa */}
-      <div className="absolute top-2 left-2 z-[1000] bg-white rounded shadow p-2">
+      <div className="absolute top-2 right-2 z-[1000] bg-white rounded shadow p-2">
         <select
           value={selectedMap}
           onChange={(e) => setSelectedMap(e.target.value as keyof typeof tileLayers)}

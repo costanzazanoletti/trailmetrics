@@ -1,11 +1,12 @@
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { formatTime } from "../utils/formatUtils";
 import { fetchActivityById, fetchActivityStreams, fetchActivitySegments } from "../services/activityService";
 import { mapActivityFromApi, CamelCaseActivity } from "../mappers/activityMapper";
 import { ActivityStream, Segment } from "../types/activity";
 import { MapWithTrack } from "../components/MapWithTrack";
 import { CombinedChart } from "../components/CombinedChart";
-import { formatTime } from "../utils/formatUtils";
+import { SegmentCard } from "../components/SegmentCard";
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,17 @@ const ActivityDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const fromPage = (location.state as { fromPage?: number })?.fromPage ?? 0;
+
+  const segmentRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  useEffect(() => {
+  if (selectedSegment) {
+      const ref = segmentRefs.current.get(selectedSegment.segmentId);
+      if (ref) {
+        ref.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [selectedSegment]);
 
   useEffect(() => {
     if (!id) return;
@@ -74,25 +86,20 @@ const ActivityDetail = () => {
                 return (
                   <li
                     key={seg.segmentId}
-                    className={`border-b pb-2 flex flex-col ${
-                      selectedSegment?.segmentId === seg.segmentId ? "bg-gray-200" : ""
-                    }`}
+                    ref={(el) => {
+                      if (el) segmentRefs.current.set(seg.segmentId, el);
+                    }}
                   >
-                    <div className="flex justify-between items-center">
-                      <span>
-                        #{shortId} - {seg.avgGradient.toFixed(1)}% | Efficiency: {seg.efficiencyScore?.toFixed(2) ?? "N/A"}
-                      </span>
-                      <button
-                        onClick={() => setSelectedSegment(seg)}
-                        className="text-blue-500 underline text-xs"
-                      >
-                        Focus
-                      </button>
-                    </div>
+                    <SegmentCard 
+                      segment={seg}
+                      isSelected={selectedSegment?.segmentId === seg.segmentId}
+                      onSelect={setSelectedSegment}
+                    />
                   </li>
                 );
               })}
           </ul>
+
           ) : (
             <p className="text-gray-500 text-sm">No segments available</p>
           )}
@@ -107,6 +114,7 @@ const ActivityDetail = () => {
                   latlng={streams.latlng}
                   segments={segments}
                   selectedSegmentId={selectedSegment?.segmentId}
+                  onSelectSegment={(seg) => setSelectedSegment(seg)}
                 />
               </div>
 
