@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MapContainer, Polyline, TileLayer, useMap } from "react-leaflet";
 import { LatLngBoundsExpression, LatLngExpression } from "leaflet";
+import { Segment } from "../types/activity";
 
 interface MapWithTrackProps {
   latlng: [number, number][];
+  segments: Segment[];
+  selectedSegmentId?: string;
 }
 
 const tileLayers = {
@@ -21,18 +24,26 @@ const tileLayers = {
   },
 };
 
-function FitBounds({ latlng }: { latlng: [number, number][] }) {
+function FitBounds({ latlng, selectedSegment }: { latlng: [number, number][]; selectedSegment?: Segment }) {
   const map = useMap();
 
-  if (latlng.length > 0) {
-    const bounds: LatLngBoundsExpression = latlng.map(([lat, lng]) => [lat, lng]);
-    map.fitBounds(bounds, { padding: [20, 20] });
-  }
+  useEffect(() => {
+    if (selectedSegment) {
+      const bounds: LatLngBoundsExpression = [
+        [selectedSegment.startLat, selectedSegment.startLng],
+        [selectedSegment.endLat, selectedSegment.endLng],
+      ];
+      map.fitBounds(bounds, { padding: [50, 50] });
+    } else if (latlng.length > 0) {
+      const bounds: LatLngBoundsExpression = latlng.map(([lat, lng]) => [lat, lng]);
+      map.fitBounds(bounds, { padding: [20, 20] });
+    }
+  }, [latlng, selectedSegment, map]);
 
   return null;
 }
 
-export function MapWithTrack({ latlng }: MapWithTrackProps) {
+export function MapWithTrack({ latlng, segments, selectedSegmentId }: MapWithTrackProps) {
   const [selectedMap, setSelectedMap] = useState<keyof typeof tileLayers>("OpenStreetMap");
 
   if (latlng.length === 0) {
@@ -41,10 +52,13 @@ export function MapWithTrack({ latlng }: MapWithTrackProps) {
 
   const path: LatLngExpression[] = latlng.map(([lat, lng]) => [lat, lng]);
   const center = path[Math.floor(path.length / 2)];
+  const selectedSegment = segments.find(seg => seg.segmentId === selectedSegmentId);
+
+console.log("selectedSegmentId:", selectedSegmentId);
 
   return (
     <div className="relative w-full">
-      {/* Mappa */}
+      {/* Map */}
       <MapContainer
         center={center}
         zoom={13}
@@ -54,8 +68,28 @@ export function MapWithTrack({ latlng }: MapWithTrackProps) {
           url={tileLayers[selectedMap].url}
           attribution={tileLayers[selectedMap].attribution}
         />
-        <Polyline positions={path} />
-        <FitBounds latlng={latlng} />
+
+        {/* Main track */}
+        <Polyline positions={latlng} color="blue" weight={3} />
+
+        {/* Segments */}
+        {segments.map(segment => {
+          let isSelected = segment.segmentId.trim() === selectedSegmentId?.trim()
+          return (
+            <Polyline
+              key={`${segment.segmentId}-${selectedSegmentId}`}
+              positions={[
+                [segment.startLat, segment.startLng],
+                [segment.endLat, segment.endLng]
+              ]}
+              color={isSelected ? "red" : "orange"}
+              weight={isSelected ? 6 : 3}
+              dashArray={isSelected ? undefined : "4"}
+            />
+          );
+        })}
+        {/* Fit bounds logic */}
+        <FitBounds latlng={latlng} selectedSegment={selectedSegment} />
       </MapContainer>
 
       {/* Dropdown sopra la mappa */}
