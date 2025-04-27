@@ -131,3 +131,15 @@ CREATE TABLE weather_icons (
   description VARCHAR(255),
   icon VARCHAR(5)
 );
+
+CREATE TABLE segment_efficiency_zone (
+    segment_id VARCHAR(50) PRIMARY KEY,
+    zone_among_similars VARCHAR(20),
+    zone_among_grade_category VARCHAR(20),
+    calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (segment_id) REFERENCES segments(segment_id)
+);
+
+-- Indexes
+CREATE INDEX idx_efficiency_calculated_at ON segment_efficiency_zone (calculated_at);
+

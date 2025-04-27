@@ -23,6 +23,7 @@ export function SegmentCard({ segment, isSelected, onSelect }: SegmentCardProps)
   const humidity = segment.humidity ?? "N/A";
   const wind = segment.wind?.toFixed(1) ?? "N/A";
   const weatherDescr = segment.weatherDescription ?? "N/A";
+  const weatherMain = segment.weatherMain ?? "N/A";
 
   const roadType = segment.roadType ?? "N/A";
   const surfaceType = segment.surfaceType ?? "N/A";
@@ -44,7 +45,7 @@ export function SegmentCard({ segment, isSelected, onSelect }: SegmentCardProps)
           {avgGradient}% | {length} m | {elevationGain > 0 ? '+' : ''}{elevationGain} m
         </div>
         {weatherIconUrl && (
-          <img src={weatherIconUrl} alt={weatherDescr} className="w-8 h-8" />
+          <img src={weatherIconUrl} alt={weatherMain} title={weatherDescr} className="w-8 h-8" />
         )}
       </div>
 
@@ -57,7 +58,7 @@ export function SegmentCard({ segment, isSelected, onSelect }: SegmentCardProps)
       </div>
 
       <div className="text-xs text-gray-600 mt-2">
-        {temperature}°C | hum:{humidity}% | wind: {wind} km/h
+        {temperature}°C | hum: {humidity}% | wind: {wind} km/h
       </div>
     </div>
   );
