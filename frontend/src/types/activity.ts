@@ -58,4 +58,5 @@ export interface Segment {
   weatherId: number;
   weatherMain: string;
   weatherDescription: string;
+  weatherIcon: string;
 }

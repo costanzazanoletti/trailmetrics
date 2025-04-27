@@ -1,4 +1,5 @@
 import { Segment } from "../types/activity";
+import { formatPace } from "../utils/formatUtils";
 
 interface SegmentCardProps {
   segment: Segment;
@@ -14,19 +15,21 @@ export function SegmentCard({ segment, isSelected, onSelect }: SegmentCardProps)
 
   const elevationGain = segment.elevationGain ?? "N/A";
   const avgGradient = segment.avgGradient?.toFixed(1) ?? "N/A";
-  const avgSpeed = segment.avgSpeed?.toFixed(2) ?? "N/A";
+  const avgSpeed = segment.avgSpeed? formatPace(segment.avgSpeed) : "N/A";
   const avgHeartrate = segment.avgHeartrate?.toFixed(0) ?? "N/A";
+  const avgCadence = segment.avgCadence?.toFixed(0) ?? "N/A";
 
   const temperature = segment.temperature?.toFixed(1) ?? "N/A";
   const humidity = segment.humidity ?? "N/A";
   const wind = segment.wind?.toFixed(1) ?? "N/A";
+  const weatherDescr = segment.weatherDescription ?? "N/A";
 
   const roadType = segment.roadType ?? "N/A";
   const surfaceType = segment.surfaceType ?? "N/A";
 
   // Weather Icon URL (API OpenWeather)
-  const weatherIconUrl = segment.weatherId
-    ? `https://openweathermap.org/img/wn/${segment.weatherId}d.png`
+  const weatherIconUrl = segment.weatherIcon
+    ? `https://openweathermap.org/img/wn/${segment.weatherIcon}@2x.png`
     : null;
 
   return (
@@ -38,23 +41,23 @@ export function SegmentCard({ segment, isSelected, onSelect }: SegmentCardProps)
     >
       <div className="flex justify-between items-center mb-2">
         <div className="text-sm font-semibold">
-          {length} m | {elevationGain} m
+          {avgGradient}% | {length} m | {elevationGain > 0 ? '+' : ''}{elevationGain} m
         </div>
         {weatherIconUrl && (
-          <img src={weatherIconUrl} alt="weather" className="w-8 h-8" />
+          <img src={weatherIconUrl} alt={weatherDescr} className="w-8 h-8" />
         )}
       </div>
 
       <div className="text-xs text-gray-700">
-        {avgGradient}% | {avgSpeed} m/s | {avgHeartrate} bpm
+        {avgCadence} spm | {avgSpeed} | {avgHeartrate} bpm
       </div>
 
       <div className="text-xs text-gray-600 mt-2">
-        {roadType} |{surfaceType}
+        {roadType} | {surfaceType}
       </div>
 
       <div className="text-xs text-gray-600 mt-2">
-        {temperature}°C | Hum: {humidity}% | Wind: {wind} m/s
+        {temperature}°C | hum:{humidity}% | wind: {wind} km/h
       </div>
     </div>
   );
