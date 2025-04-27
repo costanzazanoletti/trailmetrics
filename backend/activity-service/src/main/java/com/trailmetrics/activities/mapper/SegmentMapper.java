@@ -2,6 +2,8 @@ package com.trailmetrics.activities.mapper;
 
 import com.trailmetrics.activities.dto.SegmentDTO;
 import com.trailmetrics.activities.model.Segment;
+import com.trailmetrics.activities.model.SegmentEfficiencyZone;
+import com.trailmetrics.activities.repository.SegmentEfficiencyZoneRepository;
 import com.trailmetrics.activities.repository.WeatherIconRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -11,10 +13,12 @@ import org.springframework.stereotype.Service;
 public class SegmentMapper {
 
   private final WeatherIconRepository weatherIconRepository;
+  private final SegmentEfficiencyZoneRepository segmentEfficiencyZoneRepository;
 
   public SegmentDTO toDTO(Segment segment) {
     SegmentDTO dto = new SegmentDTO();
 
+    // Copy plain data
     dto.setSegmentId(segment.getSegmentId());
     dto.setActivityId(segment.getActivityId());
 
@@ -52,9 +56,17 @@ public class SegmentMapper {
     dto.setWeatherMain(segment.getWeatherMain());
     dto.setWeatherDescription(segment.getWeatherDescription());
 
+    // Get icon name from database
     weatherIconRepository.findIconByWeatherId(segment.getWeatherId())
         .ifPresent(dto::setWeatherIcon);
 
+    // Get efficiency zones from database
+    SegmentEfficiencyZone efficiencyZone = segmentEfficiencyZoneRepository.findById(
+        segment.getSegmentId()).orElse(null);
+    if (efficiencyZone != null) {
+      dto.setEfficiencyZone(efficiencyZone.getZoneAmongSimilars());
+      dto.setGradeEfficiencyZone(efficiencyZone.getZoneAmongGradeCategory());
+    }
     return dto;
   }
 }

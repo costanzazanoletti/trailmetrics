@@ -28,12 +28,11 @@ public class SegmentEfficiencyZoneService {
     log.info("Computing segment efficiency zones for activity {}", activityId);
 
     for (Segment segment : segments) {
-      String segmentId = segment.getSegmentId();
       try {
-        getOrCalculateZone(segmentId);
+        getOrCalculateZone(segment.getSegmentId());
       } catch (Exception e) {
         // Log warning
-        log.warn("Failed to calculate efficiency zone for segment {}: ", segmentId, e);
+        log.warn("Failed to calculate efficiency zone for segment {}: ", segment.getSegmentId(), e);
       }
     }
   }

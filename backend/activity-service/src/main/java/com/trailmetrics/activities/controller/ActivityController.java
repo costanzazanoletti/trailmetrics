@@ -16,6 +16,7 @@ import com.trailmetrics.activities.response.ApiResponse;
 import com.trailmetrics.activities.response.ApiResponseFactory;
 import com.trailmetrics.activities.service.ActivityService;
 import com.trailmetrics.activities.service.ActivitySyncService;
+import com.trailmetrics.activities.service.SegmentEfficiencyZoneService;
 import com.trailmetrics.activities.service.UserAuthService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class ActivityController {
   private final UserAuthService userAuthService;
   private final ActivityService activityService;
   private final SegmentMapper segmentMapper;
+  private final SegmentEfficiencyZoneService segmentEfficiencyZoneService;
 
 
   @GetMapping
@@ -101,7 +103,6 @@ public class ActivityController {
       Activity activity = activityService.getUserActivityById(activityId, userId);
 
       ActivityDTO activityDTO = ActivityMapper.convertToDTO(activity);
-
       return ApiResponseFactory.ok(activityDTO, "Fetched activity details");
 
     } catch (TrailmetricsAuthServiceException e) {
@@ -153,12 +154,18 @@ public class ActivityController {
       // Fetch activity and check that it belongs to the authenticated user
       Long userId = Long.parseLong(getAuthenticatedUserId());
       Activity activity = activityService.getUserActivityById(activityId, userId);
+
+      // Check and compute efficiency zones for activity segments
+      segmentEfficiencyZoneService.recalculateZonesForActivity(activityId);
+
+      // Fetch activity segments
       List<Segment> segments = activityService.getActivitySegments(activity.getId());
 
       if (segments.isEmpty()) {
         throw new ResourceNotFoundException("Not found");
       }
 
+      // Prepare response
       List<SegmentDTO> segmentDTOS = segments.stream()
           .map(segment -> segmentMapper.toDTO(segment))
           .toList();

@@ -43,4 +43,7 @@ public class SegmentDTO {
   private String weatherDescription;
   private String weatherIcon;
 
+  private String efficiencyZone;
+  private String gradeEfficiencyZone;
+
 }
