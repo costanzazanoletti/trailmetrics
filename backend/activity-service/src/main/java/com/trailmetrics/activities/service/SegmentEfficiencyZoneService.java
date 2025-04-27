@@ -4,13 +4,13 @@ import com.trailmetrics.activities.model.Segment;
 import com.trailmetrics.activities.model.SegmentEfficiencyZone;
 import com.trailmetrics.activities.repository.SegmentEfficiencyZoneRepository;
 import com.trailmetrics.activities.repository.SegmentRepository;
-import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,7 +21,12 @@ public class SegmentEfficiencyZoneService {
   private final SegmentEfficiencyZoneRepository zoneRepository;
   private final SegmentRepository segmentRepository;
 
-  @Transactional
+  @Async
+  public void recalculateZonesForActivityAsync(Long activityId) {
+    recalculateZonesForActivity(activityId);
+  }
+
+
   public void recalculateZonesForActivity(Long activityId) {
     List<Segment> segments = segmentRepository.findByActivityId(activityId);
 

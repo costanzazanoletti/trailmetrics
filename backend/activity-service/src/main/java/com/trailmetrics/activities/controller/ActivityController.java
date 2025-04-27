@@ -20,6 +20,7 @@ import com.trailmetrics.activities.service.SegmentEfficiencyZoneService;
 import com.trailmetrics.activities.service.UserAuthService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/activities")
 @RequiredArgsConstructor
+@Slf4j
 public class ActivityController {
 
 
@@ -67,6 +69,7 @@ public class ActivityController {
     } catch (TrailmetricsAuthServiceException e) {
       return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
     } catch (Exception e) {
+      log.error("Failed to fetch activies", e);
       return ApiResponseFactory.error("Failed to fetch activities",
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -113,6 +116,7 @@ public class ActivityController {
     } catch (ResourceNotFoundException e) {
       return ApiResponseFactory.error("Activity not found", HttpStatus.NOT_FOUND);
     } catch (Exception e) {
+      log.error("Failed to fetch activity details", e);
       return ApiResponseFactory.error("Failed to fetch activity details",
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -142,6 +146,7 @@ public class ActivityController {
     } catch (ResourceNotFoundException e) {
       return ApiResponseFactory.error("Activity streams not found", HttpStatus.NOT_FOUND);
     } catch (Exception e) {
+      log.error("Failed to fetch activity streams", e);
       return ApiResponseFactory.error("Failed to fetch activity streams",
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -155,8 +160,8 @@ public class ActivityController {
       Long userId = Long.parseLong(getAuthenticatedUserId());
       Activity activity = activityService.getUserActivityById(activityId, userId);
 
-      // Check and compute efficiency zones for activity segments
-      segmentEfficiencyZoneService.recalculateZonesForActivity(activityId);
+      // Check and compute efficiency zones for activity segments asynchronously
+      segmentEfficiencyZoneService.recalculateZonesForActivityAsync(activityId);
 
       // Fetch activity segments
       List<Segment> segments = activityService.getActivitySegments(activity.getId());
@@ -167,7 +172,7 @@ public class ActivityController {
 
       // Prepare response
       List<SegmentDTO> segmentDTOS = segments.stream()
-          .map(segment -> segmentMapper.toDTO(segment))
+          .map(segmentMapper::toDTO)
           .toList();
 
       return ApiResponseFactory.ok(segmentDTOS, "Fetched activity segments");
@@ -180,7 +185,8 @@ public class ActivityController {
     } catch (ResourceNotFoundException e) {
       return ApiResponseFactory.error("Activity streams not found", HttpStatus.NOT_FOUND);
     } catch (Exception e) {
-      return ApiResponseFactory.error("Failed to fetch activity streams",
+      log.error("Failed to fetch activity segments", e);
+      return ApiResponseFactory.error("Failed to fetch activity segments",
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
