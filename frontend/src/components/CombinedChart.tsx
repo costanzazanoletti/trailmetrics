@@ -56,7 +56,7 @@ export function CombinedChart({
     if (currentSpeed && currentSpeed > 0) {
       const speedKmH = currentSpeed * 3.6;
       const paceSecPerKm = 3600 / speedKmH;
-      pace = paceSecPerKm / 60; // pace in min/km
+      pace = paceSecPerKm / 60;
     }
 
     return {
@@ -65,7 +65,7 @@ export function CombinedChart({
       heartrate: heartrate[index],
       cadence: cadence[index],
       speed: currentSpeed,
-      pace: pace,
+      pace,
       time: time[index],
       grade: grade[index],
     };
@@ -74,8 +74,15 @@ export function CombinedChart({
   const minAltitude = Math.min(...altitude);
   const maxAltitude = Math.max(...altitude);
 
+  const SCALING_FACTOR = 100;
+  const totalKm = distance?.[distance.length - 1]
+    ? distance[distance.length - 1] / 1000
+    : 1;
+  const chartWidthPx = Math.max(totalKm * SCALING_FACTOR, 600);
+
   return (
     <div className="w-full">
+      {/* Toggles */}
       <div className="flex gap-4 mb-4">
         <label className="text-sm">
           <input
@@ -106,140 +113,158 @@ export function CombinedChart({
         </label>
       </div>
 
-      <div className="h-96">
-        <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart
-            data={data}
-            onMouseMove={(state) => {
-              if (state && typeof state.activeTooltipIndex === 'number') {
-                onHoverIndexChange?.(state.activeTooltipIndex);
-              }
-            }}
-            onClick={(state) => {
-              if (!state || typeof state.activeLabel !== 'number') return;
-              const clickedKm = state.activeLabel;
-
-              const found = segments?.find(
-                (seg) =>
-                  seg.startDistance / 1000 <= clickedKm &&
-                  seg.endDistance / 1000 >= clickedKm
-              );
-
-              if (found && onSegmentClick) {
-                onSegmentClick(found);
-              }
-            }}
-          >
-            <defs>
-              <linearGradient id="altitudeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#9CA3AF" stopOpacity={1} />
-                <stop offset="95%" stopColor="#9CA3AF" stopOpacity={0.5} />
-              </linearGradient>
-            </defs>
-
-            <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
-
-            <XAxis
-              dataKey="x"
-              type="number"
-              domain={['dataMin', 'dataMax']}
-              tickFormatter={(value) => `${value.toFixed(0)} km`}
-            />
-            <YAxis
-              yAxisId="left"
-              domain={[minAltitude - 20, maxAltitude + 20]}
-              tickFormatter={(value) => `${value} m`}
-              label={{
-                value: 'Altitude (m)',
-                angle: -90,
-                position: 'insideLeft',
+      {/* Chart */}
+      <div style={{ overflowX: 'auto' }}>
+        <div
+          style={{
+            minWidth: `${chartWidthPx}px`,
+            height: 400,
+          }}
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <ComposedChart
+              data={data}
+              onMouseMove={(state) => {
+                if (state && typeof state.activeTooltipIndex === 'number') {
+                  onHoverIndexChange?.(state.activeTooltipIndex);
+                }
               }}
-            />
-            <YAxis
-              yAxisId="right"
-              orientation="right"
-              tickFormatter={(value) => `${value}`}
-              label={{
-                value: 'HR / Cadence / Pace',
-                angle: 90,
-                position: 'insideRight',
+              onClick={(state) => {
+                if (!state || typeof state.activeLabel !== 'number') return;
+                const clickedKm = state.activeLabel;
+
+                const found = segments.find(
+                  (seg) =>
+                    seg.startDistance / 1000 <= clickedKm &&
+                    seg.endDistance / 1000 >= clickedKm
+                );
+                if (found && onSegmentClick) onSegmentClick(found);
               }}
-            />
+            >
+              <defs>
+                <linearGradient
+                  id="altitudeGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="5%" stopColor="#9CA3AF" stopOpacity={1} />
+                  <stop offset="95%" stopColor="#9CA3AF" stopOpacity={0.5} />
+                </linearGradient>
+              </defs>
 
-            <Tooltip content={<CustomTooltip />} />
-
-            {segments.map((segment) => {
-              const x1 = segment.startDistance / 1000;
-              const x2 = segment.endDistance / 1000;
-              const isSelected = segment.segmentId === selectedSegmentId;
-
-              return (
-                <ReferenceArea
-                  key={segment.segmentId}
-                  x1={x1}
-                  x2={x2}
-                  stroke={isSelected ? '#EF4444' : '#D1D5DB'}
-                  fill={isSelected ? '#FECACA' : '#E5E7EB'}
-                  fillOpacity={isSelected ? 0.3 : 0.15}
-                  strokeOpacity={0.6}
-                  ifOverflow="extendDomain"
-                  yAxisId="left"
-                />
-              );
-            })}
-
-            <Area
-              type="monotone"
-              dataKey="altitude"
-              yAxisId="left"
-              stroke="none"
-              fill="url(#altitudeGradient)"
-              fillOpacity={0.5}
-            />
-
-            {showHeartRate && (
-              <Line
-                type="monotone"
-                dataKey="heartrate"
-                stroke="#EF4444"
-                dot={false}
-                strokeWidth={2}
-                yAxisId="right"
+              <CartesianGrid
+                strokeDasharray="3 3"
+                horizontal
+                vertical={false}
               />
-            )}
-            {showCadence && (
-              <Line
-                type="monotone"
-                dataKey="cadence"
-                stroke="#3B82F6"
-                dot={false}
-                strokeWidth={2}
-                yAxisId="right"
-              />
-            )}
-            {showPace && (
-              <Line
-                type="monotone"
-                dataKey="pace"
-                stroke="#22C55E"
-                dot={false}
-                strokeWidth={2}
-                yAxisId="right"
-              />
-            )}
 
-            {typeof highlightIndex === 'number' && data[highlightIndex] && (
-              <ReferenceDot
-                x={data[highlightIndex].x}
-                y={data[highlightIndex].altitude}
+              <XAxis
+                dataKey="x"
+                type="number"
+                domain={['dataMin', 'dataMax']}
+                tickFormatter={(value) => `${value.toFixed(0)} km`}
+              />
+              <YAxis
                 yAxisId="left"
-                r={4}
-                fill="#1D4ED8"
-                stroke="white"
+                domain={[minAltitude - 20, maxAltitude + 20]}
+                tickFormatter={(value) => `${value} m`}
+                label={{
+                  value: 'Altitude (m)',
+                  angle: -90,
+                  position: 'insideLeft',
+                }}
               />
-            )}
-          </ComposedChart>
-        </ResponsiveContainer>
+              <YAxis
+                yAxisId="right"
+                orientation="right"
+                tickFormatter={(value) => `${value}`}
+                label={{
+                  value: 'HR / Cadence / Pace',
+                  angle: 90,
+                  position: 'insideRight',
+                }}
+              />
+
+              <Tooltip content={<CustomTooltip />} />
+
+              {/* Highlighted areas for segments */}
+              {segments.map((segment) => {
+                const x1 = segment.startDistance / 1000;
+                const x2 = segment.endDistance / 1000;
+                const isSelected = segment.segmentId === selectedSegmentId;
+
+                return (
+                  <ReferenceArea
+                    key={segment.segmentId}
+                    x1={x1}
+                    x2={x2}
+                    stroke={isSelected ? '#EF4444' : '#D1D5DB'}
+                    fill={isSelected ? '#FECACA' : '#E5E7EB'}
+                    fillOpacity={isSelected ? 0.3 : 0.15}
+                    strokeOpacity={0.6}
+                    ifOverflow="extendDomain"
+                    yAxisId="left"
+                  />
+                );
+              })}
+
+              {/* Main altitude area */}
+              <Area
+                type="monotone"
+                dataKey="altitude"
+                yAxisId="left"
+                stroke="none"
+                fill="url(#altitudeGradient)"
+                fillOpacity={0.5}
+              />
+
+              {/* Optional overlays */}
+              {showHeartRate && (
+                <Line
+                  type="monotone"
+                  dataKey="heartrate"
+                  stroke="#EF4444"
+                  dot={false}
+                  strokeWidth={2}
+                  yAxisId="right"
+                />
+              )}
+              {showCadence && (
+                <Line
+                  type="monotone"
+                  dataKey="cadence"
+                  stroke="#3B82F6"
+                  dot={false}
+                  strokeWidth={2}
+                  yAxisId="right"
+                />
+              )}
+              {showPace && (
+                <Line
+                  type="monotone"
+                  dataKey="pace"
+                  stroke="#22C55E"
+                  dot={false}
+                  strokeWidth={2}
+                  yAxisId="right"
+                />
+              )}
+
+              {typeof highlightIndex === 'number' && data[highlightIndex] && (
+                <ReferenceDot
+                  x={data[highlightIndex].x}
+                  y={data[highlightIndex].altitude}
+                  yAxisId="left"
+                  r={4}
+                  fill="#1D4ED8"
+                  stroke="white"
+                />
+              )}
+            </ComposedChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   );
