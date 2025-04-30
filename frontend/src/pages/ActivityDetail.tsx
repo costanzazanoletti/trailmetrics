@@ -1,6 +1,5 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
-import { formatTime } from '../utils/formatUtils';
 import { shouldPollForZones } from '../utils/efficiencyUtils';
 import {
   fetchActivityById,
@@ -15,10 +14,10 @@ import {
 import { ActivityStream, Segment } from '../types/activity';
 import { MapWithTrack } from '../components/MapWithTrack';
 import { CombinedChart } from '../components/CombinedChart';
-import { SegmentCard } from '../components/SegmentCard';
 import { EfficiencyLegend } from '../components/EfficiencyZoneLegend';
 import { ActivityHeader } from '../components/ActivityHeader';
 import { SegmentList } from '../components/SegmentList';
+import { SimilarSegmentsPanel } from '../components/SimilarSegmentsPanel';
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -29,10 +28,8 @@ const ActivityDetail = () => {
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [needsPolling, setNeedsPolling] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-  const [similarSegments, setSimilarSegments] = useState<Segment[] | null>(
-    null
-  );
-  const [showSimilarPanel, setShowSimilarPanel] = useState(false);
+  const [selectedSegmentForSimilar, setSelectedSegmentForSimilar] =
+    useState<Segment | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,11 +40,9 @@ const ActivityDetail = () => {
 
   const handleShowSimilar = async (segment: Segment) => {
     try {
-      const data = await fetchSimilarSegments(segment.segmentId);
-      setSimilarSegments(data);
-      setShowSimilarPanel(true);
-    } catch (err) {
-      console.error('Failed to load similar segments:', err);
+      setSelectedSegmentForSimilar(segment);
+    } catch (error) {
+      console.error('Failed to load similar segments', error);
     }
   };
 
@@ -137,6 +132,7 @@ const ActivityDetail = () => {
         <div className="flex-1 min-w-0 flex flex-col gap-6">
           {streams && (
             <>
+              {/* Map */}
               <div className="h-[400px]">
                 <MapWithTrack
                   latlng={streams.latlng}
@@ -146,7 +142,15 @@ const ActivityDetail = () => {
                   highlightIndex={highlightIndex}
                 />
               </div>
-
+              {/* Similar segments panel  */}
+              {selectedSegmentForSimilar && (
+                <SimilarSegmentsPanel
+                  segmentId={selectedSegmentForSimilar.segmentId}
+                  onClose={() => setSelectedSegmentForSimilar(null)}
+                  onSegmentClick={(seg) => setSelectedSegment(seg)}
+                />
+              )}
+              {/* Combined Chart */}
               <CombinedChart
                 time={streams.time}
                 altitude={streams.altitude}
