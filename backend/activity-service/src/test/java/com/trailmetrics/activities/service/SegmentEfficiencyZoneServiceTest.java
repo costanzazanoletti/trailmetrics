@@ -106,7 +106,7 @@ class SegmentEfficiencyZoneServiceTest {
   }
 
   @Test
-  void testGetOrCalculateZone_NoSimilarityData_ShouldThrowException() {
+  void testGetOrCalculateZone_NoSimilarityData_ShouldRaiseException() {
     String segmentId = "seg-3";
     Segment segment = new Segment();
     segment.setSegmentId(segmentId);
@@ -117,7 +117,7 @@ class SegmentEfficiencyZoneServiceTest {
     existingZone.setCalculatedAt(Instant.now());
 
     when(segmentRepository.findById(segmentId)).thenReturn(Optional.of(segment));
-    when(zoneRepository.findById(segmentId)).thenReturn(Optional.of(existingZone));
+    when(zoneRepository.findBySegmentId(segmentId)).thenReturn(Optional.of(existingZone));
     when(segmentRepository.findLatestCalculatedAtBySegmentId(segmentId))
         .thenReturn(Optional.empty()); // no similarity data!
 
@@ -125,6 +125,6 @@ class SegmentEfficiencyZoneServiceTest {
       zoneService.getOrCalculateZone(segmentId);
     });
 
-    assertTrue(ex.getMessage().contains("No segment similarity data"));
+    assertTrue(ex.getMessage().contains("no segment similarity data "));
   }
 }

@@ -15,7 +15,7 @@ public interface SegmentRepository extends JpaRepository<Segment, String> {
           SELECT s
           FROM Segment s
           WHERE s.segmentId IN (
-              SELECT ss.id.segmentId
+              SELECT ss.id.similarSegmentId
               FROM SegmentSimilarity ss
               WHERE ss.id.segmentId = :segmentId
               ORDER BY ss.rank ASC
