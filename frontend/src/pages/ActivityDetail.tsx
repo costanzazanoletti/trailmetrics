@@ -25,6 +25,7 @@ const ActivityDetail = () => {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [needsPolling, setNeedsPolling] = useState(false);
+  const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,7 +78,8 @@ const ActivityDetail = () => {
           setSegments(segmentData);
 
           const someWithoutZone = segmentData.some(
-            (s) => !s.zoneAmongSimilars || !s.zoneAmongGradeCategory
+            (s: Segment) =>
+              s.efficiencyZone == null || s.gradeEfficiencyZone == null
           );
 
           if (!someWithoutZone) {
@@ -139,7 +141,6 @@ const ActivityDetail = () => {
                   return idA - idB;
                 })
                 .map((seg) => {
-                  const shortId = seg.segmentId.split('-')[1] ?? seg.segmentId;
                   return (
                     <li
                       key={seg.segmentId}
@@ -173,6 +174,7 @@ const ActivityDetail = () => {
                   segments={segments}
                   selectedSegmentId={selectedSegment?.segmentId}
                   onSelectSegment={(seg) => setSelectedSegment(seg)}
+                  highlightIndex={highlightIndex}
                 />
               </div>
 
@@ -185,6 +187,11 @@ const ActivityDetail = () => {
                   speed={streams.speed}
                   distance={streams.distance}
                   grade={streams.grade}
+                  onHoverIndexChange={setHighlightIndex}
+                  highlightIndex={highlightIndex}
+                  segments={segments}
+                  selectedSegmentId={selectedSegment?.segmentId}
+                  onSegmentClick={setSelectedSegment}
                 />
               </div>
             </>

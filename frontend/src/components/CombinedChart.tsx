@@ -1,6 +1,18 @@
-import { useState } from "react";
-import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, TooltipProps } from "recharts";
-import { CustomTooltip } from "./CustomTooltip";
+import { useState } from 'react';
+import {
+  ComposedChart,
+  Area,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  ReferenceDot,
+  ReferenceArea,
+} from 'recharts';
+import { CustomTooltip } from './CustomTooltip';
+import { Segment } from '../types/activity';
 
 interface CombinedChartProps {
   time: number[];
@@ -9,11 +21,28 @@ interface CombinedChartProps {
   cadence: number[];
   speed: number[];
   distance: number[];
-  grade: number[]; 
+  grade: number[];
+  onHoverIndexChange?: (index: number) => void;
+  highlightIndex?: number | null;
+  segments?: Segment[];
+  selectedSegmentId?: string;
+  onSegmentClick?: (segment: Segment) => void;
 }
 
-
-export function CombinedChart({ time, altitude, heartrate, cadence, speed, distance, grade }: CombinedChartProps) {
+export function CombinedChart({
+  time,
+  altitude,
+  heartrate,
+  cadence,
+  speed,
+  distance,
+  grade,
+  onHoverIndexChange,
+  highlightIndex,
+  segments = [],
+  selectedSegmentId,
+  onSegmentClick,
+}: CombinedChartProps) {
   const [showHeartRate, setShowHeartRate] = useState(true);
   const [showCadence, setShowCadence] = useState(false);
   const [showPace, setShowPace] = useState(false);
@@ -21,34 +50,32 @@ export function CombinedChart({ time, altitude, heartrate, cadence, speed, dista
   if (altitude.length === 0) return <p>No data</p>;
 
   const data = altitude.map((alt, index) => {
-        const currentSpeed = speed[index];
-        let pace = undefined;
+    const currentSpeed = speed[index];
+    let pace = undefined;
 
-        if (currentSpeed && currentSpeed > 0) {
-            const speedKmH = currentSpeed * 3.6;
-            const paceSecPerKm = 3600 / speedKmH;
-            pace = paceSecPerKm / 60; // pace in min/km, float (es: 5.75 = 5'45")
-        }
+    if (currentSpeed && currentSpeed > 0) {
+      const speedKmH = currentSpeed * 3.6;
+      const paceSecPerKm = 3600 / speedKmH;
+      pace = paceSecPerKm / 60; // pace in min/km
+    }
 
-        return {
-            x: distance[index] / 1000,
-            altitude: alt,
-            heartrate: heartrate[index],
-            cadence: cadence[index],
-            speed: currentSpeed,
-            pace: pace,
-            time: time[index],
-            grade: grade[index],
-        };
-    });
+    return {
+      x: distance[index] / 1000,
+      altitude: alt,
+      heartrate: heartrate[index],
+      cadence: cadence[index],
+      speed: currentSpeed,
+      pace: pace,
+      time: time[index],
+      grade: grade[index],
+    };
+  });
 
   const minAltitude = Math.min(...altitude);
   const maxAltitude = Math.max(...altitude);
 
-
   return (
     <div className="w-full">
-      {/* Checkbox to select what to show */}
       <div className="flex gap-4 mb-4">
         <label className="text-sm">
           <input
@@ -79,10 +106,30 @@ export function CombinedChart({ time, altitude, heartrate, cadence, speed, dista
         </label>
       </div>
 
-      {/* Chart */}
       <div className="h-96">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={data}>
+          <ComposedChart
+            data={data}
+            onMouseMove={(state) => {
+              if (state && typeof state.activeTooltipIndex === 'number') {
+                onHoverIndexChange?.(state.activeTooltipIndex);
+              }
+            }}
+            onClick={(state) => {
+              if (!state || typeof state.activeLabel !== 'number') return;
+              const clickedKm = state.activeLabel;
+
+              const found = segments?.find(
+                (seg) =>
+                  seg.startDistance / 1000 <= clickedKm &&
+                  seg.endDistance / 1000 >= clickedKm
+              );
+
+              if (found && onSegmentClick) {
+                onSegmentClick(found);
+              }
+            }}
+          >
             <defs>
               <linearGradient id="altitudeGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="#9CA3AF" stopOpacity={1} />
@@ -99,22 +146,48 @@ export function CombinedChart({ time, altitude, heartrate, cadence, speed, dista
               tickFormatter={(value) => `${value.toFixed(0)} km`}
             />
             <YAxis
-                yAxisId="left"
-                domain={[minAltitude - 20, maxAltitude + 20]}
-                tickFormatter={(value) => `${value} m`}
-                label={{ value: "Altitude (m)", angle: -90, position: "insideLeft" }}
+              yAxisId="left"
+              domain={[minAltitude - 20, maxAltitude + 20]}
+              tickFormatter={(value) => `${value} m`}
+              label={{
+                value: 'Altitude (m)',
+                angle: -90,
+                position: 'insideLeft',
+              }}
             />
-
             <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickFormatter={(value) => `${value}`}
-                label={{ value: "HR / Cadence / Pace", angle: 90, position: "insideRight" }}
+              yAxisId="right"
+              orientation="right"
+              tickFormatter={(value) => `${value}`}
+              label={{
+                value: 'HR / Cadence / Pace',
+                angle: 90,
+                position: 'insideRight',
+              }}
             />
 
             <Tooltip content={<CustomTooltip />} />
 
-            {/* Altitude Area */}
+            {segments.map((segment) => {
+              const x1 = segment.startDistance / 1000;
+              const x2 = segment.endDistance / 1000;
+              const isSelected = segment.segmentId === selectedSegmentId;
+
+              return (
+                <ReferenceArea
+                  key={segment.segmentId}
+                  x1={x1}
+                  x2={x2}
+                  stroke={isSelected ? '#EF4444' : '#D1D5DB'}
+                  fill={isSelected ? '#FECACA' : '#E5E7EB'}
+                  fillOpacity={isSelected ? 0.3 : 0.15}
+                  strokeOpacity={0.6}
+                  ifOverflow="extendDomain"
+                  yAxisId="left"
+                />
+              );
+            })}
+
             <Area
               type="monotone"
               dataKey="altitude"
@@ -124,12 +197,11 @@ export function CombinedChart({ time, altitude, heartrate, cadence, speed, dista
               fillOpacity={0.5}
             />
 
-            {/* Dynamic lines */}
             {showHeartRate && (
               <Line
                 type="monotone"
                 dataKey="heartrate"
-                stroke="#EF4444" 
+                stroke="#EF4444"
                 dot={false}
                 strokeWidth={2}
                 yAxisId="right"
@@ -139,7 +211,7 @@ export function CombinedChart({ time, altitude, heartrate, cadence, speed, dista
               <Line
                 type="monotone"
                 dataKey="cadence"
-                stroke="#3B82F6" 
+                stroke="#3B82F6"
                 dot={false}
                 strokeWidth={2}
                 yAxisId="right"
@@ -149,10 +221,21 @@ export function CombinedChart({ time, altitude, heartrate, cadence, speed, dista
               <Line
                 type="monotone"
                 dataKey="pace"
-                stroke="#22C55E" 
+                stroke="#22C55E"
                 dot={false}
                 strokeWidth={2}
                 yAxisId="right"
+              />
+            )}
+
+            {typeof highlightIndex === 'number' && data[highlightIndex] && (
+              <ReferenceDot
+                x={data[highlightIndex].x}
+                y={data[highlightIndex].altitude}
+                yAxisId="left"
+                r={4}
+                fill="#1D4ED8"
+                stroke="white"
               />
             )}
           </ComposedChart>
