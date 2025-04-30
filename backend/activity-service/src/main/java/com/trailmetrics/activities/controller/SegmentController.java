@@ -6,6 +6,7 @@ import com.trailmetrics.activities.model.Segment;
 import com.trailmetrics.activities.repository.SegmentRepository;
 import com.trailmetrics.activities.response.ApiResponse;
 import com.trailmetrics.activities.response.ApiResponseFactory;
+import com.trailmetrics.activities.service.SegmentEfficiencyZoneService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,12 +23,18 @@ public class SegmentController {
 
   private final SegmentRepository segmentRepository;
   private final SegmentMapper segmentMapper;
+  private final SegmentEfficiencyZoneService segmentEfficiencyZoneService;
 
   @GetMapping("/{segmentId}/similar")
   public ResponseEntity<ApiResponse<List<SegmentDTO>>> getSimilarSegments(
       @PathVariable String segmentId) {
     try {
       List<Segment> similarSegments = segmentRepository.findTopSimilarSegments(segmentId);
+      // Compute efficiency zones for related activities asynchronously
+      similarSegments.forEach(
+          segment -> segmentEfficiencyZoneService.recalculateZonesForActivityAsync(
+              segment.getActivityId()));
+
       List<SegmentDTO> segmentDTOs = similarSegments.stream()
           .map(segmentMapper::toDTO)
           .toList();
