@@ -8,7 +8,7 @@ const apiClient = axios.create({
 });
 
 export interface PaginatedActivitiesResponse {
-  content: any[]; 
+  content: any[];
   totalPages: number;
   totalElements: number;
   size: number;
@@ -20,43 +20,52 @@ export const fetchActivities = async (
   size = 10
 ): Promise<PaginatedActivitiesResponse> => {
   try {
-    const res = await apiClient.get("/api/activities", {
+    const res = await apiClient.get('/api/activities', {
       params: { page, size },
     });
     return res.data.data;
   } catch (error) {
-    console.error("Unable to fetch activities", error);
+    console.error('Unable to fetch activities', error);
     throw error;
   }
 };
 
 export const fetchActivityById = async (id: string) => {
-  try{
+  try {
     const res = await apiClient.get(`/api/activities/${id}`);
-    return res.data.data; 
+    return res.data.data;
   } catch (error) {
-    console.error("Unable to fetch activity details", error);
+    console.error('Unable to fetch activity details', error);
     throw error;
   }
 };
 
 export const fetchActivityStreams = async (id: string) => {
-  try{
+  try {
     const res = await apiClient.get(`/api/activities/${id}/streams`);
-    return res.data.data; 
+    return res.data.data;
   } catch (error) {
-    console.error("Unable to fetch activity streams", error);
+    console.error('Unable to fetch activity streams', error);
     throw error;
   }
 };
 
 export const fetchActivitySegments = async (id: string) => {
-  try{
+  try {
     const res = await apiClient.get(`/api/activities/${id}/segments`);
-    return res.data.data; 
-  }catch (error) {
-    console.error("Unable to fetch activity segments", error);
+    return res.data.data;
+  } catch (error) {
+    console.error('Unable to fetch activity segments', error);
     throw error;
   }
 };
 
+export const fetchSimilarSegments = async (segmentId: string) => {
+  try {
+    const res = await apiClient.get(`/api/segments/${segmentId}/similar`);
+    return res.data.data;
+  } catch (error) {
+    console.error('Unable to fetch similar segments', error);
+    throw error;
+  }
+};
