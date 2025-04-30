@@ -6,6 +6,7 @@ import {
   fetchActivityById,
   fetchActivityStreams,
   fetchActivitySegments,
+  fetchSimilarSegments,
 } from '../services/activityService';
 import {
   mapActivityFromApi,
@@ -26,6 +27,10 @@ const ActivityDetail = () => {
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [needsPolling, setNeedsPolling] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const [similarSegments, setSimilarSegments] = useState<Segment[] | null>(
+    null
+  );
+  const [showSimilarPanel, setShowSimilarPanel] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -33,6 +38,16 @@ const ActivityDetail = () => {
   const fromPage = (location.state as { fromPage?: number })?.fromPage ?? 0;
 
   const segmentRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  const handleShowSimilar = async (segment: Segment) => {
+    try {
+      const data = await fetchSimilarSegments(segment.segmentId);
+      setSimilarSegments(data);
+      setShowSimilarPanel(true);
+    } catch (err) {
+      console.error('Failed to load similar segments:', err);
+    }
+  };
 
   useEffect(() => {
     if (selectedSegment) {
@@ -154,6 +169,7 @@ const ActivityDetail = () => {
                           selectedSegment?.segmentId === seg.segmentId
                         }
                         onSelect={setSelectedSegment}
+                        onShowSimilar={() => handleShowSimilar(seg)}
                       />
                     </li>
                   );

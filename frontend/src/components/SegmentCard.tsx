@@ -14,12 +14,14 @@ interface SegmentCardProps {
   segment: Segment;
   isSelected: boolean;
   onSelect: (segment: Segment) => void;
+  onShowSimilar?: () => void;
 }
 
 export function SegmentCard({
   segment,
   isSelected,
   onSelect,
+  onShowSimilar,
 }: SegmentCardProps) {
   const length =
     segment.endDistance && segment.startDistance
@@ -52,17 +54,51 @@ export function SegmentCard({
     >
       <div className="flex justify-between items-start mb-2">
         <div className="flex flex-col text-sm font-semibold">
+          <span className="text-xs text-gray-500 mb-2">
+            #{segment.segmentId}
+          </span>
           <span>{avgGradient}% grade</span>
           <span>{avgCadence} spm cadence</span>
         </div>
-        <div className="flex gap-2">
-          {segment.efficiencyZone && (
-            <EfficiencyIcon zone={segment.efficiencyZone} type="efficiency" />
-          )}
-          {segment.gradeEfficiencyZone && (
-            <EfficiencyIcon zone={segment.gradeEfficiencyZone} type="grade" />
-          )}
-        </div>
+        {onShowSimilar ? (
+          <div
+            className="relative group cursor-pointer"
+            onClick={onShowSimilar}
+          >
+            <div className="flex gap-2 p-1 rounded hover:bg-blue-100 transition">
+              {segment.efficiencyZone && (
+                <EfficiencyIcon
+                  zone={segment.efficiencyZone}
+                  type="efficiency"
+                />
+              )}
+              {segment.gradeEfficiencyZone && (
+                <EfficiencyIcon
+                  zone={segment.gradeEfficiencyZone}
+                  type="grade"
+                />
+              )}
+            </div>
+
+            {/* Tooltip */}
+            <div
+              className="absolute top-full left-1/2 -translate-x-1/2 mt-1 
+                  bg-gray-800 text-white text-xs px-2 py-1 rounded shadow 
+                  opacity-0 group-hover:opacity-100 transition-opacity duration-150 z-10 pointer-events-none"
+            >
+              Show similar segments
+            </div>
+          </div>
+        ) : (
+          <div className="flex gap-2">
+            {segment.efficiencyZone && (
+              <EfficiencyIcon zone={segment.efficiencyZone} type="efficiency" />
+            )}
+            {segment.gradeEfficiencyZone && (
+              <EfficiencyIcon zone={segment.gradeEfficiencyZone} type="grade" />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-700">
