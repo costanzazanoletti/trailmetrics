@@ -171,6 +171,7 @@ const ActivityDetail = () => {
                 <SimilarSegmentsPanel
                   segmentId={selectedSegmentForSimilar.segmentId}
                   currentActivityId={selectedSegmentForSimilar.activityId}
+                  gradeCategory={selectedSegmentForSimilar.gradeCategory}
                   onClose={() => setSelectedSegmentForSimilar(null)}
                   onSegmentClick={(seg) => setSelectedSegment(seg)}
                 />

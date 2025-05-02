@@ -9,8 +9,8 @@ export function ActivityHeader({ activity }: ActivityHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
       <div>
-        <h1 className="text-2xl font-semibold">{activity.name}</h1>
         <div className="text-xs text-gray-500 mt-1"># {activity.id}</div>
+        <h1 className="text-2xl font-semibold">{activity.name}</h1>
         <p className="text-gray-600 mt-2">
           {activity.sportType} | {new Date(activity.startDate).toLocaleString()}
         </p>

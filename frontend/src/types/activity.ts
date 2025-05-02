@@ -59,6 +59,7 @@ export interface Segment {
   weatherMain: string;
   weatherDescription: string;
   weatherIcon: string;
-  efficiencyZone: string,
-  gradeEfficiencyZone: string
+  efficiencyZone: string;
+  gradeEfficiencyZone: string;
+  gradeCategory: number;
 }

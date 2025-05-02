@@ -35,3 +35,8 @@ export function formatPace(speed: number | undefined) {
 
 export const getShortSegmentId = (segmentId: string) =>
   segmentId.includes('-') ? segmentId.split('-')[1] : segmentId;
+
+export function getGradeCategoryRange(gradeCategory: number): [number, number] {
+  const halfWidth = 1.25; // 2.5 / 2
+  return [gradeCategory - halfWidth, gradeCategory + halfWidth];
+}

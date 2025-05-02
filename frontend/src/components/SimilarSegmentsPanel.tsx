@@ -5,10 +5,12 @@ import {
   fetchTopSegmentsByGrade,
 } from '../services/activityService';
 import { SegmentCard } from './SegmentCard';
+import { getGradeCategoryRange } from '../utils/formatUtils';
 
 interface SimilarSegmentsPanelProps {
   segmentId: string;
   currentActivityId: number;
+  gradeCategory: number;
   onClose: () => void;
   onSegmentClick?: (segment: Segment) => void;
 }
@@ -16,6 +18,7 @@ interface SimilarSegmentsPanelProps {
 export function SimilarSegmentsPanel({
   segmentId,
   currentActivityId,
+  gradeCategory,
   onClose,
   onSegmentClick,
 }: SimilarSegmentsPanelProps) {
@@ -124,7 +127,10 @@ export function SimilarSegmentsPanel({
           </div>
 
           <div>
-            <h4 className="text-sm font-medium mb-2">Top 5 by grade</h4>
+            <h4 className="text-sm font-medium mb-2">
+              Top 5 by grade from {getGradeCategoryRange(gradeCategory)[0]}% to{' '}
+              {getGradeCategoryRange(gradeCategory)[1]}%
+            </h4>
             {renderSegmentList(topGradeSegments.slice(0, 5))}
           </div>
         </div>

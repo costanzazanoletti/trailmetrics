@@ -134,13 +134,12 @@ export function SegmentCard({
         <GaugeCircle size={14} className="text-blue-500" /> {avgSpeed}
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-gray-700 mt-2">
-        <Ruler size={14} /> {length} m
-        <TrendingUp size={14} /> {elevationGain} m D+
-      </div>
-
       {variant === 'full' && (
         <>
+          <div className="flex items-center gap-3 text-xs text-gray-700 mt-2">
+            <Ruler size={14} /> {length} m
+            <TrendingUp size={14} /> {elevationGain} m D+
+          </div>
           <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
             <Route size={14} /> {roadType}
             <LandPlot size={14} /> {surfaceType}
