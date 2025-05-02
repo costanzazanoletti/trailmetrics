@@ -1,11 +1,15 @@
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import {
+  useParams,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 import { shouldPollForZones } from '../utils/efficiencyUtils';
 import {
   fetchActivityById,
   fetchActivityStreams,
   fetchActivitySegments,
-  fetchSimilarSegments,
 } from '../services/activityService';
 import {
   mapActivityFromApi,
@@ -21,6 +25,7 @@ import { SimilarSegmentsPanel } from '../components/SimilarSegmentsPanel';
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [activity, setActivity] = useState<CamelCaseActivity | null>(null);
   const [streams, setStreams] = useState<ActivityStream | null>(null);
@@ -36,10 +41,20 @@ const ActivityDetail = () => {
 
   const fromPage = (location.state as { fromPage?: number })?.fromPage ?? 0;
 
+  const preselectedSegmentId = searchParams.get('segment');
+
   const segmentRefs = useRef<Map<string, HTMLLIElement>>(new Map());
+
+  const handleSelectSegment = (seg: Segment | null) => {
+    setSelectedSegment(seg);
+    if (!seg || seg.segmentId !== selectedSegment?.segmentId) {
+      setSelectedSegmentForSimilar(null);
+    }
+  };
 
   const handleShowSimilar = async (segment: Segment) => {
     try {
+      setSelectedSegment(segment);
       setSelectedSegmentForSimilar(segment);
     } catch (error) {
       console.error('Failed to load similar segments', error);
@@ -70,8 +85,17 @@ const ActivityDetail = () => {
         setStreams(streamData);
         setSegments(segmentData);
 
+        // Pre-select
+        if (preselectedSegmentId) {
+          const match = segmentData.find(
+            (s: Segment) => s.segmentId === preselectedSegmentId
+          );
+          if (match) setSelectedSegment(match);
+        }
+
+        // Check if needs polling
         if (shouldPollForZones(segmentData)) {
-          setNeedsPolling(true); // Start polling
+          setNeedsPolling(true);
         } else {
           setNeedsPolling(false);
         }
@@ -123,7 +147,7 @@ const ActivityDetail = () => {
         <SegmentList
           segments={segments}
           selectedSegment={selectedSegment}
-          onSelect={setSelectedSegment}
+          onSelect={handleSelectSegment}
           onShowSimilar={handleShowSimilar}
           segmentRefs={segmentRefs}
         />
@@ -138,7 +162,7 @@ const ActivityDetail = () => {
                   latlng={streams.latlng}
                   segments={segments}
                   selectedSegmentId={selectedSegment?.segmentId}
-                  onSelectSegment={(seg) => setSelectedSegment(seg)}
+                  onSelectSegment={(seg) => handleSelectSegment(seg)}
                   highlightIndex={highlightIndex}
                 />
               </div>
@@ -146,6 +170,7 @@ const ActivityDetail = () => {
               {selectedSegmentForSimilar && (
                 <SimilarSegmentsPanel
                   segmentId={selectedSegmentForSimilar.segmentId}
+                  currentActivityId={selectedSegmentForSimilar.activityId}
                   onClose={() => setSelectedSegmentForSimilar(null)}
                   onSegmentClick={(seg) => setSelectedSegment(seg)}
                 />
