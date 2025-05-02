@@ -4,8 +4,10 @@ import com.trailmetrics.activities.model.Segment;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface SegmentRepository extends JpaRepository<Segment, String> {
 
@@ -53,4 +55,14 @@ public interface SegmentRepository extends JpaRepository<Segment, String> {
         )
       """)
   List<Segment> findTopSimilarSegments(String segmentId);
+
+  @Query("""
+          SELECT s FROM Segment s
+          WHERE s.gradeCategory = :gradeCategory AND s.segmentId <> :excludeSegmentId
+          ORDER BY s.efficiencyScore DESC NULLS LAST
+      """)
+  List<Segment> findTopByGradeCategory(@Param("gradeCategory") Double gradeCategory,
+      @Param("excludeSegmentId") String excludeSegmentId,
+      Pageable pageable);
+
 }
