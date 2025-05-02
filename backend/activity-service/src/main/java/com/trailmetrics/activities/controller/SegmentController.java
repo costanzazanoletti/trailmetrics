@@ -55,6 +55,11 @@ public class SegmentController {
       @PathVariable String segmentId) {
     try {
       List<Segment> topSegments = segmentService.getTopSegmentsByGrade(segmentId);
+      // Compute efficiency zones for related activities asynchronously
+      topSegments.forEach(
+          segment -> segmentEfficiencyZoneService.recalculateZonesForActivityAsync(
+              segment.getActivityId()));
+
       List<SegmentDTO> topSegmentsDTO = topSegments.stream().map(segmentMapper::toDTO).toList();
 
       return ApiResponseFactory.ok(topSegmentsDTO, "Fetched same grade category top segments");
