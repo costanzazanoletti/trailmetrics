@@ -6,6 +6,7 @@ import {
   Route,
   LandPlot,
 } from 'lucide-react';
+import { getShortSegmentId } from '../utils/formatUtils';
 import { Segment } from '../types/activity';
 import { formatPace } from '../utils/formatUtils';
 import { EfficiencyIcon } from './EfficiencyIcon';
@@ -55,7 +56,7 @@ export function SegmentCard({
       <div className="flex justify-between items-start mb-2">
         <div className="flex flex-col text-sm font-semibold">
           <span className="text-xs text-gray-500 mb-2">
-            #{segment.segmentId}
+            #{getShortSegmentId(segment.segmentId)}
           </span>
           <span>{avgGradient}% grade</span>
           <span>{avgCadence} spm cadence</span>

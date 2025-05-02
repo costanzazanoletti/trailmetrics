@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { fetchSimilarSegments } from '../services/activityService';
 import { formatPace } from '../utils/formatUtils';
 import { EfficiencyIcon } from './EfficiencyIcon';
+import { getShortSegmentId } from '../utils/formatUtils';
 
 interface SimilarSegmentsPanelProps {
   segmentId: string;
@@ -70,6 +71,10 @@ export function SimilarSegmentsPanel({
             {topEfficiency.map((seg) => {
               const isSameActivity = seg.activityId === currentActivityId;
               const isCurrent = seg.segmentId === segmentId;
+              const displayId =
+                seg.activityId === currentActivityId
+                  ? `${getShortSegmentId(seg.segmentId)}`
+                  : `${seg.segmentId}`;
 
               return (
                 <li
@@ -84,15 +89,10 @@ export function SimilarSegmentsPanel({
                   }`}
                 >
                   <div>
-                    <div className="text-sm font-medium">#{seg.segmentId}</div>
+                    <div className="text-sm font-medium">#{displayId}</div>
                     <div className="text-xs text-gray-600">
                       Grade: {seg.avgGradient?.toFixed(1)}% | Pace:{' '}
                       {seg.avgSpeed ? formatPace(seg.avgSpeed) : 'N/A'}
-                      {!isSameActivity && (
-                        <span className="ml-2 text-blue-500 text-xs">
-                          (other activity)
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div>
