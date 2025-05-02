@@ -2,9 +2,7 @@
 import { Segment } from '../types/activity';
 import { useEffect, useState } from 'react';
 import { fetchSimilarSegments } from '../services/activityService';
-import { formatPace } from '../utils/formatUtils';
-import { EfficiencyIcon } from './EfficiencyIcon';
-import { getShortSegmentId } from '../utils/formatUtils';
+import { SegmentCard } from './SegmentCard';
 
 interface SimilarSegmentsPanelProps {
   segmentId: string;
@@ -69,40 +67,19 @@ export function SimilarSegmentsPanel({
           </p>
           <ul className="space-y-2 text-sm">
             {topEfficiency.map((seg) => {
-              const isSameActivity = seg.activityId === currentActivityId;
               const isCurrent = seg.segmentId === segmentId;
-              const displayId =
-                seg.activityId === currentActivityId
-                  ? `${getShortSegmentId(seg.segmentId)}`
-                  : `${seg.segmentId}`;
 
               return (
-                <li
-                  key={seg.segmentId}
-                  onClick={() => {
-                    if (!isCurrent) handleClick(seg);
-                  }}
-                  className={`p-2 rounded border flex justify-between items-center ${
-                    isCurrent
-                      ? 'bg-blue-100 border-blue-300 text-gray-600 cursor-not-allowed'
-                      : 'hover:bg-gray-100 cursor-pointer'
-                  }`}
-                >
-                  <div>
-                    <div className="text-sm font-medium">#{displayId}</div>
-                    <div className="text-xs text-gray-600">
-                      Grade: {seg.avgGradient?.toFixed(1)}% | Pace:{' '}
-                      {seg.avgSpeed ? formatPace(seg.avgSpeed) : 'N/A'}
-                    </div>
-                  </div>
-                  <div>
-                    {seg.efficiencyZone && (
-                      <EfficiencyIcon
-                        zone={seg.efficiencyZone}
-                        type="efficiency"
-                      />
-                    )}
-                  </div>
+                <li key={seg.segmentId}>
+                  <SegmentCard
+                    segment={seg}
+                    isSelected={isCurrent}
+                    onSelect={() => {
+                      if (!isCurrent) handleClick(seg);
+                    }}
+                    variant="compact"
+                    currentActivityId={currentActivityId}
+                  />
                 </li>
               );
             })}

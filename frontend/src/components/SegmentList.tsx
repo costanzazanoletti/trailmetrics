@@ -42,6 +42,7 @@ export function SegmentList({
                   isSelected={selectedSegment?.segmentId === seg.segmentId}
                   onSelect={onSelect}
                   onShowSimilar={() => onShowSimilar(seg)}
+                  variant={'full'}
                 />
               </li>
             ))}
