@@ -69,3 +69,13 @@ export const fetchSimilarSegments = async (segmentId: string) => {
     throw error;
   }
 };
+
+export const fetchTopSegmentsByGrade = async (segmentId: string) => {
+  try {
+    const res = await apiClient.get(`/api/segments/${segmentId}/top-grade`);
+    return res.data.data;
+  } catch (error) {
+    console.error('Unable to fetch top segments by grade', error);
+    throw error;
+  }
+};

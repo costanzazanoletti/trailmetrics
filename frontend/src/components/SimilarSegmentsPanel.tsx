@@ -1,7 +1,9 @@
-// components/SimilarSegmentsPanel.tsx
-import { Segment } from '../types/activity';
 import { useEffect, useState } from 'react';
-import { fetchSimilarSegments } from '../services/activityService';
+import { Segment } from '../types/activity';
+import {
+  fetchSimilarSegments,
+  fetchTopSegmentsByGrade,
+} from '../services/activityService';
 import { SegmentCard } from './SegmentCard';
 
 interface SimilarSegmentsPanelProps {
@@ -19,21 +21,24 @@ export function SimilarSegmentsPanel({
 }: SimilarSegmentsPanelProps) {
   const [loading, setLoading] = useState(true);
   const [similarSegments, setSimilarSegments] = useState<Segment[]>([]);
+  const [topGradeSegments, setTopGradeSegments] = useState<Segment[]>([]);
 
   useEffect(() => {
-    fetchSimilarSegments(segmentId)
-      .then((data) => setSimilarSegments(data))
-      .catch((err) => console.error(err))
+    setLoading(true);
+    Promise.all([
+      fetchSimilarSegments(segmentId),
+      fetchTopSegmentsByGrade(segmentId),
+    ])
+      .then(([similar, grade]) => {
+        setSimilarSegments(similar);
+        setTopGradeSegments(grade);
+      })
+      .catch((err) => console.error('Error loading segment data', err))
       .finally(() => setLoading(false));
   }, [segmentId]);
 
-  const topEfficiency = [...similarSegments]
-    .filter((s) => s.efficiencyScore !== null)
-    .sort((a, b) => (b.efficiencyScore ?? 0) - (a.efficiencyScore ?? 0))
-    .slice(0, 5);
-
   const handleClick = (seg: Segment) => {
-    if (seg.segmentId === segmentId) return; // already selected
+    if (seg.segmentId === segmentId) return;
     if (seg.activityId === currentActivityId) {
       onSegmentClick?.(seg);
     } else {
@@ -43,6 +48,27 @@ export function SimilarSegmentsPanel({
       );
     }
   };
+
+  const renderSegmentList = (segments: Segment[]) => (
+    <ul className="space-y-2 text-sm">
+      {segments.map((seg) => {
+        const isCurrent = seg.segmentId === segmentId;
+        return (
+          <li key={seg.segmentId}>
+            <SegmentCard
+              segment={seg}
+              isSelected={isCurrent}
+              onSelect={() => {
+                if (!isCurrent) handleClick(seg);
+              }}
+              variant="compact"
+              currentActivityId={currentActivityId}
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
 
   return (
     <div className="mt-6 p-4 border rounded bg-white shadow-sm">
@@ -61,30 +87,24 @@ export function SimilarSegmentsPanel({
       ) : similarSegments.length === 0 ? (
         <p className="text-sm text-gray-500">No similar segments found.</p>
       ) : (
-        <>
-          <p className="text-sm mb-2 text-gray-600 font-medium">
-            Top 5 by efficiency:
-          </p>
-          <ul className="space-y-2 text-sm">
-            {topEfficiency.map((seg) => {
-              const isCurrent = seg.segmentId === segmentId;
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 className="text-sm font-medium mb-2">Top 5 by similarity</h4>
+            {renderSegmentList(
+              similarSegments
+                .filter((s) => s.efficiencyScore !== null)
+                .sort(
+                  (a, b) => (b.efficiencyScore ?? 0) - (a.efficiencyScore ?? 0)
+                )
+                .slice(0, 5)
+            )}
+          </div>
 
-              return (
-                <li key={seg.segmentId}>
-                  <SegmentCard
-                    segment={seg}
-                    isSelected={isCurrent}
-                    onSelect={() => {
-                      if (!isCurrent) handleClick(seg);
-                    }}
-                    variant="compact"
-                    currentActivityId={currentActivityId}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        </>
+          <div>
+            <h4 className="text-sm font-medium mb-2">Top 5 by grade</h4>
+            {renderSegmentList(topGradeSegments.slice(0, 5))}
+          </div>
+        </div>
       )}
     </div>
   );
