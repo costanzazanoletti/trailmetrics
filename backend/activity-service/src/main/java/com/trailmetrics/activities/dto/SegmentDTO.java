@@ -46,4 +46,6 @@ public class SegmentDTO {
   private String efficiencyZone;
   private String gradeEfficiencyZone;
 
+  private Double gradeCategory;
+
 }

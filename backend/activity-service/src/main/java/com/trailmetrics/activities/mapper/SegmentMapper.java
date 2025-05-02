@@ -67,6 +67,8 @@ public class SegmentMapper {
       dto.setEfficiencyZone(efficiencyZone.getZoneAmongSimilars());
       dto.setGradeEfficiencyZone(efficiencyZone.getZoneAmongGradeCategory());
     }
+
+    dto.setGradeCategory(segment.getGradeCategory());
     return dto;
   }
 }
