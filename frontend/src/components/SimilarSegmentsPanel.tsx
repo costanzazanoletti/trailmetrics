@@ -22,20 +22,43 @@ export function SimilarSegmentsPanel({
   const [loading, setLoading] = useState(true);
   const [similarSegments, setSimilarSegments] = useState<Segment[]>([]);
   const [topGradeSegments, setTopGradeSegments] = useState<Segment[]>([]);
+  const [needsPolling, setNeedsPolling] = useState(false);
+
+  const fetchAll = async () => {
+    try {
+      const [similar, grade] = await Promise.all([
+        fetchSimilarSegments(segmentId),
+        fetchTopSegmentsByGrade(segmentId),
+      ]);
+      setSimilarSegments(similar);
+      setTopGradeSegments(grade);
+
+      const missingZones = [...similar, ...grade].some(
+        (s) => !s.efficiencyZone || !s.gradeEfficiencyZone
+      );
+
+      setNeedsPolling(missingZones);
+    } catch (err) {
+      console.error('Error loading segment data', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([
-      fetchSimilarSegments(segmentId),
-      fetchTopSegmentsByGrade(segmentId),
-    ])
-      .then(([similar, grade]) => {
-        setSimilarSegments(similar);
-        setTopGradeSegments(grade);
-      })
-      .catch((err) => console.error('Error loading segment data', err))
-      .finally(() => setLoading(false));
+    fetchAll();
   }, [segmentId]);
+
+  useEffect(() => {
+    if (!needsPolling) return;
+
+    const interval = setInterval(() => {
+      fetchAll();
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [needsPolling]);
 
   const handleClick = (seg: Segment) => {
     if (seg.segmentId === segmentId) return;
