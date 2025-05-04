@@ -167,7 +167,7 @@ def segments_batch_insert_and_update_status(segments_df, activity_id, engine):
         connection.rollback()
         raise DatabaseException(f"An error occurred: {e}")
 
-def insert_not_processable_actitivity_status(activity_id, engine):
+def insert_not_processable_activity_status(activity_id, engine):
     try:
         with engine.begin() as connection:
             query = """

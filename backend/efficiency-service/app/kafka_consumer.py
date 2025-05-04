@@ -10,7 +10,7 @@ from app.segments_service import process_segments, process_deleted_activities
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
 from app.similarity_service import should_compute_similarity_for_user
-from database import engine, get_user_id_from_activity, insert_not_processable_actitivity_status
+from database import engine, get_user_id_from_activity, insert_not_processable_activity_status
 
 
 # Load environment variables
@@ -61,7 +61,7 @@ def process_segments_message(message):
         if not compressed_segments or not status or status == 'failure':
             logger.info(f"Received not processable activity {activity_id}")
             # Insert into activity status tracker the activity with not_processable 
-            insert_not_processable_actitivity_status(activity_id, engine)
+            insert_not_processable_activity_status(activity_id, engine)
             logger.info(f"Saved activity status not processable for activity {activity_id}")
         else:
             # Process segments
