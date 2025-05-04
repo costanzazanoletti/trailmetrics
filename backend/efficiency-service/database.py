@@ -445,3 +445,19 @@ def get_user_id_from_activity(engine, activity_id):
             return result[0] if result else None
     except SQLAlchemyError as e:
         raise DatabaseException(f"Database error: {e}")
+    
+def mark_similarity_processed_for_user(engine, user_id):
+    """Set similarity_processed_at = now() for all valid activities of the user."""
+    query = """
+        UPDATE activity_status_tracker
+        SET similarity_processed_at = now()
+        WHERE activity_id IN (
+            SELECT ast.activity_id
+            FROM activity_status_tracker ast
+            JOIN activities a ON ast.activity_id = a.id
+            WHERE a.athlete_id = :user_id AND ast.not_processable = false
+        );
+    """
+    with engine.begin() as connection:
+        execute_sql(connection, query, {"user_id": user_id})
+

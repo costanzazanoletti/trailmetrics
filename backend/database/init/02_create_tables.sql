@@ -123,7 +123,8 @@ CREATE TABLE similarity_status_fingerprint (
     user_id BIGINT PRIMARY KEY,
     similarity_calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     activity_fingerprint TEXT NOT NULL,
-    in_progress BOOLEAN DEFAULT FALSE
+    in_progress BOOLEAN DEFAULT FALSE,
+    similarity_processed_at TIMESTAMPTZ
 );
 
 CREATE TABLE weather_icons (

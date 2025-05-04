@@ -20,7 +20,8 @@ from database import (
     get_user_segments,
     delete_user_similarity_data,
     save_similarity_data,
-    update_similarity_status_in_progress
+    update_similarity_status_in_progress,
+    mark_similarity_processed_for_user
 )
 
 # Init logger
@@ -243,7 +244,8 @@ def run_similarity_computation(user_id):
             logger.info(f"No segments for user {user_id} to compute similarity matrix.")
 
         trans.commit() # Manually commit the transaction
-
+        # Update user's activities status after the pipeline is closed
+        mark_similarity_processed_for_user(engine, user_id)
     except Exception as e:
         logger.error(f"Similarity computation failed for user {user_id}: {e}.")
         trans.rollback() # Manually rollback if an exception is raised

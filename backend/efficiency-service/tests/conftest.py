@@ -99,9 +99,23 @@ def create_sample_data():
 
 @pytest.fixture
 def setup_similarity_test_data(engine=engine):
-    user_id = "9999"  # Use a fixed test ID to clean easily
+    user_id = "9999"
     with engine.begin() as conn:
-        # Insert segments
+        # Insert activities
+        conn.execute(text("""
+            INSERT INTO activities (id, athlete_id)
+            VALUES (1, :athlete_id), (2, :athlete_id)
+        """), {"athlete_id": user_id})
+
+        # Insert activity_status_tracker with one not_processable
+        conn.execute(text("""
+            INSERT INTO activity_status_tracker (activity_id, not_processable)
+            VALUES 
+            (1, false), 
+            (2, true)
+        """))
+
+        # Insert segments (linked to activity 1)
         conn.execute(text("""
             INSERT INTO segments (
                 segment_id, activity_id, user_id, grade_category,
@@ -114,11 +128,15 @@ def setup_similarity_test_data(engine=engine):
             ('seg2', 1, :user_id, 1.5, 120, 100, 789456, 12,
              18, 1.2, 'asphalt', 'smooth', 21, 52, 0, 1)
         """), {"user_id": user_id})
+
     yield user_id
-    # Teardown
+
     with engine.begin() as conn:
         conn.execute(text("DELETE FROM segment_similarity WHERE segment_id IN ('seg1', 'seg2') OR similar_segment_id IN ('seg1', 'seg2')"))
         conn.execute(text("DELETE FROM segments WHERE user_id = :user_id"), {"user_id": user_id})
+        conn.execute(text("DELETE FROM activity_status_tracker WHERE activity_id IN (1, 2)"))
+        conn.execute(text("DELETE FROM activities WHERE id IN (1, 2)"))
+
 
 @pytest.fixture
 def load_test_message(request):

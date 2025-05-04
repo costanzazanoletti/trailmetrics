@@ -384,3 +384,38 @@ def test_run_similarity_computation_exception(
     mock_transaction.rollback.assert_called_once()
     mock_connection.close.assert_called_once()
     mock_update_similarity_status.assert_called_once_with(mock_engine, user_id, False)
+
+@patch("app.similarity_service.mark_similarity_processed_for_user")
+@patch("app.similarity_service.engine")
+@patch("app.similarity_service.update_similarity_status_in_progress")
+@patch("app.similarity_service.save_similarity_data")
+@patch("app.similarity_service.delete_user_similarity_data")
+@patch("app.similarity_service.compute_similarity_matrix")
+@patch("app.similarity_service.get_user_segments")
+def test_run_similarity_computation_with_segments_and_processing_timestamp(
+    mock_get_user_segments,
+    mock_compute_similarity_matrix,
+    mock_delete_user_similarity_data,
+    mock_save_similarity_data,
+    mock_update_similarity_status,
+    mock_engine,
+    mock_mark_similarity_processed
+):
+    mock_connection = MagicMock()
+    mock_engine.connect.return_value = mock_connection
+    mock_transaction = MagicMock()
+    mock_connection.begin.return_value = mock_transaction
+
+    mock_get_user_segments.return_value = pd.DataFrame([
+        {"segment_id": "seg1", "grade_category": 1.5},
+        {"segment_id": "seg2", "grade_category": 1.5},
+    ])
+    mock_compute_similarity_matrix.return_value = pd.DataFrame([
+        {"segment_id": "seg1", "similar_segment_id": "seg2", "similarity_score": 0.9, "rank": 1}
+    ])
+
+    user_id = 42
+    run_similarity_computation(user_id)
+
+    mock_transaction.commit.assert_called_once()
+    mock_mark_similarity_processed.assert_called_once_with(mock_engine, user_id)

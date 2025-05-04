@@ -99,14 +99,34 @@ def test_process_weather_segments_terrain_weather(set_up, create_sample_data):
 
 def test_run_similarity_computation_with_db(set_up, setup_similarity_test_data):
     """
-    Tests computing and saving to database the similarity matrix for a given user.
+    Tests computing and saving to database the similarity matrix for a given user,
+    and verifies that similarity_processed_at is updated correctly.
     """
     user_id = setup_similarity_test_data
 
     run_similarity_computation(user_id)
 
     with engine.begin() as conn:
-        result = conn.execute(text("SELECT * FROM segment_similarity WHERE segment_id = 'seg1' OR similar_segment_id = 'seg2'")).fetchall()
-        assert result  # Make sure similarity was inserted
+        # Check that similarity data are saved correctly
+        result = conn.execute(text("""
+            SELECT * FROM segment_similarity 
+            WHERE segment_id = 'seg1' OR similar_segment_id = 'seg2'
+        """)).fetchall()
+        assert result
         assert all('similarity_score' in dict(row._mapping) for row in result)
         assert all('rank' in dict(row._mapping) for row in result)
+
+        # Check that similarity_processed_at was updated only for processable activities
+        processed_rows = conn.execute(text("""
+            SELECT ast.similarity_processed_at, ast.not_processable
+            FROM activity_status_tracker ast
+            JOIN activities a ON ast.activity_id = a.id
+            WHERE a.athlete_id = :user_id
+        """), {"user_id": user_id}).fetchall()
+
+        assert processed_rows
+        for row in processed_rows:
+            if row.not_processable:
+                assert row.similarity_processed_at is None
+            else:
+                assert row.similarity_processed_at is not None

@@ -26,7 +26,7 @@ def test_segments_message_with_success_status(mock_process_segments, mock_should
 @patch('app.kafka_consumer.engine')
 @patch('app.kafka_consumer.should_compute_similarity_for_user')
 @patch('app.kafka_consumer.process_segments')
-@patch('app.kafka_consumer.insert_not_processable_actitivity_status')
+@patch('app.kafka_consumer.insert_not_processable_activity_status')
 def test_segments_message_with_failure_status(mock_insert_not_processable,mock_process_segments, mock_should_compute, mock_engine):
     """Test process segments message with a mock Kafka message with failure status"""
     # Mock segmentation output message 
