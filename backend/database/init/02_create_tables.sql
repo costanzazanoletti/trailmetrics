@@ -138,7 +138,7 @@ CREATE TABLE segment_efficiency_zone (
     zone_among_similars VARCHAR(20),
     zone_among_grade_category VARCHAR(20),
     calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (segment_id) REFERENCES segments(segment_id)
+    FOREIGN KEY (segment_id) REFERENCES segments(segment_id) ON DELETE CASCADE
 );
 
 -- Indexes
