@@ -69,7 +69,7 @@ public class ActivityController {
     } catch (TrailmetricsAuthServiceException e) {
       return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
     } catch (Exception e) {
-      log.error("Failed to fetch activies", e);
+      log.error("Failed to fetch activities", e);
       return ApiResponseFactory.error("Failed to fetch activities",
           HttpStatus.INTERNAL_SERVER_ERROR);
     }

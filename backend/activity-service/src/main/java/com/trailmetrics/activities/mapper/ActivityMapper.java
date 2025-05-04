@@ -6,7 +6,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ActivityMapper {
-  
+
   public static Activity convertToEntity(ActivityDTO dto) {
     Activity activity = new Activity();
     activity.setId(dto.getId());
@@ -48,6 +48,8 @@ public class ActivityMapper {
     dto.setAverageWatts(activity.getAverageWatts());
     dto.setWeightedAverageWatts(activity.getWeightedAverageWatts());
     dto.setHasHeartrate(activity.getHasHeartrate());
+    dto.setStatus(activity.getStatus() != null ? activity.getStatus().name() : null);
+
     return dto;
   }
 }

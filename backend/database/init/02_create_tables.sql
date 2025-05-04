@@ -85,6 +85,7 @@ CREATE TABLE activity_status_tracker (
     terrain_status BOOLEAN DEFAULT FALSE,
     weather_status BOOLEAN DEFAULT FALSE,
     not_processable BOOLEAN DEFAULT FALSE,
+    similarity_processed_at TIMESTAMPTZ,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -123,8 +124,7 @@ CREATE TABLE similarity_status_fingerprint (
     user_id BIGINT PRIMARY KEY,
     similarity_calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     activity_fingerprint TEXT NOT NULL,
-    in_progress BOOLEAN DEFAULT FALSE,
-    similarity_processed_at TIMESTAMPTZ
+    in_progress BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE weather_icons (

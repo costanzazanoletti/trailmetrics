@@ -4,8 +4,11 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import java.time.Instant;
 import java.util.List;
 import lombok.Data;
@@ -71,5 +74,13 @@ public class Activity {
 
   @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ActivityStream> streams;
+
+  @OneToOne
+  @JoinColumn(name = "id")
+  private ActivityStatusTracker statusTracker;
+
+  @Transient
+  private ActivityStatus status;
+
 }
 

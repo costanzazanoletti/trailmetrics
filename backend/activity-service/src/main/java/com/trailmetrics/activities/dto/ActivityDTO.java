@@ -53,5 +53,9 @@ public class ActivityDTO {
 
   @JsonProperty("has_heartrate")
   private Boolean hasHeartrate;
+
+  @JsonProperty("status")
+  private String status;
+
 }
 
