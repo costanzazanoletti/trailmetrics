@@ -63,7 +63,7 @@ CREATE TABLE segments (
     end_time INTEGER,
     start_heartrate INTEGER,
     end_heartrate INTEGER,
-    avg_heartrate INTEGER,
+    avg_heartrate DOUBLE PRECISION,
     avg_speed DOUBLE PRECISION,
     elevation_gain INTEGER,
     hr_drift DOUBLE PRECISION, 
@@ -87,6 +87,7 @@ CREATE TABLE activity_status_tracker (
     terrain_status BOOLEAN DEFAULT FALSE,
     weather_status BOOLEAN DEFAULT FALSE,
     not_processable BOOLEAN DEFAULT FALSE,
+    similarity_processed_at TIMESTAMPTZ,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -127,3 +128,21 @@ CREATE TABLE similarity_status_fingerprint (
     activity_fingerprint TEXT NOT NULL,
     in_progress BOOLEAN DEFAULT FALSE
 );
+
+CREATE TABLE weather_icons (
+  weather_id INT PRIMARY KEY,
+  description VARCHAR(255),
+  icon VARCHAR(5)
+);
+
+CREATE TABLE segment_efficiency_zone (
+    segment_id VARCHAR(50) PRIMARY KEY,
+    zone_among_similars VARCHAR(20),
+    zone_among_grade_category VARCHAR(20),
+    calculated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (segment_id) REFERENCES segments(segment_id) ON DELETE CASCADE
+);
+
+-- Indexes
+CREATE INDEX idx_efficiency_calculated_at ON segment_efficiency_zone (calculated_at);
+
