@@ -52,7 +52,7 @@ def test_preprocess_streams():
     df_processed = preprocess_streams(mock_df, 5727925996)
     
     assert df_processed is not None, "Preprocessing should not return None"
-    required_columns = ["distance", "altitude", "latlng", "cadence", "grade", "speed", "time"]
+    required_columns = ["distance", "altitude", "latlng", "cadence", "grade", "speed", "time", "ascent_so_far", "descent_so_far"]
     for col in required_columns:
         assert col in df_processed.columns, f"Missing required column: {col}"
     print("Processed DataFrame by preprocess_streams")
@@ -69,7 +69,9 @@ def test_create_segments():
         "grade": [0.1, 5.8, 7.1, 10.0, 0.3],
         "cadence": [70, 75, 65, 80, 60],
         "latlng": [[46.1, 8.4], [46.2, 8.5], [46.3, 8.6], [46.4, 8.7], [46.5, 8.8]],
-        "heartrate": [110, 113, 120, 120, 125]
+        "heartrate": [110, 113, 120, 120, 125],
+        "ascent_so_far": [0, 0, 1, 3, 4],
+        "descent_so_far": [0, 1, 1, 1, 4]
     })
     config = {
         "gradient_tolerance": 0.5,

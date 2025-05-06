@@ -132,6 +132,11 @@ def preprocess_streams(df, activity_id):
                     logger.info(f"No valid next point found for index {i}, copying previous")
                     df.at[i, "latlng"] = df.loc[i-1, "latlng"]  # Copy the last valid point
 
+    # Compute cumulated ascent and descent
+    altitude_diff = df["altitude"].diff().fillna(0)
+    df["ascent_so_far"] = altitude_diff.clip(lower=0).cumsum()
+    df["descent_so_far"] = -altitude_diff.clip(upper=0).cumsum()
+    
     return df.reset_index(drop=True)
 
 
@@ -142,7 +147,7 @@ def create_segments(df, activity_id, config):
     if config["rolling_window_size"] > 1:
         df["grade"] = df["grade"].rolling(window=config["rolling_window_size"], center=True, min_periods=1).mean()
         df["cadence"] = df["cadence"].rolling(window=config["rolling_window_size"], center=True, min_periods=1).mean()
-    
+
     segments, start_index = [], 0
     for i in range(1, len(df)):
         segment_length = df["distance"].iloc[i] - df["distance"].iloc[start_index]
@@ -173,6 +178,8 @@ def create_segments(df, activity_id, config):
                 "start_heartrate": df["heartrate"].iloc[start_index] if df["heartrate"].iloc[start_index] is not None else np.nan,  # Handle missing heartrate
                 "end_heartrate": df["heartrate"].iloc[i - 1] if df["heartrate"].iloc[i - 1] is not None else np.nan,  # Handle missing heartrate
                 "avg_heartrate": np.nanmean(df["heartrate"].iloc[start_index:i]) if df["heartrate"].iloc[start_index:i].notna().any() else np.nan,  # Use nanmean to handle NaN values
+                "cumulative_ascent": df["ascent_so_far"].iloc[start_index],
+                "cumulative_descent": df["descent_so_far"].iloc[start_index],
             }
 
             segments.append(segment)
