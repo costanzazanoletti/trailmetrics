@@ -1,4 +1,4 @@
-import { Activity } from "../types/activity";
+import { Activity, ActivityStatus } from '../types/activity';
 
 export interface CamelCaseActivity {
   id: number;
@@ -18,6 +18,7 @@ export interface CamelCaseActivity {
   averageWatts: number | null;
   weightedAverageWatts: number | null;
   hasHeartrate: boolean;
+  status: ActivityStatus | null;
 }
 
 export function mapActivityFromApi(activity: Activity): CamelCaseActivity {
@@ -39,5 +40,6 @@ export function mapActivityFromApi(activity: Activity): CamelCaseActivity {
     averageWatts: activity.average_watts,
     weightedAverageWatts: activity.weighted_average_watts,
     hasHeartrate: activity.has_heartrate,
+    status: activity.status,
   };
 }

@@ -15,13 +15,14 @@ import {
   mapActivityFromApi,
   CamelCaseActivity,
 } from '../mappers/activityMapper';
-import { ActivityStream, Segment } from '../types/activity';
+import { ActivityStream, Segment, ActivityStatus } from '../types/activity';
 import { MapWithTrack } from '../components/MapWithTrack';
 import { CombinedChart } from '../components/CombinedChart';
 import { EfficiencyLegend } from '../components/EfficiencyZoneLegend';
 import { ActivityHeader } from '../components/ActivityHeader';
 import { SegmentList } from '../components/SegmentList';
 import { SimilarSegmentsPanel } from '../components/SimilarSegmentsPanel';
+import { ActivityStatusIcon } from '../components/ActivityStatusIcon';
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -130,8 +131,13 @@ const ActivityDetail = () => {
   }, [needsPolling, id]);
 
   if (loading) return <p className="p-4 text-sm text-gray-500">Loading...</p>;
-  if (!activity)
-    return <p className="p-4 text-sm text-red-500">Activity not found.</p>;
+
+  if (!activity || activity.status !== ActivityStatus.SIMILARITY_READY)
+    return (
+      <p className="p-4 text-sm text-red-500">
+        Activity not found or not processed.
+      </p>
+    );
 
   return (
     <div className="container mx-auto p-4">

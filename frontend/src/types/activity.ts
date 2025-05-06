@@ -1,3 +1,10 @@
+export enum ActivityStatus {
+  CREATED = 'CREATED',
+  DATA_READY = 'DATA_READY',
+  SIMILARITY_READY = 'SIMILARITY_READY',
+  NOT_PROCESSABLE = 'NOT_PROCESSABLE',
+}
+
 export interface Activity {
   id: number;
   name: string;
@@ -16,6 +23,7 @@ export interface Activity {
   average_watts: number | null;
   weighted_average_watts: number | null;
   has_heartrate: boolean;
+  status: ActivityStatus | null;
 }
 
 export interface ActivityStream {
