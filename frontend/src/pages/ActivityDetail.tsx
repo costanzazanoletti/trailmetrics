@@ -22,7 +22,6 @@ import { EfficiencyLegend } from '../components/EfficiencyZoneLegend';
 import { ActivityHeader } from '../components/ActivityHeader';
 import { SegmentList } from '../components/SegmentList';
 import { SimilarSegmentsPanel } from '../components/SimilarSegmentsPanel';
-import { ActivityStatusIcon } from '../components/ActivityStatusIcon';
 
 const ActivityDetail = () => {
   const { id } = useParams<{ id: string }>();

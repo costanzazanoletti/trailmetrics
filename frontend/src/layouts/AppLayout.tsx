@@ -1,7 +1,24 @@
-import { Navbar } from "../components/Navbar";
-import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useRef } from 'react';
+import { Navbar } from '../components/Navbar';
+import { NavLink, Outlet } from 'react-router-dom';
+import { useAuthStore } from '../store/useAuthStore';
+import { syncActivities } from '../services/activityService';
 
 export function AppLayout() {
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const hasSynced = useRef(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || hasSynced.current) return;
+    syncActivities()
+      .then(() => {
+        hasSynced.current = true;
+      })
+      .catch((err) => {
+        console.error('Error during activities sync:', err);
+      });
+  }, [isAuthenticated]);
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Top Navbar */}
@@ -13,7 +30,7 @@ export function AppLayout() {
           to="/dashboard"
           className={({ isActive }) =>
             `text-sm font-medium ${
-              isActive ? "text-blue-600" : "text-gray-600"
+              isActive ? 'text-blue-600' : 'text-gray-600'
             } hover:underline`
           }
         >
@@ -23,7 +40,7 @@ export function AppLayout() {
           to="/planning"
           className={({ isActive }) =>
             `text-sm font-medium ${
-              isActive ? "text-blue-600" : "text-gray-600"
+              isActive ? 'text-blue-600' : 'text-gray-600'
             } hover:underline`
           }
         >

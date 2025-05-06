@@ -79,3 +79,13 @@ export const fetchTopSegmentsByGrade = async (segmentId: string) => {
     throw error;
   }
 };
+
+export const syncActivities = async () => {
+  try {
+    const res = await apiClient.get(`/api/activities/sync`);
+    return res.data.data;
+  } catch (error) {
+    console.error('Unable to sync activities', error);
+    throw error;
+  }
+};
