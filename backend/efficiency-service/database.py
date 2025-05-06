@@ -73,10 +73,12 @@ def delete_all_data(engine):
     try:
         with engine.begin() as connection:
             query_similarity = "DELETE FROM segment_similarity WHERE segment_id IS NOT NULL"
+            query_efficiency = "DELETE FROM segment_efficiecmncy_zone WHERE segment_id IS NOT NULL"
             query_segments = "DELETE FROM segments WHERE activity_id IS NOT NULL"
             query_status = "DELETE FROM activity_status_tracker WHERE activity_id IS NOT NULL"
             query_weather_progress = "DELETE FROM weather_data_progress WHERE activity_id IS NOT NULL"
             execute_sql(connection, query_similarity)
+            execute_sql(connection, query_efficiency)
             execute_sql(connection, query_segments)
             execute_sql(connection, query_status)
             execute_sql(connection, query_weather_progress)
@@ -92,10 +94,15 @@ def delete_all_data_by_activity_ids(activity_ids, engine=engine):
                                 WHERE segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
                                 OR similar_segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
                             """
+            query_efficiency = """
+                                DELETE FROM segment_efficiency_zone
+                                WHERE segment_id IN (SELECT segment_id FROM segments WHERE activity_id IN :activity_ids)
+                            """
             query_segments = "DELETE FROM segments WHERE activity_id in :activity_ids"
             query_status = "DELETE FROM activity_status_tracker WHERE activity_id in :activity_ids"
             query_weather_progress = "DELETE FROM weather_data_progress WHERE activity_id in :activity_ids"
             execute_sql(connection, query_similarity, {"activity_ids": activity_ids})
+            execute_sql(connection, query_efficiency, {"activity_ids": activity_ids})
             execute_sql(connection, query_segments, {"activity_ids": activity_ids})
             execute_sql(connection, query_status, {"activity_ids": activity_ids})
             execute_sql(connection, query_weather_progress, {"activity_ids": activity_ids})
