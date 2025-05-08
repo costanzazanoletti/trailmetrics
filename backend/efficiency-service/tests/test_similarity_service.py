@@ -268,7 +268,10 @@ def test_compute_similarity_matrix():
             'temperature': [20, 25, 22, 28],
             'humidity': [60, 70, 65, 75],
             'wind': [5, 10, 7, 12],
-            'weather_id': [800, 801, 802, 803]}
+            'weather_id': [800, 801, 802, 803],
+            "cumulative_ascent" : [1, 2, 3, 4],
+            'cumulative_descent': [0, 0, 10, 20]
+            }
     df = pd.DataFrame(data)
     top_k_df = compute_similarity_matrix(df)
     assert top_k_df.shape[0] == 4

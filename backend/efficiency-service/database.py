@@ -332,7 +332,9 @@ def get_user_segments(connection, user_id):
                     temperature,         
                     humidity,             
                     wind,              
-                    weather_id
+                    weather_id, 
+                    cumulative_ascent,
+                    cumulative_descent
                 FROM segments
                 WHERE user_id = :user_id
             """

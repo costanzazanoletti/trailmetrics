@@ -123,12 +123,12 @@ def setup_similarity_test_data(engine=engine):
                 segment_id, activity_id, user_id, grade_category,
                 segment_length, start_distance, start_time, start_altitude,
                 elevation_gain, avg_gradient, road_type, surface_type,
-                temperature, humidity, wind, weather_id
+                temperature, humidity, wind, weather_id, cumulative_ascent, cumulative_descent
             ) VALUES 
             ('seg1', 1, :user_id, 1.5, 100, 0, 123456, 10,
-             20, 1.5, 'asphalt', 'smooth', 20, 50, 1.8, 100),
+             20, 1.5, 'asphalt', 'smooth', 20, 50, 1.8, 100, 15, 10),
             ('seg2', 1, :user_id, 1.5, 120, 100, 789456, 12,
-             18, 1.2, 'asphalt', 'smooth', 21, 52, 0, 1)
+             18, 1.2, 'asphalt', 'smooth', 21, 52, 0, 1, 10, 5)
         """), {"user_id": user_id})
 
     yield user_id
