@@ -52,14 +52,16 @@ public class ActivityService {
   }
 
   public ActivityStatus computeStatus(ActivityStatusTracker tracker) {
-    if (tracker.isNotProcessable()) {
-      return ActivityStatus.NOT_PROCESSABLE;
-    }
-    if (tracker.getSimilarityProcessedAt() != null) {
-      return ActivityStatus.SIMILARITY_READY;
-    }
-    if (tracker.isTerrainStatus() && tracker.isWeatherStatus() && tracker.isSegmentStatus()) {
-      return ActivityStatus.DATA_READY;
+    if (tracker != null) {
+      if (tracker.isNotProcessable()) {
+        return ActivityStatus.NOT_PROCESSABLE;
+      }
+      if (tracker.getSimilarityProcessedAt() != null) {
+        return ActivityStatus.SIMILARITY_READY;
+      }
+      if (tracker.isTerrainStatus() && tracker.isWeatherStatus() && tracker.isSegmentStatus()) {
+        return ActivityStatus.DATA_READY;
+      }
     }
     return ActivityStatus.CREATED;
   }
