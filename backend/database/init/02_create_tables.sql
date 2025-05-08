@@ -75,6 +75,8 @@ CREATE TABLE segments (
     weather_main VARCHAR(255),
     weather_description VARCHAR(255),
     efficiency_score DOUBLE PRECISION,
+    cumulative_ascent INTEGER,
+    cumulative_descent INTEGER,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

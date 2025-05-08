@@ -86,6 +86,8 @@ def create_sample_data():
         "end_heartrate": [120, 130],
         "avg_heartrate": [110.2, 120.2],
         'segment_id': ["987-1", "987-2"],
+        'cumulative_ascent': [10, 12],
+        'cumulative_descent': [0, 5]
     }
 
     activity_id = 987
@@ -136,7 +138,6 @@ def setup_similarity_test_data(engine=engine):
         conn.execute(text("DELETE FROM segments WHERE user_id = :user_id"), {"user_id": user_id})
         conn.execute(text("DELETE FROM activity_status_tracker WHERE activity_id IN (1, 2)"))
         conn.execute(text("DELETE FROM activities WHERE id IN (1, 2)"))
-
 
 @pytest.fixture
 def load_test_message(request):

@@ -28,6 +28,8 @@ def prepare_segmentation_message(activity_id, user_id, segments_df, processed_at
         segment_id=segments_df.index.to_series().add(1).astype(str).radd(f"{activity_id}-")
     )
 
+    print(f"COLUMNS\n{segments_df.columns}")
+
     # Convert the dataframe into a dictionary of lists of dictionaries
     segments = segments_df.to_dict(orient="records")
 

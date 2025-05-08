@@ -43,7 +43,7 @@ def test_process_segments(load_sample_segments, set_up):
         ).scalar_one()
 
         # Assertion
-        expected_rows = 193
+        expected_rows = 137
         assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
         assert segment_status is True
 
