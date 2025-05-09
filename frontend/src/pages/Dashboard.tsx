@@ -42,13 +42,15 @@ const Dashboard = () => {
           setActivities(mapped);
           setTotalPages(res.totalPages);
 
-          // If all activities are not in a final state
-          const allDone = mapped.every(
-            (a) =>
-              a.status === ActivityStatus.NOT_PROCESSABLE ||
-              a.status === ActivityStatus.SIMILARITY_READY
-          );
-          if (allDone && interval) {
+          // If no activities or not all in the final state
+          if (
+            mapped.length > 0 &&
+            mapped.every(
+              (a) =>
+                a.status === ActivityStatus.NOT_PROCESSABLE ||
+                a.status === ActivityStatus.SIMILARITY_READY
+            )
+          ) {
             clearInterval(interval);
           }
         })
