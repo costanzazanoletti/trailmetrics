@@ -81,7 +81,8 @@ const Dashboard = () => {
                       {new Date(activity.startDate).toLocaleDateString()}
                     </td>
                     <td className="px-4 py-2">
-                      {activity.status == ActivityStatus.SIMILARITY_READY ? (
+                      {activity.status == ActivityStatus.SIMILARITY_READY ||
+                      activity.status == ActivityStatus.DATA_READY ? (
                         <Link
                           to={`/activities/${activity.id}`}
                           state={{ fromPage: page }}

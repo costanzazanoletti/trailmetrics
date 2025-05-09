@@ -131,7 +131,11 @@ const ActivityDetail = () => {
 
   if (loading) return <p className="p-4 text-sm text-gray-500">Loading...</p>;
 
-  if (!activity || activity.status !== ActivityStatus.SIMILARITY_READY)
+  if (
+    !activity ||
+    (activity.status !== ActivityStatus.SIMILARITY_READY &&
+      activity.status !== ActivityStatus.DATA_READY)
+  )
     return (
       <p className="p-4 text-sm text-red-500">
         Activity not found or not processed.
@@ -143,8 +147,15 @@ const ActivityDetail = () => {
       {/* Header */}
       <ActivityHeader activity={activity} />
 
-      {/* Legend */}
-      <EfficiencyLegend />
+      {/* Legend or warning message*/}
+      {activity.status === ActivityStatus.SIMILARITY_READY ? (
+        <EfficiencyLegend />
+      ) : (
+        <div className="p-4 my-3 bg-yellow-100 border border-yellow-300 text-yellow-700 rounded text-sm">
+          Efficiency analysis is still in progress. The results will appear here
+          once available.
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex flex-col md:flex-row gap-6">
