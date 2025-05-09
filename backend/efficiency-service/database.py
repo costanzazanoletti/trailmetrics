@@ -455,7 +455,7 @@ def get_user_id_from_activity(engine, activity_id):
         with engine.begin() as connection:
             query = "SELECT athlete_id from activities where id = :activity_id"
             result = fetch_one_sql(connection, query, {"activity_id": activity_id})
-            return result[0] if result else None
+            return str(result[0]) if result else None
     except SQLAlchemyError as e:
         raise DatabaseException(f"Database error: {e}")
     

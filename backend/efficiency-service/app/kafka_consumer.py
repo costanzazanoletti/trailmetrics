@@ -48,7 +48,7 @@ def process_segments_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
-        user_id = data.get("userId")
+        user_id = str(data.get("userId"))
         status = data.get("status")
         compressed_segments = data.get("compressedSegments")
 
@@ -79,7 +79,7 @@ def process_terrain_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
-        user_id = data.get("userId")
+        user_id = str(data.get("userId"))
         compressed_terrain_info = data.get("compressedTerrainInfo")
 
         if not activity_id or not compressed_terrain_info:
