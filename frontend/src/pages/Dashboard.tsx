@@ -31,18 +31,40 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    setIsLoading(true);
+    let interval: ReturnType<typeof setInterval>;
 
-    fetchActivities(page, 10)
-      .then((res) => {
-        const mapped = res.content.map(mapActivityFromApi);
-        setActivities(mapped);
-        setTotalPages(res.totalPages);
-      })
-      .catch((err) => console.error('Fetch error:', err))
-      .finally(() => {
-        setIsLoading(false);
-      });
+    const loadActivities = () => {
+      setIsLoading(true);
+
+      fetchActivities(page, 10)
+        .then((res) => {
+          const mapped = res.content.map(mapActivityFromApi);
+          setActivities(mapped);
+          setTotalPages(res.totalPages);
+
+          // If all activities are not in a final state
+          const allDone = mapped.every(
+            (a) =>
+              a.status === ActivityStatus.NOT_PROCESSABLE ||
+              a.status === ActivityStatus.SIMILARITY_READY
+          );
+          if (allDone && interval) {
+            clearInterval(interval);
+          }
+        })
+        .catch((err) => console.error('Fetch error:', err))
+        .finally(() => {
+          setIsLoading(false);
+        });
+    };
+
+    loadActivities(); // initial
+
+    interval = setInterval(() => {
+      loadActivities();
+    }, 10000); // every 10 seconds
+
+    return () => clearInterval(interval); // cleanup
   }, [page]);
 
   return (
