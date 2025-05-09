@@ -17,9 +17,9 @@ logger = logging.getLogger("app")
 load_dotenv()
 
 # Get reference points parameters
-DISTANCE_THRESHOLD = float(os.getenv("DISTANCE_THRESHOLD", 1000))
-ELEVATION_THRESHOLD = float(os.getenv("ELEVATION_THRESHOLD", 400))
-TIME_THRESHOLD = float(os.getenv("TIME_THRESHOLD", 3600))
+GRID_SIZE = float(os.getenv("GRID_SIZE", "0.2"))
+ELEVATION_THRESHOLD = float(os.getenv("ELEVATION_THRESHOLD", "600"))
+TIME_THRESHOLD = float(os.getenv("TIME_THRESHOLD", "10800"))
 
 def parse_kafka_segments(compressed_segments):
     """Parses the decompressed JSON segments into a DataFrame."""
@@ -54,10 +54,10 @@ def add_datetime_columns(segments_df, activity_start_timestamp):
     
     return segments_df
 
-def create_reference_points(df_segments,  elevation_threshold, time_threshold, grid_size=0.1):
+def create_reference_points(df_segments,  elevation_threshold, time_threshold, grid_size):
     """
     Creates reference points based on geographic location, time, and elevation gain,
-    using a grid-based approach to divide the area into bounding boxes (default grid_size=0.1 degrees).
+    using a grid-based approach to divide the area into bounding boxes.
     """
     selected_points = []
     # Initialize the first reference point with rounded coordinates based on grid_size
@@ -139,7 +139,7 @@ def get_weather_info(activity_start_date, compressed_segments, activity_id):
     segments_df = add_datetime_columns(segments_df, activity_start_date)
 
     # Create reference points
-    reference_points_df = create_reference_points(segments_df, DISTANCE_THRESHOLD, ELEVATION_THRESHOLD, TIME_THRESHOLD)
+    reference_points_df = create_reference_points(segments_df, ELEVATION_THRESHOLD, TIME_THRESHOLD, GRID_SIZE)
 
     logger.info(f"Computed {len(reference_points_df)} reference points")
 

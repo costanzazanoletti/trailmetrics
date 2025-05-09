@@ -10,10 +10,11 @@ logging.config.fileConfig("./logging.conf")
 def test_create_reference_points(sample_df_segments):
  
     elevation_threshold = 50  
-    time_threshold = 600       
+    time_threshold = 600   
+    grid_size = 0.1    
     
     # Run the function to get the reference points
-    result_df = create_reference_points(sample_df_segments, elevation_threshold, time_threshold)
+    result_df = create_reference_points(sample_df_segments, elevation_threshold, time_threshold, grid_size)
     
     # Print the result for debugging
     print(f"Reference points:\n{result_df.head()}")
