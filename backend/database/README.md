@@ -1,91 +1,58 @@
 # Database Setup Guide
 
 ## Overview
-This directory contains SQL scripts to initialize and configure the PostgreSQL databases for the TrailMetrics application. The setup includes separate databases for different microservices, user management, and schema initialization.
 
-## Structure
+This directory contains SQL scripts to initialize and configure the PostgreSQL database for the TrailMetrics application. It includes creation of users, tables, and optional seed data. All initialization is performed automatically via Docker when the system starts.
+
+## Directory Structure
+
 ```
-/database/
-│── init/
-│   ├── 01_create_databases.sql  # Creates the databases
-│   ├── 02_create_users.sql      # Creates users and assigns privileges
-│   ├── 03_create_tables.sql     # Defines the table structures
-│   ├── 04_seed_data.sql         # Inserts initial test data (optional)
-│── migrations/                   # (For Flyway or Liquibase migrations)
-│── README.md                     # Documentation for database setup
-```
-
-## PostgreSQL Database Setup
-
-### 1. Creating Databases
-To create the required databases, execute the following command:
-```sh
-psql -U postgres -f init/01_create_databases.sql
-```
-This will create:
-- `activity_service`: Stores activity data and user preferences.
-- `analytics_service`: Stores computed analytics and segments.
-
-### 2. Creating Users
-Execute:
-```sh
-psql -U postgres -f init/02_create_users.sql
-```
-This creates:
-- `activity_user`: Access to `activity_service`.
-- `analytics_user`: Access to `analytics_service`.
-
-### 3. Creating Tables
-Execute:
-```sh
-psql -U postgres -f init/03_create_tables.sql
-```
-This will set up the necessary tables within each database.
-
-### 4. Seeding Data (Optional)
-If you want to populate the database with test data:
-```sh
-psql -U postgres -f init/04_seed_data.sql
+backend/database/
+├── init/                      # Executed on Postgres container startup
+│   ├── 01_create_database.sql
+│   ├── 02_create_schema.sql
+│   └── (generated) 03_create_users.sql
+├── templates/                # Contains 03_create_users.template.sql for env-based user injection
+├── entrypoint.sh             # Custom entrypoint for PostgreSQL to generate SQL from template
+├── .env                      # Defines sensitive database user credentials
+├── .env.example              # Public reference of required env vars
+├── Dockerfile.postgres       # Extends base postgres image with envsubst support
+└── README.md                 # This file
 ```
 
-## Using Docker for Database Initialization
-If running PostgreSQL in Docker, mount the `init` directory so scripts run automatically:
+## Automatic Initialization (Docker)
+
+PostgreSQL initialization is handled automatically at container startup using Docker volumes. Ensure the following is configured in `docker-compose.yml`:
+
 ```yaml
 services:
   postgres:
-    image: postgres:latest
-    container_name: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mypassword
-    ports:
-      - "5432:5432"
+    build:
+      context: ./backend/database
+      dockerfile: Dockerfile.postgres
+    entrypoint: ["/entrypoint.sh"]
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./database/init:/docker-entrypoint-initdb.d
-```
-This ensures PostgreSQL runs the scripts during container startup.
-
-## Connecting to the Database
-Use `psql` to connect manually:
-```sh
-psql -U postgres -d activity_service
-psql -U postgres -d analytics_service
-```
-Or, for remote connections:
-```sh
-psql -h <host> -U <user> -d <database>
+      - ./backend/database/init:/docker-entrypoint-initdb.d
+      - ./backend/database/templates:/templates:ro
+      - ./backend/database/entrypoint.sh:/entrypoint.sh:ro
+    env_file:
+      - ./backend/database/.env
 ```
 
-## Notes
-- Ensure PostgreSQL is running before executing scripts.
-- Modify `.env` files to reflect the correct database credentials for each service.
-- For production, ensure proper access controls are configured.
+## Environment Variables
 
-## Troubleshooting
-If errors occur, check:
-- PostgreSQL logs (`docker logs postgres` if running in Docker).
-- Connection details and user permissions.
-- If any previous conflicting schemas exist (`\dt` in `psql`).
+Configuration variables must be defined in a `.env` file. An example is available at `.env.example`.
 
+These are used at container runtime to inject database usernames and passwords into the initialization script.
+
+## RSA Key Notes
+
+This service does not handle key management, but services like `auth-service` expect keys stored externally. Database secrets are injected at container startup only.
+
+## Manual Execution (Development)
+
+If needed, SQL files can be run manually using `psql`:
+
+```bash
+psql -U postgres -f backend/database/init/01_create_database.sql
+```

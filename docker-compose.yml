@@ -147,6 +147,7 @@ services:
       - ./backend/efficiency-service/.env
     environment:
       - KAFKA_BROKER=broker:29092
+      - POSTGRES_HOST=postgres
     command: ['python', 'app.py']
 
   terrain-service:
@@ -185,7 +186,6 @@ services:
       args:
         VITE_API_AUTH__BASE_URL: http://localhost:8080
         VITE_API_ACTIVITY_BASE_URL: http://localhost:8081
-        VITE_STRAVA_CLIENT_ID: 138564
     container_name: frontend
     restart: always
     depends_on:

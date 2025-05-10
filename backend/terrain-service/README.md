@@ -2,13 +2,22 @@
 
 ## Overview
 
-The **Terrain Service** is a microservice responsible for processing activity data, segmenting the route based on elevation changes, and publishing the results to Kafka. This service is part of the **TRAILMETRICS** project and interacts with Kafka, and external APIs: OpenStreetMap Overpass interpreter. This API doesn't require any authentication.
+The **Terrain Service** is a Python-based microservice responsible for enriching activity segments with terrain type information using OpenStreetMap data. It listens to processed segment messages from Kafka and queries the Overpass API to determine terrain characteristics.
+
+## Responsibilities
+
+- Consumes segment messages from `segmentation-output-queue`
+- Queries Overpass API to detect surface and path type
+- Attaches terrain classification to each segment
+- Publishes enriched data to `terrain-output-queue`
 
 ## Setup
 
-### Install Dependencies
+### Prerequisites
 
-The service runs on **Python 3.10+**. First, create a virtual environment and install dependencies:
+- Python 3.10+
+
+### Install Dependencies
 
 ```bash
 python3 -m venv venv
@@ -16,22 +25,17 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### Create the `.env` File
+### Configuration
 
-The `.env` file contains environment variables required for the service. **Do not commit this file to Git!** Create a `.env` file in the root of `terrain-service/` with:
+All environment variables must be provided in a `.env` file. A sample is available in `.env.example`. Configuration includes:
 
-```
-KAFKA_BROKER=localhost:9092
-KAFKA_CONSUMER_GROUP=terrain-service-group
-KAFKA_TOPIC_INPUT=segmentation-output-queue
-KAFKA_TOPIC_OUTPUT=terrain-output-queue
-KAFKA_MAX_POLL_RECORDS=10
-OVERPASS_API_URL=http://overpass-api.de/api/interpreter
-```
+- Kafka broker and topic names
+- Overpass API URL
+- Polling batch size
 
-### Running Locally
+## Running Locally
 
-After setting up the environment, start the service with:
+After environment setup:
 
 ```bash
 python app.py
@@ -39,21 +43,30 @@ python app.py
 
 ## Running with Docker
 
-To run the service inside a Docker container:
-
 ```bash
-docker-compose up --build terrain-service
+docker compose up terrain-service
 ```
 
-If you made changes to `requirements.txt` or `Dockerfile`, rebuild:
+To rebuild:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d terrain-service
 ```
+
+## Kafka Topics
+
+- Consumes: `segmentation-output-queue`
+- Produces: `terrain-output-queue`
+
+## External APIs
+
+- OpenStreetMap Overpass API: queried via HTTP (no authentication required)
+
+  - Default: `http://overpass-api.de/api/interpreter`
 
 ## Tests
-### Running tests
-To test the service, activate the virtual environment and run:
+
+Tests are in the `tests/` folder. Run them with:
 
 ```bash
 pytest -s tests/
@@ -61,4 +74,4 @@ pytest -s tests/
 
 ## More Information
 
-For a complete setup of **TRAILMETRICS**, check the [Developer Guide](../../docs/developer-guide.md).
+For overall system documentation, refer to the [Developer Guide](../../docs/developer-guide.md).

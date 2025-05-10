@@ -2,13 +2,22 @@
 
 ## Overview
 
-The **Segmentation Service** is a microservice responsible for processing activity data, segmenting the route based on elevation changes, and publishing the results to Kafka. This service is part of the **TRAILMETRICS** project and interacts with Kafka.
+The **Segmentation Service** is a Python-based microservice responsible for analyzing activity streams and dividing the route into segments based on elevation profile and gradient. It processes incoming messages from Kafka and publishes enriched segment data to downstream services.
+
+## Responsibilities
+
+- Consumes activity stream data from `activity-stream-queue`
+- Applies slope-based segmentation logic using configured thresholds
+- Assigns grade category and cadence thresholds to segments
+- Publishes results to `segmentation-output-queue`
 
 ## Setup
 
-### Install Dependencies
+### Prerequisites
 
-The service runs on **Python 3.10+**. First, create a virtual environment and install dependencies:
+- Python 3.10+
+
+### Install Dependencies
 
 ```bash
 python3 -m venv venv
@@ -16,26 +25,17 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### Create the `.env` File
+### Configuration
 
-The `.env` file contains environment variables required for the service. **Do not commit this file to Git!** Create a `.env` file in the root of `segmentation-service/` with:
-```
-GRADIENT_TOLERANCE=0.5
-MIN_SEGMENT_LENGTH=50.0
-MAX_SEGMENT_LENGTH=200.0
-CLASSIFICATION_TOLERANCE=2.5
-CADENCE_THRESHOLD=60
-CADENCE_TOLERANCE=5
-ROLLING_WINDOW_SIZE=0
-KAFKA_BROKER=localhost:9092
-KAFKA_CONSUMER_GROUP=segmentation-service-group
-KAFKA_TOPIC_INPUT=activity-stream-queue
-KAFKA_TOPIC_OUTPUT=segmentation-output-queue
-```
+All configuration parameters must be provided via a `.env` file. A reference template is available in `.env.example`. These include:
 
-### Running Locally
+- segmentation thresholds (min/max length, gradient tolerance)
+- cadence classification parameters
+- Kafka broker, consumer group, input/output topics
 
-After setting up the environment, start the service with:
+## Running Locally
+
+After setting up the environment:
 
 ```bash
 python app.py
@@ -43,22 +43,26 @@ python app.py
 
 ## Running with Docker
 
-To run the service inside a Docker container:
-
 ```bash
-docker-compose up --build segmentation-service
+docker compose up segmentation-service
 ```
 
-If you made changes to `requirements.txt` or `Dockerfile`, rebuild:
+If dependencies or Dockerfile changed:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d segmentation-service
 ```
+
+## Kafka Topics
+
+- Consumes: `activity-stream-queue`
+- Produces: `segmentation-output-queue`
 
 ## Tests
 
-### Running tests
-To test the service, activate the virtual environment and run:
+Unit tests are available in the `tests/` folder.
+
+Run tests with:
 
 ```bash
 pytest -s tests/
@@ -66,4 +70,4 @@ pytest -s tests/
 
 ## More Information
 
-For a complete setup of **TRAILMETRICS**, check the [Developer Guide](../../docs/developer-guide.md).
+For full system context, see the [Developer Guide](../../docs/developer-guide.md).

@@ -2,17 +2,38 @@
 
 ## Overview
 
-The **Weather Service** is a microservice responsible for acquiring weather data for each activity segment, and publishing the results to Kafka. This service is part of the **TRAILMETRICS** project and interacts with Kafka, and external APIs: Openweather One Call API 3.0 (https://openweathermap.org/api/one-call-3). This service requires a business account and an api key as request parameter for authentication
-The Free plan limit is `60 calls / minute`, `1000 free calls / day` and after that limit `0.0014 EUR / call`.
+The **Weather Service** is a Python-based microservice responsible for enriching activity segments with historical weather data. It consumes segment data from Kafka, queries OpenWeather One Call API 3.0, and publishes enriched data downstream.
 
-### Handle request limit
-Since the Openweather API has a limit in free calls per day, and also a limit of calls per minute, the service handles the retry by sending a message to a Kafka retry queue
+## Responsibilities
+
+- Consumes segmentation results from `segmentation-output-queue`
+- Uses coordinates, elevation changes and timestamps to fetch historical weather from OpenWeather
+- Handles API rate limits by deferring requests via a retry Kafka topic
+- Publishes weather-enriched data to `weather-output-queue`
+
+## External API: OpenWeather One Call 3.0
+
+This service uses the **OpenWeather One Call API 3.0** ([docs](https://openweathermap.org/api/one-call-3)) to fetch historical weather.
+
+- Endpoint: `https://api.openweathermap.org/data/3.0/onecall/timemachine`
+- Requires API Key passed via query string (`appid=...`)
+- **Free plan limits:**
+
+  - 60 calls/minute
+  - 1000 calls/day (free)
+  - Exceeding daily limit: €0.0014 per call
+
+## Rate Limit Handling
+
+To respect API usage limits, the service tracks requests and defers over-quota segments via `weather-retry-queue`. These are automatically retried after a configurable delay.
 
 ## Setup
 
-### Install Dependencies
+### Prerequisites
 
-The service runs on **Python 3.10+**. First, create a virtual environment and install dependencies:
+- Python 3.10+
+
+### Install Dependencies
 
 ```bash
 python3 -m venv venv
@@ -20,29 +41,18 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### Create the `.env` File
+### Configuration
 
-The `.env` file contains environment variables required for the service. **Do not commit this file to Git!** Create a `.env` file in the root of `weather-service/` with:
+Environment variables are defined in a `.env` file. A template is available in `.env.example`.
 
-```
-KAFKA_BROKER=localhost:9092
-KAFKA_CONSUMER_GROUP=weather-service-group
-KAFKA_RETRY_CONSUMER_GROUP=weather-service-retry-group
-KAFKA_TOPIC_INPUT=segmentation-output-queue
-KAFKA_TOPIC_OUTPUT=weather-output-queue
-KAFKA_TOPIC_RETRY=weather-retry-queue
-KAFKA_MAX_POLL_RECORDS=10
-DISTANCE_THRESHOLD= 10000
-ELEVATION_THRESHOLD=400
-TIME_THRESHOLD=3600
-OPENWEATHER_HISTORY_API_URL=https://api.openweathermap.org/data/3.0/onecall/timemachine
-OPENWEATHER_API_KEY=your_api_key
-DAILY_REQUEST_LIMIT=1000
-```
+These include:
 
-### Running Locally
+- Kafka broker, topics, consumer groups
+- OpenWeather API base URL and key
+- Request limits and retry strategy
+- Segment filtering thresholds (distance, elevation, time)
 
-After setting up the environment, start the service with:
+## Running Locally
 
 ```bash
 python app.py
@@ -50,21 +60,25 @@ python app.py
 
 ## Running with Docker
 
-To run the service inside a Docker container:
-
 ```bash
-docker-compose up --build weather-service
+docker compose up weather-service
 ```
 
-If you made changes to `requirements.txt` or `Dockerfile`, rebuild:
+To rebuild:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d weather-service
 ```
+
+## Kafka Topics
+
+- Consumes: `segmentation-output-queue`
+- Produces: `weather-output-queue`
+- Retry: `weather-retry-queue`
 
 ## Tests
-### Running tests
-To test the service, activate the virtual environment and run:
+
+Run tests with:
 
 ```bash
 pytest -s tests/
@@ -72,4 +86,4 @@ pytest -s tests/
 
 ## More Information
 
-For a complete setup of **TRAILMETRICS**, check the [Developer Guide](../../docs/developer-guide.md).
+For overall architecture, see the [Developer Guide](../../docs/developer-guide.md).

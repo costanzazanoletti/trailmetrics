@@ -12,7 +12,7 @@ logger = logging.getLogger("app")
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('DB_PORT', 5432)}/{os.getenv('DB_NAME')}"
 if "pytest" in sys.modules:
     DATABASE_URL = os.getenv("TEST_DATABASE_URL", DATABASE_URL)
 

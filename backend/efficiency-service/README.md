@@ -1,13 +1,24 @@
 # Efficiency Service
 
 ## Overview
-The **Efficiency Service** is a microservice responsible for collecting all the information from the other services (segments, terrain, weather), save the information into the database. The service is also responsible of computing the efficiency score for each segment and the similarity within a user activities' segments belonging to the same grade category.
+
+The **Efficiency Service** is a Python-based microservice responsible for:
+
+- Consuming activity segment data from Kafka (`segmentation-output-queue`, `terrain-output-queue`, `weather-output-queue`, etc.)
+- Saving terrain, weather, and segment information to the database
+- Calculating a custom efficiency score for each segment
+- Managing analysis state per activity
+- Computing segment similarity within a user's activities based on grade category and predefined metrics
+
+This service operates fully asynchronously and reacts to Kafka events published by other services.
 
 ## Setup
 
-### Install Dependencies
+### Prerequisites
 
-The service runs on **Python 3.10+**. First, create a virtual environment and install dependencies:
+- Python 3.10+
+
+### Install Dependencies
 
 ```bash
 python3 -m venv venv
@@ -15,31 +26,17 @@ source venv/bin/activate  # macOS/Linux
 pip install -r requirements.txt
 ```
 
-### Create the `.env` File
+### Configuration
 
-The `.env` file contains environment variables required for the service. **Do not commit this file to Git!** Create a `.env` file in the root of `efficiency-service/` with:
-DATABASE_URL=postgresql://analytics_user:[password]@localhost:5432/trailmetrics
-TEST_DATABASE_URL=postgresql://postgres:postgres@localhost:5432/trailmetrics_test
-KAFKA_BROKER=localhost:9092
-KAFKA_CONSUMER_GROUP=efficiency-service-group
-KAFKA_TOPIC_SEGMENTS=segmentation-output-queue
-KAFKA_TOPIC_TERRAIN=terrain-output-queue
-KAFKA_TOPIC_WEATHER=weather-output-queue
-KAFKA_TOPIC_DELETED_ACTIVITIES=activities-deleted-queue
-EFFICIENCY_FACTOR_SCALE=10
-EFFICIENCY_ELEVATION_WEIGHT=1
-EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT=1
-TOP_K_SIMILAR_SEGMENTS=10
-SIMILARITY_COMPUTATION_METHOD=euclidean
+All environment variables must be defined in a `.env` file. An example is provided in `.env.example`. This includes:
 
-## Database connection
-The service connects to the application PostgreSQL database with a dedicated user (**analytics_user**).
+- Kafka topic and broker configuration
+- PostgreSQL database URL
+- Weights and parameters for efficiency score computation and similarity analysis
 
-When running with docker-compose, the database and users are created and configured through dedicated scripts. When running locally you can launch the scripts located in the /database folder.
+## Running Locally
 
-### Running Locally
-
-After setting up the environment, start the service with:
+After setting up the environment:
 
 ```bash
 python app.py
@@ -47,28 +44,45 @@ python app.py
 
 ## Running with Docker
 
-To run the service inside a Docker container:
+Build and run the service with:
 
 ```bash
-docker-compose up efficiency-service
+docker compose up efficiency-service
 ```
 
-If you made changes to `requirements.txt` or `Dockerfile`, rebuild:
+If dependencies or Dockerfile changed:
 
 ```bash
-docker-compose up --build -d
+docker compose up --build -d efficiency-service
 ```
+
+## Database Connection
+
+The service connects to the central PostgreSQL database using the `analytics_user`. The database and user are created automatically when running in Docker.
+
+For local setup, see the database service README and run the SQL init scripts manually if needed.
 
 ## Tests
-### Running tests
-To test the service, activate the virtual environment and run:
+
+Tests are located in the `tests/` folder and use a separate PostgreSQL test instance defined in the `.env`.
+
+Run tests with:
 
 ```bash
 pytest -s tests/
 ```
-## Test database
-The .env file should contain the url of the PostgreSQL test database that is automatically used when the tests are launched with pytest.
+
+## Related Topics
+
+- Kafka topics consumed:
+
+  - `segmentation-output-queue`
+  - `terrain-output-queue`
+  - `weather-output-queue`
+  - `activities-deleted-queue`
+
+- The similarity matrix computation runs only when all required data for a user activity is available.
 
 ## More Information
 
-For a complete setup of **TRAILMETRICS**, check the [Developer Guide](../../docs/developer-guide.md).
+For system-wide architecture and integration, refer to the [Developer Guide](../../docs/developer-guide.md).

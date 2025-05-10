@@ -1,50 +1,88 @@
 # Authentication Service
 
-This service interacts with frontend to perform user authentication through Strava OAuth2 and JWT.
-It interacts with other services with API Key authenticated requests
+This service handles user authentication via Strava OAuth2 and issues JWT tokens used by the frontend. It also validates tokens and serves public keys to other backend services. Internal service-to-service communication is secured with API Key authentication.
 
-## Set up
+## Responsibilities
 
-The application can run in Intellij or in Docker.
+- Redirects users to Strava for OAuth2 authentication
+- Exchanges authorization code for Strava access token
+- Issues signed JWT tokens for authenticated users
+- Exposes public key for JWT verification
+- Validates incoming JWTs and API keys
 
-### Intellij set up
+## Dependencies
 
-SpringBoot uses standard /src/resources/application.yml from classpath and property values are
-loaded from .env file.
-To ensure SpringBoot loads the environment variables check in application.yml
+- Strava API (OAuth2 flow)
+- PostgreSQL (user persistence)
+- Other services (consume JWT and validate API key)
 
-```
+## Configuration
+
+Configuration variables must be defined in a `.env` file. An example file is available at `.env.example`.
+
+This includes:
+
+- Auth service port and public key exposure
+- API key used for internal authentication
+- JWT cookie configuration
+- Database connection
+- RSA key locations
+
+Spring Boot automatically loads these if the following is included in `application.yml`:
+
+```yaml
 spring:
   config:
     import: optional:file:.env[.properties]
 ```
 
-## Test
+## Building and Running
 
-Tests run with Profile=Test, src/test/resources/application-test.yml and can run from Intellij and
-from Maven plugin inside Intellij.
-Ensure that .env file is present and that environment variables are loaded from .env file
+### From IntelliJ
 
-### Docker set up
+1. Ensure `.env` file is present with required config (see `.env.example`)
+2. Build using Maven: `clean package`
+3. Run `AuthenticationServiceApplication` class directly
 
-Before starting the container in docker you must create the jar file using maven `clean package`.
+### With Docker
 
-## RSA Authentication
+1. Build the jar with Maven:
 
-Inside /config/keys there must be the files
-
-- private.pem
-- public.pem
-  They can be created using OpenSSL
-
-1. Generate a private key
-
+```bash
+./mvnw clean package
 ```
+
+2. Start via Docker Compose:
+
+```bash
+docker compose up auth-service
+```
+
+## RSA Key Pair for JWT
+
+JWTs are signed with a private RSA key and verified using the public key. Keys must be placed in the `config/keys` folder:
+
+- `private.pem`
+- `public.pem`
+
+You can generate them with OpenSSL:
+
+```bash
 openssl genpkey -algorithm RSA -out private_key.pem -aes256
-```
-
-2. Extract the public key
-
-```
 openssl rsa -pubout -in private_key.pem -out public_key.pem
+```
+
+Then rename and move the files:
+
+```bash
+mv private_key.pem config/keys/private.pem
+mv public_key.pem config/keys/public.pem
+```
+
+## Tests
+
+Unit and integration tests are included under `src/test/`. Run them using:
+
+```bash
+./mvnw test
 ```

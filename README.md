@@ -1,236 +1,103 @@
-# TrailMetrics - Project Documentation
+# TrailMetrics
+
+A microservice-based platform for analyzing trail running performance data. TrailMetrics processes data from wearable devices and public APIs (Strava, weather, terrain) to compute individual efficiency metrics and suggest optimal pacing strategies for runners.
+
+![Docker](https://img.shields.io/badge/docker-ready-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 1. Introduction
 
-**TrailMetrics** is an application for analyzing and processing trail running training and race activities. The system uses **Kafka** for real-time messaging, **PostgreSQL** for data storage, and **Spring Boot** for backend processing and API exposure.
+TrailMetrics is a web-based application for analyzing trail running training and race activities. It computes a custom efficiency metric over route segments that are homogeneous in terms of grade, terrain type, and weather conditions. By comparing performance across similar segments, TrailMetrics helps athletes interpret their effort and optimize pacing strategies. The system leverages Kafka for real-time messaging, PostgreSQL for data storage, and a backend built with Spring Boot and Python.
 
-**Technologies used:**
+## 2. Technologies
 
-- **Kafka (Kraft)**: Real-time message processing.
-- **Spring Boot**: Backend framework.
-- **Python**: Metrics computation
-- **PostgreSQL**: Data storage for activities.
-- **Docker**: Containerization of services.
+- **Kafka (KRaft)**: Real-time event streaming and coordination between microservices
+- **Spring Boot**: Java-based backend services (auth, activity coordination)
+- **Python**: Services for metrics computation and data enrichment
+- **PostgreSQL**: Centralized data storage
+- **React + Tailwind**: Frontend interface (in `frontend/`)
+- **Docker Compose**: Container orchestration for local development
 
-## 2. System Architecture
+## 3. System Architecture
 
-The system uses a **microservices architecture** with the following components:
+TrailMetrics follows a microservices architecture. The main components are:
 
-- **Backend**: Spring Boot processes activity data and integrates with Kafka for real-time messaging.
-- **Kafka**: Handles real-time messaging and data processing via producer and consumer.
-- **PostgreSQL**: Stores activities and user data.
+- **Activity Service** – manages activity sync, retries, and orchestration
+- **Segmentation Service** – splits activities by slope/terrain
+- **Efficiency Service** – computes cadence-efficiency metrics
+- **Weather Service** – enriches data with weather forecast info
+- **Terrain Service** – identifies terrain type via geographic data
+- **Auth Service** – handles Strava OAuth2 login and user profiles
+- **Frontend** – visualizes activities, graphs, maps, and planning tools
 
-## 3. Setup Instructions
+See [`docs/Architecture.png`](docs/Architecture.png) for a high-level overview.
 
-### 3.1. Prerequisites
+## 4. Getting Started
 
-- **Docker and Docker Compose**: To run frontend, backend, data analysis, Kafka and PostgreSQL containers.
-- **Java 17+**: To run the Spring Boot backend.
-- **Maven**: For Spring Boot dependency management.
+### 4.1. Prerequisites
 
-### 3.2. Clone the Repository
+- Docker and Docker Compose
+- Java 17+
+- Maven
+
+### 4.2. Clone and Run
 
 ```bash
-git clone https://github.com/your-username/trailmetrics.git
-```
-
-### 3.3. Run the Project with Docker Compose
-
-1. Navigate to the project directory:
-
-```bash
+git clone https://github.com/costanzazanoletti/trailmetrics.git
 cd trailmetrics
+docker compose up -d
 ```
 
-2. Start the services:
+Visit `http://localhost:3000` to access the frontend.
+
+### Using Makefile (optional)
+
+You can use the provided `Makefile` in the project root to simplify Docker operations:
 
 ```bash
-docker-compose up -d
+make up         # Start all services
+make down       # Stop and remove containers and volumes
+make rebuild    # Full cleanup and rebuild
+make logs s=auth-service         # View logs for a specific service
+make shell s=efficiency-service  # Open a shell inside a service container
 ```
 
-3. Verify that the containers are running:
+## 5. Project Structure
 
-```bash
-docker ps
+```
+frontend/               → React app
+backend/
+  ├─ activity-service/   → Sync and orchestrate activities
+  ├─ auth-service/       → Authentication and token handling
+  ├─ efficiency-service/ → Efficiency computation
+  ├─ segmentation-service/ → Grade/terrain segmentation
+  ├─ terrain-service/    → Terrain classification
+  ├─ weather-service/    → Weather enrichment
+  ├─ database/           → Init scripts, schema, Docker setup
+  └─ ...
+docker-compose.yml     → Service orchestration
 ```
 
-## 4. Kafka Configuration
+## 6. Kafka Topics Overview
 
-### 4.1. Kafka (Kraft)
+Kafka coordinates microservice communication. The key topics used include:
 
-Kafka is configured to **handle topics** and process messages via **producer** and **consumer**.
+- `activity-sync-queue`: triggers sync of new activities
+- `activity-retry-queue`: retries failed syncs
+- `user-sync-retry-queue`: retries failed user updates
+- `activity-stream-queue`: raw stream ready for segmentation
+- `segmentation-output-queue`: segment result broadcast
+- `terrain-output-queue`: terrain info available
+- `weather-output-queue`: weather info available
+- `weather-retry-queue`: weather retry scheduling
+- `activities-deleted-queue`: deleted activity list
 
-- **Kafka Port**: `localhost:9092`
+Each topic includes structured JSON messages. See [`docs/KafkaMessages.md`](docs/Kafkamessages.md) for full schemas.
 
-## 5. Kafka Topics and Messages
+## 7. Contributing
 
-This table defines the Kafka topics and messages used in the application for event-driven communication between services.
+This project is part of a master's thesis and currently not accepting external contributions. However, feel free to open issues or suggestions.
 
-### 5.1 Kafka Messages
+## 8. License
 
-# Kafka Topics and Messages
-
-This document defines the Kafka topics and messages used in the application for event-driven communication between services.
-
-# Kafka Topics and Messages
-
-This document defines the Kafka topics and messages used in the application for event-driven communication between services.
-
-## Kafka Messages
-
-### `activity-sync-queue`
-
-- **Description**: Syncing activity data
-- **Producer Service**: `activity-service`
-- **Consumer Service**: `activity-service`
-- **Consumer Group**: `activity-service-group`
-- **Key**: `activityId`
-- **Value JSON**:
-  ```json
-  {
-    "userId": "28658549",
-    "activityId": 8054008512,
-    "timestamp": 1740680052.920566000
-  }
-  ```
-
-### `activity-retry-queue`
-
-- **Description**: Retry failed activity syncs
-- **Producer Service**: `activity-service`
-- **Consumer Service**: `activity-service`
-- **Consumer Group**: `activity-service-group`
-- **Key**: `activityId`
-- **Value JSON**:
-  ```json
-  {
-    "userId": "28658549",
-    "activityId": 8054008512,
-    "timestamp": 1740680052.920566000
-  }
-  ```
-
-### `user-sync-retry-queue`
-
-- **Description**: Retry failed user syncs
-- **Producer Service**: `activity-service`
-- **Consumer Service**: `activity-service`
-- **Consumer Group**: `user-service-group`
-- **Key**: `userId`
-- **Value JSON**: 
-```json
-{
-    "userId": "28658549",
-    "scheduledRetryTime": 1740680052.920566000,
-    "sentTimestamp": 1740680052.920566000
-  }
-```
-### `activity-stream-queue`
-
-- **Description**: An activity has been synchronized and the processing has started
-- **Producer Service**: `activity-service`
-- **Consumer Service**: `segmentation-service`
-- **Consumer Group**: `segmentation-service-group`
-- **Key**: `activityId`
-- **Value JSON**:
-  ```json
-  {
-    "activityId": 13484124195,
-    "userId": 12345,
-    "startDate": 1740680048.270867,
-    "processedAt": 1740680048.270867000,
-    "compressedStream": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
-  }
-  ```
-  
-### `segmentation-output-queue`
-
-**Description:** An activity has been segmented  (or status: failure if unable to process)
-**Producer Service:** `segmentation-service`  
-**Consumer Service:** `terrain-service`, `weather-service`, `efficiency-service`  
-**Consumer Group:** `terrain-service-group`,`weather-service-group`, `efficiency-service-group`  
-**Key:** `activityId`  
-**Value JSON:**
-
-```json
-{
-  "activityId": 13484124195,
-  "userId": 12345,
-  "startDate": 1740680048.270867,
-  "processedAt": 1740680048.270867,
-  "status":"success",
-  "compressedSegments": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
-}
-```
-
-### `terrain-output-queue`
-
-**Description:** Terrain data has been retrieved from API
-**Producer Service:** `terrain-service`  
-**Consumer Service:** `efficiency-service`  
-**Consumer Group:** `efficiency-service-group`  
-**Key:** `activityId`  
-**Value JSON:**
-
-```json
-{
-  "activityId": 13484124195,
-  "compressedTerrainInfo": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
-}
-```
-
-### `weather-output-queue`
-
-**Description:** Weather data has been retrieved from API  
-**Producer Service:** `weather-service`  
-**Consumer Service:** `efficiency-service`  
-**Consumer Group:** `efficiency-service-group`  
-**Key:** `activityId`  
-**Value JSON:**
-
-```json
-{
-  "activityId": 13484124195,
-  "compressedWeatherInfo": "H4sIAAAAAAAA/+1c644muW19l/397UAXSpTyKoYRDOxN"
-}
-```
-
-### `weather-retry-queue`
-
-**Description:** Weather API rate limit hit, retry after a delay  
-**Producer Service:** `weather-service`  
-**Consumer Service:** `weather-service`  
-**Consumer Group:** `weather-service-group`  
-**Key:** `activityId`  
-**Value JSON:**
-
-```json
-{
-  "activityId": 12345,
-  "requestParams": {
-    "lat": 46.0,
-    "lon": 8.0,
-    "dt": 1633595280,
-    "units": "metric"
-  },
-  "segmentIds": ["123456-1","123456-2"],
-  "retryTimestamp": 1743416209
-}
-```
-
-### `activities-deleted-queue`
-
-**Description:** List of deleted activities
-**Producer Service:** `activity-service-group`
-**Consumer Service:** `efficiency-service`
-**Consumer Group:** `efficiency-service-group`  
-**Key:** `userId`  
-**Value JSON:**
-
-```json
-{
-  "userId": "28658549",
-  "checkedAt": 1740680052.987654,
-  "deletedActivityIds": [4321, 8765]
-}
-```
+MIT License.

@@ -1,50 +1,89 @@
-# React + TypeScript + Vite
+# TrailMetrics Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This is the web interface for **TrailMetrics**, built with **React**, **TypeScript**, and **Vite**. The application allows athletes to authenticate via Strava, explore activity data, visualize metrics such as cadence and efficiency, and plan training strategies.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Features include:
 
-## Expanding the ESLint configuration
+- OAuth2 login via Strava
+- Dynamic map and elevation chart visualization
+- Segment list with gradient, terrain, weather, and efficiency data
+- Interactive dashboard for activity metrics
+- Panel to explore similar segments and comparative stats
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Setup
 
-- Configure the top-level `parserOptions` property like this:
+### Prerequisites
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+- Node.js (>= 18)
+- npm or yarn
+
+### Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+## Running the App Locally
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Start the development server:
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```bash
+npm run dev
+# or
+yarn dev
 ```
+
+The app will be available at `http://localhost:3000`.
+
+## Environment Configuration
+
+All runtime variables are defined in `.env` and documented in `.env.example`. These include:
+
+```env
+VITE_API_AUTH__BASE_URL=http://localhost:8080
+VITE_API_ACTIVITY_BASE_URL=http://localhost:8081
+VITE_STRAVA_CLIENT_ID=your_client_id
+```
+
+These variables configure the backend endpoints and Strava OAuth client.
+
+## Project Structure
+
+```
+frontend/
+├── public/              # Static assets
+├── src/
+│   ├── assets/          # Icons and images
+│   ├── components/      # Shared UI components
+│   ├── config/          # Environment setup
+│   ├── hooks/           # Custom React hooks
+│   ├── layouts/         # Page layouts
+│   ├── mappers/         # Mapping API responses to frontend models
+│   ├── pages/           # Route views (Dashboard, Planning)
+│   ├── services/        # API functions
+│   ├── store/           # Zustand state management
+│   ├── styles/          # Tailwind + custom styles
+│   ├── types/           # TypeScript interfaces
+│   └── utils/           # Utility functions
+```
+
+## Linting and Formatting
+
+The project uses ESLint and Prettier. Run:
+
+```bash
+npm run lint
+npm run format
+```
+
+## Testing
+
+Tests are not currently implemented in the frontend.
+
+## More Information
+
+For overall architecture and backend integration, see the [Developer Guide](../../docs/developer-guide.md).
