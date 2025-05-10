@@ -24,25 +24,28 @@ services:
       KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
     healthcheck:
-      test: ["CMD", "nc", "-z", "broker", "29092"]
+      test: ['CMD', 'nc', '-z', 'broker', '29092']
       interval: 10s
       timeout: 5s
       retries: 5
 
   postgres:
-    image: postgres:latest
+    build:
+      context: ./backend/database
+      dockerfile: Dockerfile.postgres
+    entrypoint: ['/entrypoint.sh']
     container_name: postgres
     restart: always
     ports:
       - '5432:5432'
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+    env_file:
+      - ./backend/database/.env
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/database/init:/docker-entrypoint-initdb.d:ro 
+      - ./backend/database/init:/docker-entrypoint-initdb.d
+      - ./backend/database/templates:/templates:ro
+      - ./backend/database/entrypoint.sh:/entrypoint.sh:ro
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -72,7 +75,7 @@ services:
     container_name: auth-service
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8080/health']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -94,7 +97,7 @@ services:
     container_name: activity-service
     restart: always
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8081/health']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -144,7 +147,6 @@ services:
       - ./backend/efficiency-service/.env
     environment:
       - KAFKA_BROKER=broker:29092
-      - DATABASE_URL=postgresql://analytics_user:103QKa3O4kpDnZA@postgres:5432/trailmetrics
     command: ['python', 'app.py']
 
   terrain-service:
