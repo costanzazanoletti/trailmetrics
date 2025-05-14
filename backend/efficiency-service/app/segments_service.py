@@ -1,13 +1,9 @@
 import logging
 import logging_setup
-import json
-import gzip
-import pandas as pd
-import numpy as np
 import os
 from dotenv import load_dotenv
 from app.exceptions import DatabaseException
-from database import segments_batch_insert_and_update_status, delete_all_data_by_activity_ids
+from db.segments import segments_batch_insert_and_update_status, delete_all_data_by_activity_ids
 from app.utilities import parse_compressed_data
 
 logger = logging.getLogger("app")

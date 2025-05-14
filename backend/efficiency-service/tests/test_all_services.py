@@ -1,8 +1,4 @@
 import pytest
-import json
-import os
-import gzip
-import base64
 import pandas as pd
 from datetime import datetime, timezone
 from sqlalchemy import text
@@ -10,8 +6,7 @@ from app.weather_service import process_weather_info
 from app.terrain_service import process_terrain_info
 from app.segments_service import process_segments
 from app.similarity_service import run_similarity_computation
-from app.exceptions import DatabaseException
-from database import engine  
+from db.setup import engine 
 
 def test_process_segments_terrain_weather(set_up, create_sample_data):
     """

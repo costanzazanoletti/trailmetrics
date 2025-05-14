@@ -1,6 +1,5 @@
 import pytest
 import json
-import os
 from unittest.mock import Mock, patch
 from app.kafka_consumer import (
     process_segments_message, 
@@ -8,7 +7,8 @@ from app.kafka_consumer import (
     process_weather_message, 
     process_deleted_activities_message
 )
-from database import engine, fetch_one_sql
+from db.setup import engine
+from db.core import fetch_one_sql
 
 # SEGMENTS
 @patch('app.kafka_consumer.engine')

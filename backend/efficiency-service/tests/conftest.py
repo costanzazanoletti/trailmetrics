@@ -7,7 +7,7 @@ import numpy as np
 import os
 from unittest.mock import Mock, MagicMock
 from sqlalchemy import text
-from database import engine
+from db.setup import engine
 
 def dataframe_to_compressed_json(df):
     """Helper function to convert a dataframe into compressed json"""

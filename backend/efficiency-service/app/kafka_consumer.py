@@ -1,16 +1,15 @@
 import json
 import os
-import base64
 import logging
 import logging_setup
-import time
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
 from app.segments_service import process_segments, process_deleted_activities
 from app.terrain_service import process_terrain_info
 from app.weather_service import process_weather_info
 from app.similarity_service import should_compute_similarity_for_user
-from database import engine, get_user_id_from_activity, insert_not_processable_activity_status
+from db.setup import engine
+from db.activities import get_user_id_from_activity, insert_not_processable_activity_status
 
 
 # Load environment variables

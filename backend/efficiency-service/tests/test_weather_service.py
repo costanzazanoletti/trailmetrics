@@ -3,12 +3,10 @@ import json
 import os
 import pandas as pd
 from unittest.mock import Mock, patch
-import base64
-from datetime import datetime, timezone
 from sqlalchemy import text
 from app.weather_service import process_weather_info
 from app.exceptions import DatabaseException
-from database import engine  
+from db.setup import engine  
 
 @pytest.fixture
 def set_up(autouse=True):

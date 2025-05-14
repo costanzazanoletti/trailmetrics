@@ -1,10 +1,8 @@
 import logging
 import logging_setup
-import pandas as pd
-import numpy as np
 from app.exceptions import DatabaseException
 from app.utilities import parse_compressed_data
-from database import weather_batch_insert_and_update_status
+from db.segments import weather_batch_insert_and_update_status
 
 logger = logging.getLogger("app")
 

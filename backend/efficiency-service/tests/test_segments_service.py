@@ -3,13 +3,12 @@ import json
 import os
 import pandas as pd
 import numpy as np
-from unittest.mock import Mock, patch
-import base64
-from datetime import datetime, timezone
+from unittest.mock import patch
 from sqlalchemy import text
 from app.segments_service import process_segments, calculate_metrics, compute_efficiency_score, process_deleted_activities
 from app.exceptions import DatabaseException
-from database import engine, execute_sql, delete_all_data, fetch_one_sql  
+from db.setup import engine
+from db.core import execute_sql, fetch_one_sql
 
 def test_process_segments(load_sample_segments, set_up):
     """

@@ -12,14 +12,14 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
-from database import (
-    engine, 
+from db.setup import engine
+from db.segments import get_user_segments
+from db.similarity import (
+    delete_user_similarity_data,
+    save_similarity_data,
     get_activity_status_fingerprint, 
     get_similarity_status_fingerprint, 
     update_similarity_status_fingerprint,
-    get_user_segments,
-    delete_user_similarity_data,
-    save_similarity_data,
     update_similarity_status_in_progress,
     mark_similarity_processed_for_user
 )
