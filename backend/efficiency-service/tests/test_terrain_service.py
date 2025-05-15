@@ -4,8 +4,8 @@ import os
 from unittest.mock import Mock, patch
 import base64
 from sqlalchemy import text
-from app.terrain_service import process_terrain_info
-from app.exceptions import DatabaseException
+from services.terrain_service import process_terrain_info
+from exceptions.exceptions import DatabaseException
 from db.setup import engine  
 
 @pytest.fixture
@@ -71,7 +71,7 @@ def test_process_terrain_info(load_sample_segments, set_up):
         assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
         assert terrain_status is True
 
-@patch('app.terrain_service.terrain_batch_insert_and_update_status')
+@patch('services.terrain_service.terrain_batch_insert_and_update_status')
 def test_process_terrain_info_with_database_exception(mock_store_segments, load_sample_segments, set_up):
     """Tests that process_terrain_info doesn't store any data when it handles a DatabaseException."""
     # Load sample data

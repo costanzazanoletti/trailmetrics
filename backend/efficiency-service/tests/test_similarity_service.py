@@ -2,7 +2,7 @@ import pytest
 import pandas as pd
 import numpy as np
 from unittest.mock import patch, MagicMock
-from app.similarity_service import (
+from services.similarity_service import (
     group_highway_for_analysis,
     group_surface_for_analysis,
     preprocess_data_by_grade, 
@@ -13,10 +13,10 @@ from app.similarity_service import (
     run_similarity_computation
     )
 
-@patch('app.similarity_service.run_similarity_computation')
-@patch('app.similarity_service.update_similarity_status_fingerprint')
-@patch('app.similarity_service.get_similarity_status_fingerprint')
-@patch('app.similarity_service.get_activity_status_fingerprint')
+@patch('services.similarity_service.run_similarity_computation')
+@patch('services.similarity_service.update_similarity_status_fingerprint')
+@patch('services.similarity_service.get_similarity_status_fingerprint')
+@patch('services.similarity_service.get_activity_status_fingerprint')
 def test_should_compute_similarity_for_user(
     mock_get_activity_status_fingerprint,
     mock_get_similarity_status_fingerprint,
@@ -37,10 +37,10 @@ def test_should_compute_similarity_for_user(
     mock_update_similarity_status_fingerprint.assert_called_once()
     mock_run_similarity_computation.assert_called_once_with(user_id)
 
-@patch('app.similarity_service.run_similarity_computation')
-@patch('app.similarity_service.update_similarity_status_fingerprint')
-@patch('app.similarity_service.get_similarity_status_fingerprint')
-@patch('app.similarity_service.get_activity_status_fingerprint')
+@patch('services.similarity_service.run_similarity_computation')
+@patch('services.similarity_service.update_similarity_status_fingerprint')
+@patch('services.similarity_service.get_similarity_status_fingerprint')
+@patch('services.similarity_service.get_activity_status_fingerprint')
 def test_should_not_compute_similarity_if_no_activities(
     mock_get_activity_status_fingerprint,
     mock_get_similarity_status_fingerprint,
@@ -61,10 +61,10 @@ def test_should_not_compute_similarity_if_no_activities(
     mock_update_similarity_status_fingerprint.assert_not_called()
     mock_run_similarity_computation.assert_not_called()
 
-@patch('app.similarity_service.run_similarity_computation')
-@patch('app.similarity_service.update_similarity_status_fingerprint')
-@patch('app.similarity_service.get_similarity_status_fingerprint')
-@patch('app.similarity_service.get_activity_status_fingerprint')
+@patch('services.similarity_service.run_similarity_computation')
+@patch('services.similarity_service.update_similarity_status_fingerprint')
+@patch('services.similarity_service.get_similarity_status_fingerprint')
+@patch('services.similarity_service.get_activity_status_fingerprint')
 def test_should_not_compute_similarity_if_same_fingerprint(
     mock_get_activity_status_fingerprint,
     mock_get_similarity_status_fingerprint,
@@ -85,10 +85,10 @@ def test_should_not_compute_similarity_if_same_fingerprint(
     mock_update_similarity_status_fingerprint.assert_not_called()
     mock_run_similarity_computation.assert_not_called()
 
-@patch('app.similarity_service.run_similarity_computation')
-@patch('app.similarity_service.update_similarity_status_fingerprint')
-@patch('app.similarity_service.get_similarity_status_fingerprint')
-@patch('app.similarity_service.get_activity_status_fingerprint')
+@patch('services.similarity_service.run_similarity_computation')
+@patch('services.similarity_service.update_similarity_status_fingerprint')
+@patch('services.similarity_service.get_similarity_status_fingerprint')
+@patch('services.similarity_service.get_activity_status_fingerprint')
 def test_should_not_compute_similarity_if_in_progress(
     mock_get_activity_status_fingerprint,
     mock_get_similarity_status_fingerprint,
@@ -280,12 +280,12 @@ def test_compute_similarity_matrix():
     assert 'similarity_score' in top_k_df.columns
     assert 'rank' in top_k_df.columns
 
-@patch("app.similarity_service.engine")
-@patch("app.similarity_service.update_similarity_status_in_progress")
-@patch("app.similarity_service.save_similarity_data")
-@patch("app.similarity_service.delete_user_similarity_data")
-@patch("app.similarity_service.compute_similarity_matrix")
-@patch("app.similarity_service.get_user_segments")
+@patch("services.similarity_service.engine")
+@patch("services.similarity_service.update_similarity_status_in_progress")
+@patch("services.similarity_service.save_similarity_data")
+@patch("services.similarity_service.delete_user_similarity_data")
+@patch("services.similarity_service.compute_similarity_matrix")
+@patch("services.similarity_service.get_user_segments")
 def test_run_similarity_computation_with_segments(
     mock_get_user_segments,
     mock_compute_similarity_matrix,
@@ -320,12 +320,12 @@ def test_run_similarity_computation_with_segments(
     mock_transaction.commit.assert_called_once()
     mock_connection.close.assert_called_once()
 
-@patch("app.similarity_service.engine")
-@patch("app.similarity_service.update_similarity_status_in_progress")
-@patch("app.similarity_service.save_similarity_data")
-@patch("app.similarity_service.delete_user_similarity_data")
-@patch("app.similarity_service.compute_similarity_matrix")
-@patch("app.similarity_service.get_user_segments")
+@patch("services.similarity_service.engine")
+@patch("services.similarity_service.update_similarity_status_in_progress")
+@patch("services.similarity_service.save_similarity_data")
+@patch("services.similarity_service.delete_user_similarity_data")
+@patch("services.similarity_service.compute_similarity_matrix")
+@patch("services.similarity_service.get_user_segments")
 def test_run_similarity_computation_no_segments(
     mock_get_user_segments,
     mock_compute_similarity_matrix,
@@ -352,12 +352,12 @@ def test_run_similarity_computation_no_segments(
     mock_transaction.commit.assert_called_once()
     mock_connection.close.assert_called_once()
 
-@patch("app.similarity_service.engine")
-@patch("app.similarity_service.update_similarity_status_in_progress")
-@patch("app.similarity_service.save_similarity_data")
-@patch("app.similarity_service.delete_user_similarity_data")
-@patch("app.similarity_service.compute_similarity_matrix")
-@patch("app.similarity_service.get_user_segments")
+@patch("services.similarity_service.engine")
+@patch("services.similarity_service.update_similarity_status_in_progress")
+@patch("services.similarity_service.save_similarity_data")
+@patch("services.similarity_service.delete_user_similarity_data")
+@patch("services.similarity_service.compute_similarity_matrix")
+@patch("services.similarity_service.get_user_segments")
 def test_run_similarity_computation_exception(
     mock_get_user_segments,
     mock_compute_similarity_matrix,
@@ -388,13 +388,13 @@ def test_run_similarity_computation_exception(
     mock_connection.close.assert_called_once()
     mock_update_similarity_status.assert_called_once_with(mock_engine, user_id, False)
 
-@patch("app.similarity_service.mark_similarity_processed_for_user")
-@patch("app.similarity_service.engine")
-@patch("app.similarity_service.update_similarity_status_in_progress")
-@patch("app.similarity_service.save_similarity_data")
-@patch("app.similarity_service.delete_user_similarity_data")
-@patch("app.similarity_service.compute_similarity_matrix")
-@patch("app.similarity_service.get_user_segments")
+@patch("services.similarity_service.mark_similarity_processed_for_user")
+@patch("services.similarity_service.engine")
+@patch("services.similarity_service.update_similarity_status_in_progress")
+@patch("services.similarity_service.save_similarity_data")
+@patch("services.similarity_service.delete_user_similarity_data")
+@patch("services.similarity_service.compute_similarity_matrix")
+@patch("services.similarity_service.get_user_segments")
 def test_run_similarity_computation_with_segments_and_processing_timestamp(
     mock_get_user_segments,
     mock_compute_similarity_matrix,

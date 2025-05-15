@@ -2,10 +2,10 @@ import pytest
 import pandas as pd
 from datetime import datetime, timezone
 from sqlalchemy import text
-from app.weather_service import process_weather_info
-from app.terrain_service import process_terrain_info
-from app.segments_service import process_segments
-from app.similarity_service import run_similarity_computation
+from services.weather_service import process_weather_info
+from services.terrain_service import process_terrain_info
+from services.segments_service import process_segments
+from services.similarity_service import run_similarity_computation
 from db.setup import engine 
 
 def test_process_segments_terrain_weather(set_up, create_sample_data):
@@ -126,7 +126,7 @@ def test_run_similarity_computation_with_db(set_up, setup_similarity_test_data):
             else:
                 assert row.similarity_processed_at is not None
 
-from app.efficiency_zone_service import calculate_efficiency_zones_for_segments
+from services.efficiency_zone_service import calculate_efficiency_zones_for_segments
 
 def test_calculate_efficiency_zones_with_db(set_up, setup_similarity_test_data):
     user_id = setup_similarity_test_data

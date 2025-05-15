@@ -1,6 +1,6 @@
 import pandas as pd
 from sqlalchemy import text, bindparam
-from app.exceptions import DatabaseException
+from exceptions.exceptions import DatabaseException
 
 def execute_sql(connection, query, params=None):
     """Helper function to execute SQL using SQLAlchemy with a provided connection.

@@ -5,8 +5,8 @@ import pandas as pd
 import numpy as np
 from unittest.mock import patch
 from sqlalchemy import text
-from app.segments_service import process_segments, calculate_metrics, compute_efficiency_score, process_deleted_activities
-from app.exceptions import DatabaseException
+from services.segments_service import process_segments, calculate_metrics, compute_efficiency_score, process_deleted_activities
+from exceptions.exceptions import DatabaseException
 from db.setup import engine
 from db.core import execute_sql, fetch_one_sql
 
@@ -46,7 +46,7 @@ def test_process_segments(load_sample_segments, set_up):
         assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
         assert segment_status is True
 
-@patch('app.segments_service.segments_batch_insert_and_update_status')
+@patch('services.segments_service.segments_batch_insert_and_update_status')
 def test_process_segments_with_database_exception(mock_store_segments, load_sample_segments, set_up):
     """Tests that process_segments_message doesn't store any data when it handles a DatabaseException."""
     # Load sample data

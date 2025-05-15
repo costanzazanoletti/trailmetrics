@@ -4,8 +4,8 @@ import os
 import pandas as pd
 from unittest.mock import Mock, patch
 from sqlalchemy import text
-from app.weather_service import process_weather_info
-from app.exceptions import DatabaseException
+from services.weather_service import process_weather_info
+from exceptions.exceptions import DatabaseException
 from db.setup import engine  
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def test_process_weather_info(load_sample_weather, set_up):
         elif weather_status is not None:
             assert weather_status is False # If not all groups, status should remain False or be set to False
 
-@patch('app.weather_service.weather_batch_insert_and_update_status')
+@patch('services.weather_service.weather_batch_insert_and_update_status')
 def test_process_weather_info_with_database_exception(mock_store_weather, load_sample_weather, set_up):
     """Tests that process_weather_info handles DatabaseException gracefully."""
     

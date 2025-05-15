@@ -1,7 +1,7 @@
 import logging
 import logging_setup
-from app.exceptions import DatabaseException
-from app.utilities import parse_compressed_data
+from exceptions.exceptions import DatabaseException
+from utils.compression import parse_compressed_data
 from db.segments import terrain_batch_insert_and_update_status
 
 logger = logging.getLogger("app")

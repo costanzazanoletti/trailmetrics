@@ -2,7 +2,7 @@ import logging
 import logging_setup
 import pandas as pd
 from sqlalchemy import text
-from app.exceptions import DatabaseException
+from exceptions.exceptions import DatabaseException
 from sqlalchemy.exc import SQLAlchemyError
 from db.setup import engine
 from db.core import execute_sql, fetch_one_sql, fetch_all_sql_df
