@@ -23,7 +23,7 @@ from db.similarity import (
     update_similarity_status_in_progress,
     mark_similarity_processed_for_user
 )
-
+from utils.terrain import group_highway_for_analysis, group_surface_for_analysis
 # Init logger
 logger = logging.getLogger("app")
 # Get environment variables
@@ -31,44 +31,7 @@ load_dotenv()
 
 TOP_K_SIMILAR_SEGMENTS = int(os.getenv("TOP_K_SIMILAR_SEGMENTS", "10"))
 SIMILARITY_COMPUTATION_METHOD = os.getenv("SIMILARITY_COMPUTATION_METHOD", "euclidean") # 'euclidean' or 'cosine'
-
-def group_highway_for_analysis(highway):
-    if pd.isna(highway):
-        return 'unspecified_road'
-    elif highway == 'steps':
-        return 'steps'
-    elif highway in ['path', 'footway', 'pedestrian', 'cycleway']:
-        return 'pedestrian_cycle'
-    elif highway in ['track', 'unclassified', 'service', 'residential', 'tertiary', 'trunk_link']:
-        return 'minor_road'
-    elif highway in ['secondary', 'trunk']:
-        return 'major_road'
-    else:
-        return 'other_road'
-
-def group_surface_for_analysis(surface, highway):
-    if pd.isna(surface):
-        if highway in ['path', 'footway', 'pedestrian']:
-            return 'unpaved'
-        elif highway == 'cycleway':
-            return 'paved'
-        elif highway in ['track', 'unclassified', 'service', 'residential', 'tertiary']:
-            return 'unpaved'
-        elif highway in ['secondary', 'trunk', 'steps']:
-            return 'paved'
-        else:
-            return 'unknown_surface'
-    elif surface in ['asphalt', 'paved', 'paving_stones', 'sett', 'cobblestone', 'unhewn_cobblestone', 'grass_paver', 'metal', 'stone']:
-        return 'paved'
-    elif surface in ['gravel', 'compacted', 'unpaved', 'dirt', 'sand']:
-        return 'unpaved'
-    elif surface in ['grass', 'ground', 'wood']:
-        return 'soft'
-    elif surface == 'rock':
-        return 'rocky'
-    else:
-        return 'other_surface'
-    
+   
 def preprocess_data_by_grade(df_segment, numeric_features, original_categorical_features, n_components_pca=None):
     """Pre-process data (handle missing, group, scale, encode, PCA) within each grade category, using only specified features."""
     df = df_segment.copy()

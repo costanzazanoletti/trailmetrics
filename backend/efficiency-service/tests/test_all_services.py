@@ -125,3 +125,25 @@ def test_run_similarity_computation_with_db(set_up, setup_similarity_test_data):
                 assert row.similarity_processed_at is None
             else:
                 assert row.similarity_processed_at is not None
+
+from app.efficiency_zone_service import calculate_efficiency_zones_for_segments
+
+def test_calculate_efficiency_zones_with_db(set_up, setup_similarity_test_data):
+    user_id = setup_similarity_test_data
+
+    run_similarity_computation(user_id)
+    calculate_efficiency_zones_for_segments(engine)
+
+    with engine.connect() as conn:
+        result = conn.execute(text("""
+            SELECT e.segment_id, e.zone_among_similars, e.zone_among_grade_category
+            FROM segment_efficiency_zone e
+            JOIN segments s ON s.segment_id = e.segment_id
+            JOIN activities a ON s.activity_id = a.id
+            WHERE a.athlete_id = :user_id
+        """), {"user_id": user_id}).fetchall()
+
+    assert result, "No segment efficiency zones were saved"
+    for row in result:
+        assert row.zone_among_similars in ["very_low", "low", "medium", "high", "very_high"]
+        assert row.zone_among_grade_category in ["very_low", "low", "medium", "high", "very_high"]

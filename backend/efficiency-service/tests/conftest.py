@@ -123,12 +123,13 @@ def setup_similarity_test_data(engine=engine):
                 segment_id, activity_id, user_id, grade_category,
                 segment_length, start_distance, start_time, start_altitude,
                 elevation_gain, avg_gradient, road_type, surface_type,
-                temperature, humidity, wind, weather_id, cumulative_ascent, cumulative_descent
+                temperature, humidity, wind, weather_id, cumulative_ascent, cumulative_descent,
+                efficiency_score
             ) VALUES 
             ('seg1', 1, :user_id, 1.5, 100, 0, 123456, 10,
-             20, 1.5, 'asphalt', 'smooth', 20, 50, 1.8, 100, 15, 10),
+             20, 1.5, 'asphalt', 'smooth', 20, 50, 1.8, 100, 15, 10, 0.75),
             ('seg2', 1, :user_id, 1.5, 120, 100, 789456, 12,
-             18, 1.2, 'asphalt', 'smooth', 21, 52, 0, 1, 10, 5)
+             18, 1.2, 'asphalt', 'smooth', 21, 52, 0, 1, 10, 5, 0.85)
         """), {"user_id": user_id})
 
     yield user_id
@@ -138,6 +139,7 @@ def setup_similarity_test_data(engine=engine):
         conn.execute(text("DELETE FROM segments WHERE user_id = :user_id"), {"user_id": user_id})
         conn.execute(text("DELETE FROM activity_status_tracker WHERE activity_id IN (1, 2)"))
         conn.execute(text("DELETE FROM activities WHERE id IN (1, 2)"))
+        conn.execute(text("DELETE FROM segment_efficiency_zone WHERE segment_id IN ('seg1', 'seg2')"))
 
 @pytest.fixture
 def load_test_message(request):
