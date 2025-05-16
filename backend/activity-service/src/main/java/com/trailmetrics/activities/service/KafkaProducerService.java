@@ -3,6 +3,7 @@ package com.trailmetrics.activities.service;
 import com.trailmetrics.activities.dto.kafka.ActivitiesDeletedMessage;
 import com.trailmetrics.activities.dto.kafka.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.kafka.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.kafka.EfficiencyZoneRequestMessage;
 import java.time.Instant;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -18,9 +19,11 @@ public class KafkaProducerService {
   private final KafkaTemplate<String, ActivitySyncMessage> kafkaActivitySyncTemplate;
   private final KafkaTemplate<String, ActivityProcessedMessage> kafkaActivityProcessedTemplate;
   private final KafkaTemplate<String, ActivitiesDeletedMessage> kafkaUserActivityChangesTemplate;
+  private final KafkaTemplate<String, EfficiencyZoneRequestMessage> kafkaEfficiencyZoneRequestTemplate;
   private static final String ACTIVITY_PROCESSED_TOPIC = "activity-stream-queue";
   private static final String ACTIVITY_SYNC_TOPIC = "activity-sync-queue";
   private static final String ACTIVITIES_DELETED_TOPIC = "activities-deleted-queue";
+  private static final String EFFICIENCY_ZONE_REQUEST_TOPIC = "efficiency-zone-request-queue";
 
 
   public void publishActivityImport(Long activityId, String userId) {
@@ -51,5 +54,17 @@ public class KafkaProducerService {
     log.info("Published deleted activities to Kafka {} for user {}: {}",
         ACTIVITIES_DELETED_TOPIC,
         userId, deletedActivityIds);
+  }
+
+  public void publishEfficiencyZoneRequest(String userId,
+      Set<String> segmentIds) {
+    EfficiencyZoneRequestMessage message = new EfficiencyZoneRequestMessage(userId, Instant.now(),
+        segmentIds);
+
+    kafkaEfficiencyZoneRequestTemplate.send(EFFICIENCY_ZONE_REQUEST_TOPIC, userId,
+        message);
+    log.info("Published efficiency zone request to Kafka {} for user {}: {}",
+        EFFICIENCY_ZONE_REQUEST_TOPIC,
+        userId, segmentIds);
   }
 }

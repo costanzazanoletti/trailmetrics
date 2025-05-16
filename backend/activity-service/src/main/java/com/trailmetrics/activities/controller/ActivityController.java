@@ -161,7 +161,8 @@ public class ActivityController {
       Activity activity = activityService.getUserActivityById(activityId, userId);
 
       // Check and compute efficiency zones for activity segments asynchronously
-      segmentEfficiencyZoneService.recalculateZonesForActivityAsync(activityId);
+      segmentEfficiencyZoneService.recalculateZonesForActivityAsync(activityId,
+          String.valueOf(userId));
 
       // Fetch activity segments
       List<Segment> segments = activityService.getActivitySegments(activity.getId());

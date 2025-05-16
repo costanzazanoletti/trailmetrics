@@ -181,3 +181,22 @@ This document defines the Kafka topics and messages used in TrailMetrics for eve
   "deletedActivityIds": [4321, 8765]
 }
 ```
+
+---
+
+### `efficiency-zone-request-queue`
+
+- **Description**: List segment that need efficiency zone computation
+- **Producer**: `activity-service`
+- **Consumer**: `efficiency-service`
+- **Consumer Group**: `efficiency-service-group`
+- **Key**: `userId`
+- **Value JSON**:
+
+```json
+{
+  "userId": "28658549",
+  "requestedAt": 1740680052.987654,
+  "segmentIds": ["4321-10", "8765-1"]
+}
+```

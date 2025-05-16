@@ -4,6 +4,7 @@ import com.trailmetrics.activities.dto.kafka.ActivitiesDeletedMessage;
 import com.trailmetrics.activities.dto.kafka.ActivityProcessedMessage;
 import com.trailmetrics.activities.dto.kafka.ActivityRetryMessage;
 import com.trailmetrics.activities.dto.kafka.ActivitySyncMessage;
+import com.trailmetrics.activities.dto.kafka.EfficiencyZoneRequestMessage;
 import com.trailmetrics.activities.dto.kafka.UserSyncRetryMessage;
 import java.util.HashMap;
 import java.util.Map;
@@ -120,6 +121,16 @@ public class KafkaConfig {
 
   /**
    * Creates a strongly-typed KafkaTemplate for ActivitiesDeletedMessage.
+   */
+  @Bean
+  public KafkaTemplate<String, EfficiencyZoneRequestMessage> efficiencyZoneRequestMessageKafkaTemplate() {
+    ProducerFactory<String, EfficiencyZoneRequestMessage> factory =
+        new DefaultKafkaProducerFactory<>(producerFactory().getConfigurationProperties());
+    return new KafkaTemplate<>(factory);
+  }
+
+  /**
+   * Creates a strongly-typed KafkaTemplate for EfficiencyZoneRequestMessage.
    */
   @Bean
   public KafkaTemplate<String, ActivitiesDeletedMessage> userActivityChangesKafkaTemplate() {

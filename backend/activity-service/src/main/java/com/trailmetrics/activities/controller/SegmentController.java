@@ -34,7 +34,7 @@ public class SegmentController {
       // Compute efficiency zones for related activities asynchronously
       similarSegments.forEach(
           segment -> segmentEfficiencyZoneService.recalculateZonesForActivityAsync(
-              segment.getActivityId()));
+              segment.getActivityId(), segment.getUserId()));
 
       List<SegmentDTO> segmentDTOs = similarSegments.stream()
           .map(segmentMapper::toDTO)
@@ -58,7 +58,7 @@ public class SegmentController {
       // Compute efficiency zones for related activities asynchronously
       topSegments.forEach(
           segment -> segmentEfficiencyZoneService.recalculateZonesForActivityAsync(
-              segment.getActivityId()));
+              segment.getActivityId(), segment.getUserId()));
 
       List<SegmentDTO> topSegmentsDTO = topSegments.stream().map(segmentMapper::toDTO).toList();
 
