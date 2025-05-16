@@ -19,7 +19,7 @@ export function SegmentList({
 }: SegmentListProps) {
   return (
     <div className="md:w-1/4 bg-gray-50 rounded-md p-4 h-[870px] overflow-y-auto">
-      <h2 className="text-lg font-semibold mb-4">Segments</h2>
+      <h2 className="text-lg text-gray-600 font-semibold mb-4">Segments</h2>
 
       {segments.length > 0 ? (
         <ul className="space-y-2 text-sm text-gray-700">

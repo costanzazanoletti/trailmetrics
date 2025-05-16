@@ -99,10 +99,12 @@ export function SimilarSegmentsPanel({
   return (
     <div className="mt-6 p-4 border rounded bg-white shadow-sm">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold">Similar Segments</h3>
+        <h3 className="text-lg text-gray-600 font-semibold">
+          Similar Segments
+        </h3>
         <button
           onClick={onClose}
-          className="text-sm text-blue-600 hover:underline"
+          className="text-sm text-brand-sage hover:underline"
         >
           Close
         </button>

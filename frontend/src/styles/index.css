@@ -1,1 +1,38 @@
 @import 'tailwindcss';
+/* base font for body */
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Font titles */
+.font-display {
+  font-family: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
+}
+
+.text-brand-sage {
+  color: #507e63;
+}
+
+.bg-brand-sage {
+  background-color: #507e63;
+}
+
+.hover\:text-brand-sage:hover {
+  color: #3e6953;
+}
+
+.text-brand-graphite {
+  color: #2e2e2e;
+}
+
+.bg-brand-graphite {
+  background-color: #2e2e2e;
+}
+
+.bg-brand-background {
+  background-color: #f7f7f5;
+}
+
+.bg-brand-strava {
+  background-color: #fc4c02;
+}

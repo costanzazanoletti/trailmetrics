@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useAuthStore } from "../store/useAuthStore";
+import { useState } from 'react';
+import { useAuthStore } from '../store/useAuthStore';
 
 export function Navbar() {
   const { user, logout } = useAuthStore();
@@ -11,11 +11,14 @@ export function Navbar() {
   const profileImg =
     !imageError && user.profileUrl
       ? user.profileUrl
-      : "/placeholder-avatar.png";
+      : '/images/placeholder-avatar.png';
 
   return (
     <nav className="flex items-center justify-between px-6 py-4 bg-white shadow-md">
-      <div className="text-2xl font-bold text-gray-800">TrailMetrics</div>
+      <div className="text-4xl font-bold text-gray-600 tracking-tight">
+        <span className="uppercase text-brand-sage">Trail</span>
+        <span className="text-gray-600">Metrics</span>
+      </div>
       <div className="relative">
         <img
           src={profileImg}
@@ -34,7 +37,7 @@ export function Navbar() {
                 logout();
                 setMenuOpen(false);
               }}
-              className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+              className="w-full text-left px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
             >
               Logout
             </button>

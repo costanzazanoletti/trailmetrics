@@ -37,7 +37,7 @@ export function AppLayout() {
           to="/dashboard"
           className={({ isActive }) =>
             `text-sm font-medium ${
-              isActive ? 'text-blue-600' : 'text-gray-600'
+              isActive ? 'text-brand-sage' : 'text-gray-600'
             } hover:underline`
           }
         >
@@ -47,7 +47,7 @@ export function AppLayout() {
           to="/planning"
           className={({ isActive }) =>
             `text-sm font-medium ${
-              isActive ? 'text-blue-600' : 'text-gray-600'
+              isActive ? 'text-brand-sage' : 'text-gray-600'
             } hover:underline`
           }
         >

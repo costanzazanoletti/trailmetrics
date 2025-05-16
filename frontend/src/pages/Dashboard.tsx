@@ -70,7 +70,7 @@ const Dashboard = () => {
   }, [page]);
 
   return (
-    <div className="container mx-auto p-4">
+    <div className="container mx-auto p-4 text-gray-600">
       <h1 className="text-2xl font-semibold mb-6">Your Running Activities</h1>
 
       {isLoading ? (
@@ -110,7 +110,7 @@ const Dashboard = () => {
                         <Link
                           to={`/activities/${activity.id}`}
                           state={{ fromPage: page }}
-                          className="text-blue-600 hover:underline"
+                          className="text-brand-sage hover:underline"
                         >
                           {activity.name}
                         </Link>
