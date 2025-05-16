@@ -59,6 +59,7 @@ docker compose up activity-service
 - `user-sync-retry-queue` – retry user token fetch
 - `activity-stream-queue` – emitted when activity stream is available
 - `activities-deleted-queue` – consumed to clean deleted activities
+- `efficiency-zone-request-queue`- produced if segments need efficiency zone computation
 
 ## Tests
 

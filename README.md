@@ -91,7 +91,7 @@ Kafka coordinates microservice communication. The key topics used include:
 - `weather-output-queue`: weather info available
 - `weather-retry-queue`: weather retry scheduling
 - `activities-deleted-queue`: deleted activity list
-- `efficiency-zone-request-queue`: deleted activity list
+- `efficiency-zone-request-queue`: list of segments that need efficiency zone computation
 
 Each topic includes structured JSON messages. See [`docs/KafkaMessages.md`](docs/Kafkamessages.md) for full schemas.
 
