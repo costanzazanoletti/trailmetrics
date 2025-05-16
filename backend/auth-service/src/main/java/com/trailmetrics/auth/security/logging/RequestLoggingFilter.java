@@ -20,16 +20,16 @@ public class RequestLoggingFilter implements Filter {
       throws IOException, ServletException {
     HttpServletRequest httpRequest = (HttpServletRequest) request;
 
-    // Logga tutti gli header
-    log.info("[REQUEST] {} {}", httpRequest.getMethod(), httpRequest.getRequestURI());
+    // Logs all headers
+    log.debug("[REQUEST] {} {}", httpRequest.getMethod(), httpRequest.getRequestURI());
 
     Enumeration<String> headerNames = httpRequest.getHeaderNames();
     while (headerNames.hasMoreElements()) {
       String headerName = headerNames.nextElement();
-      log.info("Header: {} = {}", headerName, httpRequest.getHeader(headerName));
+      log.debug("Header: {} = {}", headerName, httpRequest.getHeader(headerName));
     }
 
-    // Logga il valore dell'IP effettivo cercando nei vari header
+    // Logs the effective ip address
     String clientIp = httpRequest.getHeader("X-Forwarded-For");
     if (clientIp == null || clientIp.isEmpty()) {
       clientIp = httpRequest.getHeader("X-Real-IP");
@@ -38,7 +38,7 @@ public class RequestLoggingFilter implements Filter {
       clientIp = httpRequest.getRemoteAddr();
     }
 
-    log.info("[CLIENT IP] {}", clientIp);
+    log.debug("[CLIENT IP] {}", clientIp);
 
     chain.doFilter(request, response);
   }
