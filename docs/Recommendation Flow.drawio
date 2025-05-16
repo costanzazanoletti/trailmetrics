@@ -1,0 +1,173 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36" version="27.0.3">
+  <diagram name="Pagina-1" id="IYs8iUMFInfTJ2BXwjoo">
+    <mxGraphModel dx="680" dy="712" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-1" target="utsGkIyrZbTo9WCEfvCj-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-1" value="frontend" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="70" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-11" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-2" target="utsGkIyrZbTo9WCEfvCj-10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-2" value="controller" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="220" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-4" value="REST API" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="150" y="148" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-5" value="Load file" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="215" y="78" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-6" value="db" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="300" y="490" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-9" value="Kafka message&amp;nbsp;&lt;div&gt;activity-stream-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="77.5" y="640" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-13" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-10" target="utsGkIyrZbTo9WCEfvCj-12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-10" value="parse gpx file into data stream" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="360" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-16" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-12" target="utsGkIyrZbTo9WCEfvCj-6">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="290" y="530" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-12" target="utsGkIyrZbTo9WCEfvCj-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-12" value="extract streams&lt;div&gt;lat, lng, elev&lt;/div&gt;" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="90" y="500" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-19" value="save to db" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="210" y="528" width="80" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-23" target="utsGkIyrZbTo9WCEfvCj-27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-23" value="segmentation-service" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="572.5" y="200" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-24" target="utsGkIyrZbTo9WCEfvCj-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-24" value="Kafka message&amp;nbsp;&lt;div&gt;activity-stream-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="50" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-30" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-27" target="utsGkIyrZbTo9WCEfvCj-29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-27" value="Parse stream&lt;div&gt;Add grade&lt;/div&gt;&lt;div&gt;Segment&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="572.5" y="340" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-32" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-29" target="utsGkIyrZbTo9WCEfvCj-31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-29" value="Handle missing columns" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="572.5" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-31" value="Kafka message&amp;nbsp;&lt;div&gt;segmentation-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="640" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-33" target="utsGkIyrZbTo9WCEfvCj-34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-33" value="Kafka message&amp;nbsp;&lt;div&gt;segmentation-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="920" y="40" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-34" target="utsGkIyrZbTo9WCEfvCj-36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-34" value="terrain-service" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="932.5" y="210" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-39" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-36" target="utsGkIyrZbTo9WCEfvCj-38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-36" value="Parse dataframe as usual and call for terrain info" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="932.5" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-38" value="Kakfa message&lt;div&gt;terrain-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="932.5" y="480" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" source="utsGkIyrZbTo9WCEfvCj-46" target="utsGkIyrZbTo9WCEfvCj-42" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" source="utsGkIyrZbTo9WCEfvCj-42" target="utsGkIyrZbTo9WCEfvCj-44" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-42" value="weather-service" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1152.5" y="210" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-43" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" source="utsGkIyrZbTo9WCEfvCj-44" target="utsGkIyrZbTo9WCEfvCj-45" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-44" value="Parse dataframe&amp;nbsp;&lt;div&gt;Create reference points only for altitude and bounding boxes&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1152.5" y="350" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-45" value="Kakfa message&lt;div&gt;weather-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1152.5" y="480" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-46" value="Kafka message&amp;nbsp;&lt;div&gt;segmentation-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1140" y="40" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-47" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" source="utsGkIyrZbTo9WCEfvCj-53" target="utsGkIyrZbTo9WCEfvCj-49" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-48" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" source="utsGkIyrZbTo9WCEfvCj-49" target="utsGkIyrZbTo9WCEfvCj-51" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-49" value="efficiency-service" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1372.5" y="208" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-50" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.563;entryY=0.167;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" source="utsGkIyrZbTo9WCEfvCj-51" target="utsGkIyrZbTo9WCEfvCj-58" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1432.5" y="478" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1433" y="490" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-51" value="Parse segments and save plain data into database (no efficiency score)" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1372.5" y="348" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-53" value="Kafka message&amp;nbsp;&lt;div&gt;segmentation-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1360" y="38" width="145" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-56" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-54" target="utsGkIyrZbTo9WCEfvCj-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-54" value="Kakfa message&lt;div&gt;terrain-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1720" y="140" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-57" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-55" target="utsGkIyrZbTo9WCEfvCj-49">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-55" value="Kakfa message&lt;div&gt;weather-output-queue&lt;/div&gt;" style="shape=document;whiteSpace=wrap;html=1;boundedLbl=1;" vertex="1" parent="1">
+          <mxGeometry x="1730" y="328" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-60" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-58" target="utsGkIyrZbTo9WCEfvCj-59">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-58" value="Handle terrain and weather data as usual" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1372.5" y="480" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-62" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;" edge="1" parent="1" source="utsGkIyrZbTo9WCEfvCj-59" target="utsGkIyrZbTo9WCEfvCj-61">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-59" value="When activity status is ready, run recommendation service" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1372.5" y="620" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="utsGkIyrZbTo9WCEfvCj-61" value="Compute top-K similar segments that are not planned and have efficiency score&lt;div&gt;Take from the most efficient similar segment the values of cadence, speed and time and copy them into the planned segment&lt;/div&gt;&lt;div&gt;Save to database&lt;/div&gt;" style="whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="520" width="117.5" height="260" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
