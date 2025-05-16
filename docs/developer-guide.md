@@ -73,6 +73,32 @@ Kafka topics and consumer groups can be inspected using AKHQ:
 http://localhost:9080
 ```
 
+## Scheduled Batch Jobs
+
+The Efficiency Service includes an internal scheduler based on [APScheduler](https://apscheduler.readthedocs.io/), which computes and updates efficiency zones for running segments.
+
+### Behavior
+
+- At startup, the service immediately performs a full efficiency zone update for all segments whose similarity data has been recently computed.
+- After that, it runs every 10 minutes (configurable via environment variable), checking for any segments that are:
+  - New
+  - Previously unprocessed
+  - Affected by updated similarity data
+
+Only those segments are processed and written to the `segment_efficiency_zone` table.
+
+### Production Considerations
+
+By default, the scheduler runs **in-process**, so it works seamlessly in development or single-container deployments. However, in production environments with multiple replicas (e.g. Kubernetes, Gunicorn workers, Heroku dynos), this can cause **duplicate batch jobs**.
+
+Recommended strategies:
+
+- **Single-instance deployment:** no action needed.
+- **Multiple replicas:** run the scheduler only in a dedicated container or worker.
+- Alternatively, move the job logic to an external orchestrator like **Celery Beat**, **Kubernetes CronJob**, or **Airflow**.
+
+If needed, you can disable the scheduler by commenting out the related lines in `app.py` inside the Efficiency Service.
+
 ## Logs & Debug
 
 To read logs from a container (e.g., `auth-service`):

@@ -1,9 +1,11 @@
 from db.core import fetch_all_sql_df, execute_sql_batch
 
 
-def fetch_efficiency_zone_input_df(connection, segment_ids=None):
+def fetch_efficiency_zone_input_df(connection, segment_ids=None, limit: int=None):
     """
     Returns the segments that require efficiency zone calculation or update.
+    It accepts a list of segment ids as optional parameter.
+    It accepts a limit as optional parameter.
     """
     base_query = """
         SELECT s.segment_id, s.grade_category, s.activity_id, s.efficiency_score, z.calculated_at,
@@ -22,6 +24,9 @@ def fetch_efficiency_zone_input_df(connection, segment_ids=None):
     if segment_ids:
         base_query += " AND s.segment_id IN :segment_ids"
         params["segment_ids"] = segment_ids
+    
+    if limit:
+        base_query += f" LIMIT {limit}"
 
     return fetch_all_sql_df(connection, base_query, params)
 
@@ -59,7 +64,6 @@ def fetch_grade_efficiencies_df(connection, grade_category, activity_id):
         "activity_id": activity_id
     })
 
-from db.core import execute_sql_batch
 
 def insert_segment_efficiency_zones_batch(connection, records: list[dict]):
     query = """

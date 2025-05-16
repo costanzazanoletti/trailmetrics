@@ -24,7 +24,7 @@ TrailMetrics follows a microservices architecture. The main components are:
 
 - **Activity Service** – manages activity sync, retries, and orchestration
 - **Segmentation Service** – splits activities by slope/terrain
-- **Efficiency Service** – computes cadence-efficiency metrics
+- **Efficiency Service** – computes efficiency metrics and performance zones
 - **Weather Service** – enriches data with weather forecast info
 - **Terrain Service** – identifies terrain type via geographic data
 - **Auth Service** – handles Strava OAuth2 login and user profiles
