@@ -1,11 +1,12 @@
 import logging
 import logging_setup
 import json
+from db.setup import engine
 from services.segments_service import process_segments, process_deleted_activities
 from services.terrain_service import process_terrain_info
 from services.weather_service import process_weather_info
 from services.similarity_service import should_compute_similarity_for_user
-from db.setup import engine
+from services.efficiency_zone_service import calculate_efficiency_zones_for_segments
 from db.activities import get_user_id_from_activity, insert_not_processable_activity_status
 
 # Setup logging
@@ -87,7 +88,6 @@ def process_deleted_activities_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         user_id = data.get("userId")
-        checked_at = data.get("checkedAt")
         deleted_activity_ids = data.get("deletedActivityIds")
   
         if not user_id or not deleted_activity_ids:
@@ -101,3 +101,17 @@ def process_deleted_activities_message(message):
 
     except Exception as e:
         logger.error(f"Error processing deleted activities message: {e}")
+
+def process_efficiency_zone_request_message(message):
+    try:
+        data = message.value if isinstance(message.value, dict) else json.loads(message.value)
+        user_id = data.get("userId")
+        segment_ids = data.get("segmentIds")
+        if not segment_ids:
+            logger.warning("Received efficiency zone request without segmentIds. Skipping.")
+            return
+        logger.info(f"Received efficiency zone request for user {data.get('userId')}: {len(segment_ids)} segments")
+        calculate_efficiency_zones_for_segments(engine, segment_ids=segment_ids, force=True)
+    
+    except Exception as e:
+        logger.error(f"Error processing efficiency zone request message: {e}")

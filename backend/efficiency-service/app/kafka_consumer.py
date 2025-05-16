@@ -8,7 +8,8 @@ from app.process_messages import (
     process_segments_message,
     process_deleted_activities_message,
     process_terrain_message,
-    process_weather_message
+    process_weather_message,
+    process_efficiency_zone_request_message
     )
 
 # Load environment variables
@@ -21,8 +22,14 @@ KAFKA_TOPIC_SEGMENTS = os.getenv("KAFKA_TOPIC_SEGMENTS")
 KAFKA_TOPIC_TERRAIN = os.getenv("KAFKA_TOPIC_TERRAIN")
 KAFKA_TOPIC_WEATHER = os.getenv("KAFKA_TOPIC_WEATHER")
 KAFKA_TOPIC_DELETED_ACTIVITIES = os.getenv("KAFKA_TOPIC_DELETED_ACTIVITIES")
+KAFKA_TOPIC_EFFICIENCY_ZONE_REQUEST = os.getenv("KAFKA_TOPIC_EFFICIENCY_ZONE_REQUEST")
 
-if not all([KAFKA_BROKER, KAFKA_CONSUMER_GROUP, KAFKA_TOPIC_SEGMENTS,KAFKA_TOPIC_TERRAIN,KAFKA_TOPIC_WEATHER, KAFKA_TOPIC_DELETED_ACTIVITIES]):
+
+if not all([
+    KAFKA_BROKER, KAFKA_CONSUMER_GROUP, 
+    KAFKA_TOPIC_SEGMENTS,KAFKA_TOPIC_TERRAIN,KAFKA_TOPIC_WEATHER, 
+    KAFKA_TOPIC_DELETED_ACTIVITIES, KAFKA_TOPIC_EFFICIENCY_ZONE_REQUEST
+    ]):
     raise ValueError("Kafka environment variables are not set properly")
 
 
@@ -90,5 +97,18 @@ def start_kafka_deleted_activities_consumer(shutdown_event):
                 process_deleted_activities_message(message)
                 consumer.commit()
         logger.info("Shutting down Kafka changes consumer...")
+    finally:
+        consumer.close()
+
+def start_kafka_efficiency_zone_request_consumer(shutdown_event):
+    """Starts the Kafka consumer for efficiency zone on-demand requests."""
+    consumer = create_kafka_consumer(KAFKA_TOPIC_EFFICIENCY_ZONE_REQUEST)
+    logger.info(f"Kafka Consumer is listening on topic '{KAFKA_TOPIC_EFFICIENCY_ZONE_REQUEST}'...")
+    try:
+        while not shutdown_event.is_set():
+            for message in consumer:
+                process_efficiency_zone_request_message(message)
+                consumer.commit()
+        logger.info("Shutting down efficiency zone request consumer...")
     finally:
         consumer.close()

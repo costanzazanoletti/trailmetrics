@@ -10,7 +10,8 @@ from app.kafka_consumer import (
     start_kafka_segments_consumer, 
     start_kafka_terrain_consumer, 
     start_kafka_weather_consumer, 
-    start_kafka_deleted_activities_consumer
+    start_kafka_deleted_activities_consumer,
+    start_kafka_efficiency_zone_request_consumer
 )
 from dotenv import load_dotenv
 
@@ -31,12 +32,14 @@ def start_consumers():
     terrain_consumer_thread = threading.Thread(target=start_kafka_terrain_consumer, args=(shutdown_event,))
     weather_consumer_thread = threading.Thread(target=start_kafka_weather_consumer, args=(shutdown_event,))
     deletion_consumer_thread = threading.Thread(target=start_kafka_deleted_activities_consumer, args=(shutdown_event,))
+    efficiency_zone_consumer_thread = threading.Thread(target=start_kafka_efficiency_zone_request_consumer, args=(shutdown_event,))
     
     # Start all consumer threads
     segment_consumer_thread.start()
     terrain_consumer_thread.start()
     weather_consumer_thread.start()
     deletion_consumer_thread.start()
+    efficiency_zone_consumer_thread.start()
 
     # Run one efficiency zone calculation batch immediately
     logger.info("Running initial batch efficiency zone calculation...")
@@ -54,6 +57,7 @@ def start_consumers():
         terrain_consumer_thread.join()
         weather_consumer_thread.join()
         deletion_consumer_thread.join()
+        efficiency_zone_consumer_thread.join()
     except KeyboardInterrupt:
         logger.info("KeyboardInterrupt received. Shutting down...")
         scheduler.shutdown(wait=False)
