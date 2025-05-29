@@ -1,6 +1,7 @@
 import logging
 import logging_setup
 import os
+import numpy as np
 from dotenv import load_dotenv
 from exceptions.exceptions import DatabaseException
 from db.segments import segments_batch_insert_and_update_status, delete_all_data_by_activity_ids
@@ -22,9 +23,6 @@ def process_segments(activity_id, user_id, compressed_segments, engine):
         # Move column 'segment_id' in first position in the DataFrame
         cols = ['segment_id'] + [col for col in segments_df.columns if col != 'segment_id']
         segments_df = segments_df[cols]
-        
-        # Compute metrics for efficiency score
-        segments_df = segments_df.apply(calculate_metrics, axis=1)
 
         # Add efficiency_score columng
         segments_df = compute_efficiency_score(segments_df, EFFICIENCY_FACTOR_SCALE, EFFICIENCY_ELEVATION_WEIGHT, EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT)
@@ -41,24 +39,35 @@ def process_segments(activity_id, user_id, compressed_segments, engine):
     except Exception as e:
         logger.error(e)
 
-def compute_efficiency_score(df, s, k, m):
+def compute_efficiency_score(df, SF, EW, DW):
   """
   Computes Efficiency Score with the formula:
-  Scaling factor * (Speed * (1 + Elevation Weight * |Elevation Change| / Distance)) / (Average Heart Rate (1 + m * (End Heart Rate - Start Heart Rate)))
+  SF * (avg_speed * (1 + EW * |elevation_gain| / time)) / (avg_heartrate * hr_drift_moduler))
   """  
-  logger.info(f"Computing efficiency score with S={s}, k={k}, m={m}")
-   
-  df["efficiency_score"] = s * (df["avg_speed"] * (1 + k * abs(df["elevation_gain"]) / df["segment_length"])) / (df["avg_heartrate"] / 60 * (1 + m * df["hr_drift"]))
+  logger.info(f"Computing efficiency score with SF={SF}, EW={EW}, DW={DW}")
+  # Add metrics columns for computing
+  df = df.apply(calculate_metrics, axis=1)  
+  # Compute efficiency score
+  num = (df['avg_speed']* 60) * (1 + EW * df["avg_elev_speed"]* 60)
+  moduler = 1.5 + 0.5 * np.tanh(DW * df['hr_drift'])  # range ~[1, 2]
+  den = df['avg_heartrate'] * moduler
+
+  df['efficiency_score'] = SF * num / den
   return df
 
 def calculate_metrics(segment):
     """Adds columns with metrics"""
-    # Compute average speed
+    # Average speed
     segment["avg_speed"] = segment["segment_length"] / (segment["end_time"] - segment["start_time"])
-    # Compute elevation gain
+    # Elevation gain
     segment["elevation_gain"] = segment["end_altitude"] - segment["start_altitude"]
-    # Heartrate variation factor
-    segment["hr_drift"] = (segment["end_heartrate"] - segment["start_heartrate"])/segment["start_heartrate"]
+    # Heartrate drift
+    segment["hr_drift"] = (segment["end_heartrate"] - segment["start_heartrate"])
+    # Time
+    segment["time"] = (segment["end_time"] - segment["start_time"])
+    # Average vertical speed
+    segment["avg_elev_speed"] = (abs(segment["elevation_gain"]) / segment["time"])
+
     return segment
 
 def process_deleted_activities(user_id, deleted_activity_ids):

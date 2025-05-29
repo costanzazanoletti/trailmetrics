@@ -54,7 +54,6 @@ def calculate_efficiency_zones_for_segments(engine, segment_ids=None, force=Fals
 
         return len(records)
 
-
 def run_efficiency_zone_batch():
     """
     Computes and updates efficiency zones for all the segments that require it. 

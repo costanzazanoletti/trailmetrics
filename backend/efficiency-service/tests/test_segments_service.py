@@ -122,27 +122,30 @@ def test_calculate_metrics():
     assert np.isclose(result_segment["avg_speed"], expected_avg_speed), f"Expected {expected_avg_speed}, got {result_segment['avg_speed']}"
     expected_elevation_gain = 10
     assert np.isclose(result_segment["elevation_gain"], expected_elevation_gain), f"Expected {expected_elevation_gain}, got {result_segment['elevation_gain']}"
-    expected_hr_drift = (130  - 120) / 120
+    expected_hr_drift = (130  - 120)
     assert np.isclose(result_segment["hr_drift"], expected_hr_drift), f"Expected {expected_hr_drift}, got {result_segment['hr_drift']}"
 
 def test_compute_efficiency_score():
     # Sample data
     data = {
-        "avg_speed": [1, 1, 1],
-        "elevation_gain": [10, 10, -10],
-        "segment_length": [100, 100, 100],
-        "avg_heartrate": [150, 150, 150],
-        "hr_drift": [0.5, 0.0, -0.5]
+        "segment_length": [100, 200, 250],
+        "start_time": [0, 60, 120],
+        "end_time": [60, 120, 180],
+        "start_altitude": [100, 110, 200],
+        "end_altitude": [110, 200, 250],
+        "start_heartrate": [120, 130, 120],
+        "end_heartrate": [130, 120, 125],
+        "avg_heartrate": [125.5, 128.0, 123.9]
     }
 
     df = pd.DataFrame(data)
 
     # Paramters
-    s = 10.0
-    k = 1
-    m = 1
+    SF = 1
+    EW = 0.1
+    DW = 0.5
 
-    result_df = compute_efficiency_score(df, s, k, m)
+    result_df = compute_efficiency_score(df, SF, EW, DW)
 
     print(result_df)
 
