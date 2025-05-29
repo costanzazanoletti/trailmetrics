@@ -98,7 +98,7 @@ Currently commented out, this endpoint would return full metadata for a single a
 
 ---
 
-### ⚠Strava API Rate Limits
+### Strava API Rate Limits
 
 Strava enforces API usage limits based on registered application credentials:
 
