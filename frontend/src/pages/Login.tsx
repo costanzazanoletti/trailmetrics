@@ -47,14 +47,12 @@ const Login = () => {
         <div className="space-y-4">
           <button
             onClick={loginWithStrava}
-            className="w-full flex items-center justify-center gap-2 bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg text-base cursor-pointer transition"
+            className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-lg text-base cursor-pointer transition"
           >
             <img
-              src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/strava.svg"
-              alt="Strava logo"
-              className="w-5 h-5 filter invert"
+              src="/images/btn_strava_connect_with_orange_x2.png"
+              alt="Connect with Strava"
             />
-            Login with Strava
           </button>
         </div>
 
