@@ -162,7 +162,7 @@ def compute_similarity_matrix(df):
     """Compute similarity within segments of the same grade category"""
     # Features selected for similarity
     numeric_features = ['segment_length', 'start_distance', 'start_time', 'start_altitude',
-                    'elevation_gain', 'avg_gradient', 'temperature', 'humidity', 'wind', 
+                    'avg_gradient', 'temperature', 'humidity', 'wind', 
                     'cumulative_ascent', 'cumulative_descent']
     original_categorical_features = ['road_type', 'surface_type', 'weather_id']   
 
