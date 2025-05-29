@@ -1,6 +1,8 @@
 # Activity Service
 
-This microservice is responsible for synchronizing the user's activities from Strava, orchestrating the initial processing workflow, and serving as the main API provider for the frontend. It exposes REST APIs (secured with JWT) and communicates with other backend services via Kafka events.
+This microservice is responsible for synchronizing the user's activities from Strava, orchestrating
+the initial processing workflow, and serving as the main API provider for the frontend. It exposes
+REST APIs (secured with JWT) and communicates with other backend services via Kafka events.
 
 ## Responsibilities
 
@@ -20,7 +22,8 @@ This microservice is responsible for synchronizing the user's activities from St
 
 ## Configuration
 
-Configuration variables must be defined in a `.env` file. An example file is available at `.env.example`.
+Configuration variables must be defined in a `.env` file. An example file is available at
+`.env.example`.
 
 This includes:
 
@@ -60,6 +63,59 @@ docker compose up activity-service
 - `activity-stream-queue` – emitted when activity stream is available
 - `activities-deleted-queue` – consumed to clean deleted activities
 - `efficiency-zone-request-queue`- produced if segments need efficiency zone computation
+
+## Strava API Usage
+
+This service integrates with Strava's public REST API to fetch activity data on behalf of
+authenticated users. Specifically, it uses the following endpoints:
+
+### [GET /athlete/activities](https://developers.strava.com/docs/reference/#api-Activities-getLoggedInAthleteActivities)
+
+Retrieves a paginated list of activity metadata for the authenticated user. The service uses query
+parameters such as:
+
+- `before` and `after` (UNIX timestamps) to filter the activity time window
+- `page` and `per_page` for pagination
+
+Used in: `StravaClient.fetchUserActivities(...)`
+
+---
+
+### [GET /activities/{id}/streams](https://developers.strava.com/docs/reference/#api-Streams-getActivityStreams)
+
+Retrieves detailed time-series data ("streams") for a specific activity, including:
+
+- GPS coordinates (`latlng`), distance, time
+- Altitude, velocity, heart rate, cadence, power, temperature
+- Grade (slope) and moving flag
+
+Used in: `StravaClient.fetchActivityStream(...)`
+
+---
+
+[GET /activities/{id}](https://developers.strava.com/docs/reference/#api-Activities-getActivityById)  
+Currently commented out, this endpoint would return full metadata for a single activity.
+
+---
+
+### ⚠Strava API Rate Limits
+
+Strava enforces API usage limits based on registered application credentials:
+
+- **Per 15-minute window**: 200 requests (100 read)
+- **Per day**: 2,000 requests (1,000 read)
+
+These limits are applied per access token and enforced globally across all users of the same client
+ID. Exceeding these limits will result in `HTTP 429 Too Many Requests`.
+
+The service should be designed to:
+
+- Monitor the `X-RateLimit-Limit` and `X-RateLimit-Usage` headers returned in each API response.
+- Apply backoff or delay logic if approaching the 15-min or daily threshold.
+- Optionally queue or defer low-priority sync operations if rate saturation occurs.
+
+More
+details: [Strava API Rate Limits Documentation](https://developers.strava.com/docs/rate-limits/)
 
 ## Tests
 
