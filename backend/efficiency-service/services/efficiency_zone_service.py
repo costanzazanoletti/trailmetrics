@@ -17,13 +17,14 @@ def calculate_efficiency_zones_for_segments(engine, segment_ids=None, force=Fals
     with engine.begin() as connection:
         df = fetch_efficiency_zone_input_df(connection, segment_ids, limit=limit)
 
+        user_ids_to_update = set()
+        
         if df.empty:
             logger.info("No segments need efficiency zone update")
-            return 0
+            return 0, user_ids_to_update
 
         logger.info(f"Processing {len(df)} segments for efficiency zone update")
 
-        user_ids_to_update = set()
         records = []
         for row in df.itertuples():
             try:
@@ -55,15 +56,8 @@ def calculate_efficiency_zones_for_segments(engine, segment_ids=None, force=Fals
             insert_segment_efficiency_zones_batch(connection, records)
             logger.info(f"Inserted {len(records)} efficiency zones in batch")
             
-            # Update affected users' model    
-            for user_id in user_ids_to_update:
-                try:
-                    train_model_for_user(user_id, connection)
-                    logger.info(f"Trained model for user {user_id}")
-                except Exception as e:
-                    logger.warning(f"Failed to train model for user {user_id}: {e}")
 
-        return len(records)
+        return len(records), user_ids_to_update
 
 def run_efficiency_zone_batch():
     """
@@ -73,15 +67,26 @@ def run_efficiency_zone_batch():
     """
     try:
         processed_total = 0 # counts processed segments
+        all_users_to_update = set() # trakcs users to update
+
         while True:
             # Calculates zones for maximum 1000 segments
-            count = calculate_efficiency_zones_for_segments(engine, limit=1000)
+            count, user_ids = calculate_efficiency_zones_for_segments(engine, limit=1000)
             
             if count == 0:
                 break # If there are no more segments break the loop
             
             processed_total += count
+            all_users_to_update.update(user_ids)
         
         logger.info(f"Batch efficiency zone calculation completed. Segments updated: {processed_total}")
+        # Train once per user at the end
+        for user_id in all_users_to_update:
+            try:
+                train_model_for_user(user_id, engine)
+                logger.info(f"Trained model for user {user_id}")
+            except Exception as e:
+                logger.warning(f"Failed to train model for user {user_id}: {e}")
+
     except Exception as e:
         logger.exception(f"Failed to execute batch efficiency zone calculation: {e}")

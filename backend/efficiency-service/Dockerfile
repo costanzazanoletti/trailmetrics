@@ -10,6 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the application files
 COPY . . 
+RUN mkdir -p /app/models
 
 # Comando per avviare il servizio
 CMD ["python", "app.py"]

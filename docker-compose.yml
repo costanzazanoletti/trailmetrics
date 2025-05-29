@@ -149,6 +149,8 @@ services:
       - KAFKA_BROKER=broker:29092
       - POSTGRES_HOST=postgres
     command: ['python', 'app.py']
+    volumes:
+      - ./backend/efficiency-service/models:/app/models
 
   terrain-service:
     build:

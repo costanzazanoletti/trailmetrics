@@ -7,6 +7,7 @@ from services.terrain_service import process_terrain_info
 from services.weather_service import process_weather_info
 from services.similarity_service import should_compute_similarity_for_user
 from services.efficiency_zone_service import calculate_efficiency_zones_for_segments
+from services.recommendation_service import train_model_for_user
 from db.activities import get_user_id_from_activity, insert_not_processable_activity_status
 
 # Setup logging
@@ -111,7 +112,12 @@ def process_efficiency_zone_request_message(message):
             logger.warning("Received efficiency zone request without segmentIds. Skipping.")
             return
         logger.info(f"Received efficiency zone request for user {data.get('userId')}: {len(segment_ids)} segments")
-        calculate_efficiency_zones_for_segments(engine, segment_ids=segment_ids, force=True)
-    
+        count, all_users_to_update = calculate_efficiency_zones_for_segments(engine, segment_ids=segment_ids, force=True)
+        for user_id in all_users_to_update:
+            try:
+                train_model_for_user(user_id, engine)
+                logger.info(f"Trained model for user {user_id}")
+            except Exception as e:
+                logger.warning(f"Failed to train model for user {user_id}: {e}")
     except Exception as e:
         logger.error(f"Error processing efficiency zone request message: {e}")

@@ -19,7 +19,7 @@ def test_train_model_for_user(mock_fetch, mock_df_from_csv, tmp_path):
     with patch("os.makedirs") as mock_makedirs, \
          patch("joblib.dump") as mock_dump:
         # Execute training
-        train_model_for_user(user_id, connection=None)
+        train_model_for_user(user_id, engine=None)
     
     # Assertions
     assert mock_dump.call_count == 2

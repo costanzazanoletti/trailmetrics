@@ -12,8 +12,8 @@ from utils.terrain import group_highway_for_analysis, group_surface_for_analysis
 
 logger = logging.getLogger("app")
 
-def train_model_for_user(user_id, connection):
-    df = fetch_user_zone_segments(user_id, connection)
+def train_model_for_user(user_id, engine):
+    df = fetch_user_zone_segments(user_id, engine)
     
     if len(df) < 50:
         logger.warning(f"Unable to train model for user {user_id}: {len(df)} segments are not enough.")
