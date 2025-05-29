@@ -7,7 +7,7 @@ from db.efficiency import (
     fetch_grade_efficiencies_df, 
     insert_segment_efficiency_zones_batch
 )
-from db.core import execute_sql
+from services.recommendation_service import train_model_for_user
 from db.setup import engine
 from utils.percentiles import map_percentile_to_zone
 
@@ -23,6 +23,7 @@ def calculate_efficiency_zones_for_segments(engine, segment_ids=None, force=Fals
 
         logger.info(f"Processing {len(df)} segments for efficiency zone update")
 
+        user_ids_to_update = set()
         records = []
         for row in df.itertuples():
             try:
@@ -44,6 +45,8 @@ def calculate_efficiency_zones_for_segments(engine, segment_ids=None, force=Fals
                     "zone_grade": zone_grade,
                     "calculated_at": datetime.now(timezone.utc),
                 })
+                # Update user ids that have been affected
+                user_ids_to_update.add(row.user_id)
 
             except Exception as e:
                 logger.warning(f"Failed to process segment {row.segment_id}: {e}")
@@ -51,6 +54,14 @@ def calculate_efficiency_zones_for_segments(engine, segment_ids=None, force=Fals
         if records:
             insert_segment_efficiency_zones_batch(connection, records)
             logger.info(f"Inserted {len(records)} efficiency zones in batch")
+            
+            # Update affected users' model    
+            for user_id in user_ids_to_update:
+                try:
+                    train_model_for_user(user_id, connection)
+                    logger.info(f"Trained model for user {user_id}")
+                except Exception as e:
+                    logger.warning(f"Failed to train model for user {user_id}: {e}")
 
         return len(records)
 

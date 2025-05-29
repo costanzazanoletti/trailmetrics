@@ -8,3 +8,4 @@ python-dotenv
 sqlalchemy
 scikit-learn>=1.0.0
 APScheduler
+joblib

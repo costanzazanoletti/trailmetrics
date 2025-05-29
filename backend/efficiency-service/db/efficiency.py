@@ -8,8 +8,8 @@ def fetch_efficiency_zone_input_df(connection, segment_ids=None, limit: int=None
     It accepts a limit as optional parameter.
     """
     base_query = """
-        SELECT s.segment_id, s.grade_category, s.activity_id, s.efficiency_score, z.calculated_at,
-               ss.similarity_calculated_at
+        SELECT s.segment_id, s.grade_category, s.activity_id, s.user_id,
+        s.efficiency_score, z.calculated_at, ss.similarity_calculated_at
         FROM segments s
         JOIN activities a ON s.activity_id = a.id
         JOIN (

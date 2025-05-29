@@ -59,17 +59,3 @@ def fetch_all_sql_df(connection, query, params=None):
         return pd.DataFrame(rows, columns=result.keys())
     except Exception as e:
         raise DatabaseException(f"Database error: {e}")
-
-def fetch_all_sql_df(connection, query, params=None):
-    """Fetch all results and return a pandas DataFrame."""
-    try:
-        stmt = text(query)
-        if params:
-            for key, value in params.items():
-                if isinstance(value, (list, tuple)):
-                    stmt = stmt.bindparams(bindparam(key, expanding=True))
-        result = connection.execute(stmt, params)
-        rows = result.fetchall()
-        return pd.DataFrame(rows, columns=result.keys())
-    except Exception as e:
-        raise DatabaseException(f"Database error: {e}")
