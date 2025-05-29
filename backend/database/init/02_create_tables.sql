@@ -132,7 +132,7 @@ CREATE TABLE similarity_status_fingerprint (
 CREATE TABLE weather_icons (
   weather_id INT PRIMARY KEY,
   description VARCHAR(255),
-  icon VARCHAR(5)
+  icon VARCHAR(255)
 );
 
 CREATE TABLE segment_efficiency_zone (
