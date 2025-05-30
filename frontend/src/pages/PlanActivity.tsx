@@ -85,27 +85,57 @@ const PlanActivityForm = () => {
         )}
       </div>
 
-      <div>
-        <label className="block mb-1 text-sm font-medium">Distance (km)</label>
-        <input
-          type="number"
-          step="0.01"
-          className={inputClass('distance')}
-          value={distance}
-          onChange={(e) => setDistance(e.target.value)}
-        />
-      </div>
+      <div className="flex gap-4">
+        <div className="w-1/3">
+          <label className="block mb-1 text-sm font-medium">
+            Distance (km)
+          </label>
+          <input
+            type="number"
+            step="0.01"
+            className={inputClass('distance')}
+            value={distance}
+            onChange={(e) => setDistance(e.target.value)}
+          />
+        </div>
 
-      <div>
-        <label className="block mb-1 text-sm font-medium">
-          Elevation Gain (m)
-        </label>
-        <input
-          type="number"
-          className={inputClass('elevationGain')}
-          value={elevationGain}
-          onChange={(e) => setElevationGain(e.target.value)}
-        />
+        <div className="w-1/3">
+          <label className="block mb-1 text-sm font-medium">
+            Elevation Gain (m)
+          </label>
+          <input
+            type="number"
+            className={inputClass('elevationGain')}
+            value={elevationGain}
+            onChange={(e) => setElevationGain(e.target.value)}
+          />
+        </div>
+
+        <div className="w-1/3">
+          <label className="block mb-1 text-sm font-medium">
+            Planned Duration *
+          </label>
+          <select
+            value={plannedDuration}
+            onChange={(e) => setPlannedDuration(e.target.value)}
+            className={inputClass('plannedDuration')}
+          >
+            <option value="">Select duration</option>
+            {[...Array(48)].map((_, i) => {
+              const sec = (i + 1) * 3600;
+              return (
+                <option key={sec} value={sec}>
+                  {i + 1} hour{i > 0 ? 's' : ''}
+                </option>
+              );
+            })}
+          </select>
+          {errors.plannedDuration && (
+            <p className="text-red-500 text-sm mt-1">
+              {errors.plannedDuration}
+            </p>
+          )}
+        </div>
       </div>
 
       <div>
@@ -132,30 +162,6 @@ const PlanActivityForm = () => {
             Trail Run
           </label>
         </div>
-      </div>
-
-      <div>
-        <label className="block mb-1 text-sm font-medium">
-          Planned Duration *
-        </label>
-        <select
-          value={plannedDuration}
-          onChange={(e) => setPlannedDuration(e.target.value)}
-          className={inputClass('plannedDuration')}
-        >
-          <option value="">Select duration</option>
-          {[...Array(48)].map((_, i) => {
-            const sec = (i + 1) * 3600;
-            return (
-              <option key={sec} value={sec}>
-                {i + 1} hour{i > 0 ? 's' : ''}
-              </option>
-            );
-          })}
-        </select>
-        {errors.plannedDuration && (
-          <p className="text-red-500 text-sm mt-1">{errors.plannedDuration}</p>
-        )}
       </div>
 
       <div>
