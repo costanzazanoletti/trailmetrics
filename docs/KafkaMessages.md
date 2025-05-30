@@ -73,6 +73,7 @@ This document defines the Kafka topics and messages used in TrailMetrics for eve
 ```json
 {
   "activityId": 13484124195,
+  "isPlanned": false,
   "userId": 12345,
   "startDate": 1740680048.270867,
   "processedAt": 1740680048.270867000,
