@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { PlannedActivityInput } from '../types/activity';
 import { API_ACTIVITY_BASE_URL } from '../config/apiConfig';
 
 // Create an axios instance with default settings
@@ -86,6 +87,40 @@ export const syncActivities = async () => {
     return res.data.data;
   } catch (error) {
     console.error('Unable to sync activities', error);
+    throw error;
+  }
+};
+
+export const fetchPlannedActivities = async (
+  page = 0,
+  size = 10
+): Promise<PaginatedActivitiesResponse> => {
+  try {
+    const res = await apiClient.get('/api/activities/planned', {
+      params: { page, size },
+    });
+    return res.data.data;
+  } catch (error) {
+    console.error('Unable to fetch planned activities', error);
+    throw error;
+  }
+};
+
+export const createPlannedActivity = async (
+  data: PlannedActivityInput,
+  file: File
+): Promise<void> => {
+  try {
+    const formData = new FormData();
+    formData.append('data', JSON.stringify(data));
+    formData.append('file', file);
+
+    await apiClient.post('/api/activities/planned', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      withCredentials: true,
+    });
+  } catch (error) {
+    console.error('Failed to create planned activity', error);
     throw error;
   }
 };

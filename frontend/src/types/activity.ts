@@ -71,3 +71,13 @@ export interface Segment {
   gradeEfficiencyZone: string;
   gradeCategory: number;
 }
+
+export interface PlannedActivityInput {
+  name: string;
+  distance: number;
+  planned_duration: number; // seconds
+  total_elevation_gain: number;
+  type: string; // e.g., 'planned'
+  sport_type: string; // 'Run' | 'Trail Run'
+  start_date: string; // ISO string
+}

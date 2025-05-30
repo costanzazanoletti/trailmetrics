@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Planning from './pages/Planning';
 import ActivityDetail from './pages/ActivityDetail';
+import PlanActivity from './pages/PlanActivity';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/planning" element={<Planning />} />
+          <Route path="/planning/create" element={<PlanActivity />} />
           <Route
             path="/activities/:id"
             element={
