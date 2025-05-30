@@ -42,7 +42,7 @@ public class ActivityService {
   public Page<Activity> fetchUserPlannedActivities(Long userId, Pageable pageable) {
     Page<Activity> page = activityRepository.findByAthleteIdAndIsPlannedIsTrue(userId, pageable);
     page.forEach(activity ->
-        activity.setStatus(computeStatus(activity.getStatusTracker()))
+        activity.setStatus(computePlanningStatus(activity))
     );
     return page;
   }
@@ -77,6 +77,12 @@ public class ActivityService {
         return ActivityStatus.DATA_READY;
       }
     }
+    return ActivityStatus.CREATED;
+  }
+
+  public ActivityStatus computePlanningStatus(Activity activity) {
+    // TO DO
+    // Check if activity is planned and if it has been processed
     return ActivityStatus.CREATED;
   }
 
