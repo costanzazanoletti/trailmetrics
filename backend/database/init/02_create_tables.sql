@@ -10,6 +10,7 @@ CREATE TABLE activities (
     description TEXT,
     distance DOUBLE PRECISION,
     has_heartrate BOOLEAN,
+    is_planned BOOLEAN,
     map_polyline TEXT,
     max_speed DOUBLE PRECISION,
     moving_time INTEGER,

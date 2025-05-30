@@ -72,6 +72,9 @@ public class Activity {
   @Column(name = "has_heartrate")
   private Boolean hasHeartrate;
 
+  @Column(name = "is_planned")
+  private Boolean isPlanned;
+
   @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ActivityStream> streams;
 
