@@ -1,7 +1,9 @@
 package com.trailmetrics.activities.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.trailmetrics.activities.dto.ActivityDTO;
 import com.trailmetrics.activities.dto.ActivityStreamsDTO;
+import com.trailmetrics.activities.dto.PlannedActivityDTO;
 import com.trailmetrics.activities.dto.SegmentDTO;
 import com.trailmetrics.activities.exception.ResourceNotFoundException;
 import com.trailmetrics.activities.exception.TrailmetricsAuthServiceException;
@@ -26,14 +28,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/activities")
@@ -47,6 +53,7 @@ public class ActivityController {
   private final ActivityService activityService;
   private final SegmentMapper segmentMapper;
   private final SegmentEfficiencyZoneService segmentEfficiencyZoneService;
+  private final ObjectMapper objectMapper;
 
 
   @GetMapping
@@ -57,7 +64,7 @@ public class ActivityController {
     try {
       // Get userId
       Long userId = Long.parseLong(getAuthenticatedUserId());
-      // Create Pageable instance using page and size (default sorting by start date descending)
+      // Create a Pageable instance using page and size (default sorting by start date descending)
       Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startDate"));
       // Fetch paginated activities
       Page<Activity> activitiesPage = activityService.fetchUserActivities(userId, pageable);
@@ -191,6 +198,51 @@ public class ActivityController {
           HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  @PostMapping(value = "/planned", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<ApiResponse<ActivityDTO>> createPlannedActivity(
+      @RequestPart("data") String dataJson,
+      @RequestPart("file") MultipartFile gpxFile) {
+    try {
+      Long userId = Long.parseLong(getAuthenticatedUserId());
+      PlannedActivityDTO dto = objectMapper.readValue(dataJson, PlannedActivityDTO.class);
+      dto.setAthleteId(userId);
+      Activity activity = activityService.savePlannedActivity(dto, gpxFile);
+      ActivityDTO responseDto = ActivityMapper.convertToDTO(activity);
+      return ResponseEntity.ok(new ApiResponse<>(true, responseDto, "Planned activity created"));
+    } catch (Exception e) {
+      return ResponseEntity
+          .status(HttpStatus.BAD_REQUEST)
+          .body(new ApiResponse<>(false, null, "Error: " + e.getMessage()));
+    }
+  }
+
+  @GetMapping("/planned")
+  public ResponseEntity<ApiResponse<Page<ActivityDTO>>> getPlannedActivities(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "15") int size
+  ) {
+    try {
+      // Get userId
+      Long userId = Long.parseLong(getAuthenticatedUserId());
+      // Create a Pageable instance using page and size (default sorting by start date descending)
+      Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "startDate"));
+      // Fetch paginated activities
+      Page<Activity> activitiesPage = activityService.fetchUserPlannedActivities(userId, pageable);
+      Page<ActivityDTO> activityDTOPage = activitiesPage.map(ActivityMapper::convertToDTO);
+
+      // Return the paginated result
+      return ApiResponseFactory.ok(activityDTOPage, "Fetched planned activities");
+
+    } catch (TrailmetricsAuthServiceException e) {
+      return ApiResponseFactory.error("Unauthorized", HttpStatus.UNAUTHORIZED);
+    } catch (Exception e) {
+      log.error("Failed to fetch planned activities", e);
+      return ApiResponseFactory.error("Failed to fetch planned activities",
+          HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
 
   private String getAuthenticatedUserId() {
     Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

@@ -1,7 +1,9 @@
 package com.trailmetrics.activities.service;
 
+import com.trailmetrics.activities.dto.PlannedActivityDTO;
 import com.trailmetrics.activities.exception.ResourceNotFoundException;
 import com.trailmetrics.activities.exception.UnauthorizedAccessException;
+import com.trailmetrics.activities.mapper.ActivityMapper;
 import com.trailmetrics.activities.model.Activity;
 import com.trailmetrics.activities.model.ActivityStatus;
 import com.trailmetrics.activities.model.ActivityStatusTracker;
@@ -10,11 +12,14 @@ import com.trailmetrics.activities.model.Segment;
 import com.trailmetrics.activities.repository.ActivityRepository;
 import com.trailmetrics.activities.repository.ActivityStreamRepository;
 import com.trailmetrics.activities.repository.SegmentRepository;
+import java.io.InputStream;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @RequiredArgsConstructor
 @Service
@@ -23,15 +28,24 @@ public class ActivityService {
   private final ActivityRepository activityRepository;
   private final ActivityStreamRepository activityStreamRepository;
   private final SegmentRepository segmentRepository;
+  private final GpxStreamExtractorService gpxStreamExtractorService;
 
   public Page<Activity> fetchUserActivities(Long userId, Pageable pageable) {
-    Page<Activity> page = activityRepository.findByAthleteId(userId, pageable);
+    Page<Activity> page = activityRepository.findByAthleteIdAndIsPlannedIsFalseOrIsPlannedIsNull(
+        userId, pageable);
     page.forEach(activity ->
         activity.setStatus(computeStatus(activity.getStatusTracker()))
     );
     return page;
   }
 
+  public Page<Activity> fetchUserPlannedActivities(Long userId, Pageable pageable) {
+    Page<Activity> page = activityRepository.findByAthleteIdAndIsPlannedIsTrue(userId, pageable);
+    page.forEach(activity ->
+        activity.setStatus(computeStatus(activity.getStatusTracker()))
+    );
+    return page;
+  }
 
   public Activity getUserActivityById(Long activityId, Long userId) {
     Activity activity = activityRepository.findById(activityId)
@@ -66,4 +80,22 @@ public class ActivityService {
     return ActivityStatus.CREATED;
   }
 
+  public Activity savePlannedActivity(PlannedActivityDTO dto, MultipartFile gpxFile) {
+    try (InputStream inputStream = gpxFile.getInputStream()) {
+      // Generate a unique negative id
+      long generatedId = -Instant.now().toEpochMilli();
+      // Convert DTO to Activity
+      Activity activity = ActivityMapper.plannedToEntity(dto, generatedId);
+
+      // Convert the GPX file to ActivityStreams
+      List<ActivityStream> streams = gpxStreamExtractorService.extractStreamsFromGpx(inputStream,
+          activity);
+      activity.setStreams(streams);
+
+      return activityRepository.save(activity);
+
+    } catch (Exception e) {
+      throw new RuntimeException("Error saving the Planned Activity", e);
+    }
+  }
 }

@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,8 +31,9 @@ public class SecurityConfig {
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http
         .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Enable CORS
-        .csrf(csrf -> csrf.csrfTokenRepository(
-            CookieCsrfTokenRepository.withHttpOnlyFalse())) // Enable CSRF
+        /*.csrf(csrf -> csrf.csrfTokenRepository(
+            CookieCsrfTokenRepository.withHttpOnlyFalse())) // Enable CSRF*/
+        .csrf(csrf -> csrf.disable()) // DISABLED FOR POSTMAN TEST
         .authorizeHttpRequests(auth -> auth
             .requestMatchers("/health").permitAll()
             .requestMatchers("/auth-service/**").permitAll() // test getPublicKey
@@ -55,7 +55,7 @@ public class SecurityConfig {
     configuration.setAllowCredentials(true);
 
     // Logging of allowed origins
-    log.info("Configured CORS allowed origins: {}, {}", frontendUrl);
+    log.info("Configured CORS allowed origins: {}", frontendUrl);
     System.out.println("Configured CORS allowed origins: " + frontendUrl);
 
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
