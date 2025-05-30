@@ -12,10 +12,12 @@ import com.trailmetrics.activities.model.Segment;
 import com.trailmetrics.activities.repository.ActivityRepository;
 import com.trailmetrics.activities.repository.ActivityStreamRepository;
 import com.trailmetrics.activities.repository.SegmentRepository;
+import com.trailmetrics.activities.utils.JsonUtils;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -23,12 +25,14 @@ import org.springframework.web.multipart.MultipartFile;
 
 @RequiredArgsConstructor
 @Service
+@Slf4j
 public class ActivityService {
 
   private final ActivityRepository activityRepository;
   private final ActivityStreamRepository activityStreamRepository;
   private final SegmentRepository segmentRepository;
   private final GpxStreamExtractorService gpxStreamExtractorService;
+  private final KafkaProducerService kafkaProducerService;
 
   public Page<Activity> fetchUserActivities(Long userId, Pageable pageable) {
     Page<Activity> page = activityRepository.findByAthleteIdAndIsPlannedIsFalseOrIsPlannedIsNull(
@@ -98,7 +102,20 @@ public class ActivityService {
           activity);
       activity.setStreams(streams);
 
-      return activityRepository.save(activity);
+      Activity savedActivity = activityRepository.save(activity);
+
+      // Prepare Kafka message payload
+      byte[] compressedJson = JsonUtils.prepareCompressedJsonOutputStream(streams);
+
+      log.info("Successfully created planned activity ID: {}", savedActivity.getId());
+
+      // Publish activity processed to Kafka
+      kafkaProducerService.publishActivityPlanned(savedActivity.getId(),
+          String.valueOf(savedActivity.getAthleteId()),
+          savedActivity.getStartDate(),
+          compressedJson);
+
+      return savedActivity;
 
     } catch (Exception e) {
       throw new RuntimeException("Error saving the Planned Activity", e);

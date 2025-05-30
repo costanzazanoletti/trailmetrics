@@ -36,11 +36,23 @@ public class KafkaProducerService {
 
   public void publishActivityProcessed(Long activityId, String userId, Instant startDate,
       byte[] compressedStream) {
-    ActivityProcessedMessage message = new ActivityProcessedMessage(activityId, userId, startDate,
+    ActivityProcessedMessage message = new ActivityProcessedMessage(activityId, false, userId,
+        startDate,
         Instant.now(), compressedStream);
     kafkaActivityProcessedTemplate.send(ACTIVITY_PROCESSED_TOPIC, String.valueOf(activityId),
         message);
     log.info("Published activity processed to Kafka for activity {} to {}", activityId,
+        ACTIVITY_PROCESSED_TOPIC);
+  }
+
+  public void publishActivityPlanned(Long activityId, String userId, Instant startDate,
+      byte[] compressedStream) {
+    ActivityProcessedMessage message = new ActivityProcessedMessage(activityId, true, userId,
+        startDate,
+        Instant.now(), compressedStream);
+    kafkaActivityProcessedTemplate.send(ACTIVITY_PROCESSED_TOPIC, String.valueOf(activityId),
+        message);
+    log.info("Published planned activity processed to Kafka for activity {} to {}", activityId,
         ACTIVITY_PROCESSED_TOPIC);
   }
 

@@ -1,7 +1,9 @@
 package com.trailmetrics.activities.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -123,6 +125,7 @@ class KafkaProducerServiceTest {
     assertEquals(userId, capturedMessage.getUserId());
     assertNotNull(capturedMessage.getProcessedAt());
     assertEquals(compressedJson.length, capturedMessage.getCompressedStream().length);
+    assertFalse(capturedMessage.getIsPlanned());
   }
 
   @Test
@@ -144,5 +147,48 @@ class KafkaProducerServiceTest {
     assertEquals(userId, capturedMessage.getUserId());
     assertNotNull(capturedMessage.getCheckedAt());
     assertEquals(deletedActivityIds, capturedMessage.getDeletedActivityIds());
+  }
+
+  @Test
+  void shouldSendActivityPlannedEvent() throws Exception {
+    // Given
+    Long activityId = -456L;
+    String userId = "123";
+    Instant startDate = Instant.now().minusSeconds(999999999L);
+
+    String sampleJson = """
+        {
+          "altitude": {
+            "data": [1000, 1001, 1002, 1003],
+            "series_type": "distance",
+            "original_size": 4,
+            "resolution": "high"
+          },
+          "latlng": {
+            "data": [[46.137134, 8.464204], [46.137118, 8.464177], [46.137102, 8.464150], [46.137090, 8.464120]],
+            "series_type": "distance",
+            "original_size": 4,
+            "resolution": "high"
+          }
+        }
+        """;
+    byte[] compressedJson = compressJson(sampleJson);
+
+    // When
+    kafkaProducerService.publishActivityPlanned(activityId, userId, startDate, compressedJson);
+
+    // Then
+    ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(
+        ActivityProcessedMessage.class);
+    verify(kafkaActivityProcessedTemplate).send(eq(ACTIVITY_PROCESSED_TOPIC),
+        eq(String.valueOf(activityId)),
+        messageCaptor.capture());
+
+    ActivityProcessedMessage capturedMessage = messageCaptor.getValue();
+    assertEquals(activityId, capturedMessage.getActivityId());
+    assertEquals(userId, capturedMessage.getUserId());
+    assertNotNull(capturedMessage.getProcessedAt());
+    assertEquals(compressedJson.length, capturedMessage.getCompressedStream().length);
+    assertTrue(capturedMessage.getIsPlanned());
   }
 }

@@ -30,6 +30,7 @@ class ActivityServiceTest {
   private ActivityStreamRepository activityStreamRepository;
   private SegmentRepository segmentRepository;
   private ActivityService activityService;
+  private KafkaProducerService kafkaProducerService;
 
   @BeforeEach
   void setup() {
@@ -37,8 +38,9 @@ class ActivityServiceTest {
     gpxStreamExtractorService = mock(GpxStreamExtractorService.class);
     activityStreamRepository = mock(ActivityStreamRepository.class);
     segmentRepository = mock(SegmentRepository.class);
+    kafkaProducerService = mock(KafkaProducerService.class);
     activityService = new ActivityService(activityRepository, activityStreamRepository,
-        segmentRepository, gpxStreamExtractorService);
+        segmentRepository, gpxStreamExtractorService, kafkaProducerService);
   }
 
   @Test
@@ -84,7 +86,8 @@ class ActivityServiceTest {
     assertEquals("Planned Run", result.getName());
     assertEquals(1, result.getStreams().size());
     assertEquals("latlng", result.getStreams().get(0).getType());
-    assertTrue(result.getId() < 0); // ID negativo
+    assertTrue(result.getId() < 0); // negative ID
+    assertTrue(result.getIsPlanned());
 
     verify(activityRepository, times(1)).save(any(Activity.class));
   }
