@@ -12,6 +12,7 @@ public class ActivityProcessedMessage {
 
   private Long activityId;
   private Boolean isPlanned;
+  private Integer duration;
   private String userId;
   private Instant startDate;
   private Instant processedAt;

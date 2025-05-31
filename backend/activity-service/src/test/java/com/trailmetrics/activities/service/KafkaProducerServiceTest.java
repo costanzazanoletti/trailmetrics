@@ -91,6 +91,7 @@ class KafkaProducerServiceTest {
     Long activityId = 456L;
     String userId = "123";
     Instant startDate = Instant.now().minusSeconds(999999999L);
+    Integer duration = 3600;
 
     String sampleJson = """
         {
@@ -111,7 +112,8 @@ class KafkaProducerServiceTest {
     byte[] compressedJson = compressJson(sampleJson);
 
     // When
-    kafkaProducerService.publishActivityProcessed(activityId, userId, startDate, compressedJson);
+    kafkaProducerService.publishActivityProcessed(activityId, userId, startDate, compressedJson,
+        duration);
 
     // Then
     ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(
@@ -155,6 +157,7 @@ class KafkaProducerServiceTest {
     Long activityId = -456L;
     String userId = "123";
     Instant startDate = Instant.now().minusSeconds(999999999L);
+    Integer duration = 3600;
 
     String sampleJson = """
         {
@@ -175,7 +178,8 @@ class KafkaProducerServiceTest {
     byte[] compressedJson = compressJson(sampleJson);
 
     // When
-    kafkaProducerService.publishActivityPlanned(activityId, userId, startDate, compressedJson);
+    kafkaProducerService.publishActivityPlanned(activityId, userId, startDate, compressedJson,
+        duration);
 
     // Then
     ArgumentCaptor<ActivityProcessedMessage> messageCaptor = ArgumentCaptor.forClass(

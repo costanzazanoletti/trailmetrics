@@ -115,7 +115,7 @@ class ActivityDetailServiceTest {
     verify(activityStreamRepository, times(1)).saveAll(mockStreams);
     verify(kafkaProducerService, times(1)).publishActivityProcessed(eq(mockActivity.getId()),
         eq(userId), eq(mockActivity.getStartDate()),
-        any(byte[].class));
+        any(byte[].class), anyInt());
     verify(kafkaRetryService, never()).scheduleActivityRetry(anyString(), anyLong(), anyInt(),
         any());
   }
@@ -148,7 +148,7 @@ class ActivityDetailServiceTest {
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
         eq(retryCount), eq(tooManyRequestsException));
     verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), anyString(), any(),
-        any());
+        any(), anyInt());
   }
 
   @Test
@@ -167,7 +167,7 @@ class ActivityDetailServiceTest {
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
         eq(retryCount), eq(null));
     verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), anyString(), any(),
-        any());
+        any(), anyInt());
   }
 
   @Test
@@ -196,6 +196,6 @@ class ActivityDetailServiceTest {
     verify(kafkaRetryService, times(1)).scheduleActivityRetry(eq(userId), eq(activityId),
         eq(retryCount), eq(null));
     verify(kafkaProducerService, never()).publishActivityProcessed(anyLong(), anyString(), any(),
-        any());
+        any(), anyInt());
   }
 }

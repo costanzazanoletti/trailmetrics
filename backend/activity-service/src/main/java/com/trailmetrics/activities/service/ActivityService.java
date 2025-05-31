@@ -113,7 +113,7 @@ public class ActivityService {
       kafkaProducerService.publishActivityPlanned(savedActivity.getId(),
           String.valueOf(savedActivity.getAthleteId()),
           savedActivity.getStartDate(),
-          compressedJson);
+          compressedJson, savedActivity.getMovingTime());
 
       return savedActivity;
 
