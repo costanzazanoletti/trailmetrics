@@ -129,3 +129,36 @@ def sample_df_weather_response():
     'weather_main': ['Rain'],
     'weather_description': ['light rain']
 })
+
+@pytest.fixture
+def sample_json_weather_response():
+    return """
+{
+    "lat": 45.8844,
+    "lon": 8.2886,
+    "timezone": "Europe/Rome",
+    "timezone_offset": 7200,
+    "data": [
+        {
+            "dt": 1743397200,
+            "sunrise": 1743397716,
+            "sunset": 1743443585,
+            "temp": 0.54,
+            "feels_like": -2.56,
+            "pressure": 1013,
+            "humidity": 65,
+            "dew_point": -4.67,
+            "clouds": 17,
+            "wind_speed": 2.68,
+            "wind_deg": 300,
+            "weather": [
+                {
+                    "id": 801,
+                    "main": "Clouds",
+                    "description": "few clouds",
+                    "icon": "02n"
+                }
+            ]
+        }
+    ]
+}"""

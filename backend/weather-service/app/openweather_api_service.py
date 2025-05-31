@@ -15,6 +15,8 @@ load_dotenv()
 
 # Get API parameters
 OPENWEATHER_HISTORY_API_URL = os.getenv("OPENWEATHER_HISTORY_API_URL")
+OPENWEATHER_ONECALL_API_URL = os.getenv("OPENWEATHER_ONECALL_API_URL")
+OPENWEATHER_DAY_SUMMARY_API_URL = os.getenv("OPENWEATHER_DAY_SUMMARY_API_URL")
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
 DAILY_REQUEST_LIMIT = int(os.getenv("DAILY_REQUEST_LIMIT", 1000))
 
@@ -53,18 +55,41 @@ def generate_weather_variables_mapping():
 
     return weather_mapping, weather_variables
 
-def generate_request_parameters(reference_point):
-    """Generates request parameters for the weather API request considering activity start time."""
-
-    timestamp = int(reference_point["timestamp"].timestamp())  # Convert to Unix timestamp
+def generate_request_parameters(reference_point, api_type="history"):
+    timestamp = int(reference_point["timestamp"].timestamp())
     coordinates = {"lat": reference_point["lat"], "lon": reference_point["lng"]}
 
-    return {
-        "lat": coordinates["lat"],
-        "lon": coordinates["lon"],
-        "dt": timestamp,
-        "units": "metric" 
-    }
+    if api_type == "history":
+        return {
+            "lat": coordinates["lat"],
+            "lon": coordinates["lon"],
+            "dt": timestamp,
+            "units": "metric"
+        }
+    elif api_type == "hourly":
+        return {
+            "lat": coordinates["lat"],
+            "lon": coordinates["lon"],
+            "exclude": "current,minutely,daily,alerts",
+            "units": "metric"
+        }
+    elif api_type == "daily":
+        return {
+            "lat": coordinates["lat"],
+            "lon": coordinates["lon"],
+            "exclude": "current,minutely,hourly,alerts",
+            "units": "metric"
+        }
+    elif api_type == "summary":
+        date_str = reference_point["timestamp"].strftime("%Y-%m-%d")
+        return {
+            "lat": coordinates["lat"],
+            "lon": coordinates["lon"],
+            "date": date_str,
+            "units": "metric"
+        }
+    else:
+        raise ValueError("Unsupported API type")
 
 def json_to_dataframe(response):
     # Flatten the data
@@ -115,45 +140,43 @@ def json_to_dataframe(response):
     
     return df
 
-def fetch_weather_data(params):
-    """
-    Sends requests to the weather API and retrieves the forecast data.
-    """
-    # Daily request counter
+def fetch_weather_data(params, api_type="history"):
     global request_counter
     logger.info(f"Request counter: {request_counter.get_count()}")
 
-    # Increment request counter
     try:
         request_counter.increment()
-    except Exception as e:
-        # If unable to increment counter, raise an exception
+    except Exception:
         logger.warning(f"Daily limit of {DAILY_REQUEST_LIMIT} requests reached.")
-        raise WeatherAPIException("Daily request limit reached", status_code=429) 
-    
-    # Add api key to params 
-    params["appid"] = OPENWEATHER_API_KEY 
+        raise WeatherAPIException("Daily request limit reached", status_code=429)
 
-    try: 
-        # Perform the request to the OpenWeather API
-        logger.info(f"Requesting weather data for {params['lat']}, {params['lon']} at {params['dt']}")
-        response = requests.get(OPENWEATHER_HISTORY_API_URL, params=params)  
-        # Raise an exception for non-OK status codes
-        response.raise_for_status()  
+    params["appid"] = OPENWEATHER_API_KEY
 
-        # If the request is successful, process the data
+    if api_type == "history":
+        url = OPENWEATHER_HISTORY_API_URL
+    elif api_type == "hourly" or api_type == "daily":
+        url = OPENWEATHER_ONECALL_API_URL
+    elif api_type == "summary":
+        url = OPENWEATHER_DAY_SUMMARY_API_URL
+    else:
+        raise ValueError("Unsupported API type")
+
+    try:
+        logger.info(f"Requesting weather data for {params.get('lat')}, {params.get('lon')} with API type: {api_type}")
+        response = requests.get(url, params=params)
+        response.raise_for_status()
         logger.info(f"Weather data received")
-        time.sleep(1)  # Ensure at least 1 second between requests
-        return json_to_dataframe(response.json())  # Return the API response as a DataFrame
-        
-    except requests.exceptions.HTTPError as err:  
-        if response is not None and response.status_code == 429: # Rate limit exceeded
-            logger.warning(f"Weather API rate limit exceeded.")
+        time.sleep(1)
+        return response.json()
+
+    except requests.exceptions.HTTPError as err:
+        if response is not None and response.status_code == 429:
+            logger.warning("Weather API rate limit exceeded.")
             raise WeatherAPIException("Hourly request limit reached", status_code=429)
         else:
             logger.error(f"Request HTTP error: {err}")
             raise WeatherAPIException(f"HTTP Error: {err}", status_code=response.status_code)
-        
+
     except requests.exceptions.RequestException as err:
         logger.error(f"Request error: {err}")
         raise WeatherAPIException(f"Request failed: {err}")

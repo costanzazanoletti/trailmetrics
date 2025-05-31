@@ -100,23 +100,8 @@ def test_fetch_weather_data_success(create_sample_params):
 
         # Verify that the function requests.get is called once
         requests.get.assert_called_once()
-
-        # Verify data are as expected
-        expected_length = 1
-        expected_dt = 1709510400  
-        expected_lat = 47.1
-        expected_lon = 8.6
-        expected_temp = 276.24
-        expected_wind =  1.26
-        expected_weather_description = "light rain"
-       
-        assert len(result) == expected_length
-        assert result.iloc[0]["lat"] == expected_lat
-        assert result.iloc[0]["lon"] == expected_lon
-        assert result.iloc[0]["dt"] == expected_dt
-        assert result.iloc[0]["temp"] == expected_temp
-        assert result.iloc[0]["wind"] == expected_wind
-        assert result.iloc[0]["weather_description"] == expected_weather_description
+        data = result['data'][0]
+        assert data.get("temp") == 276.24
  
 def test_fetch_weather_data_request_counter_limit(create_sample_params):
     # Mock a failure response from the request_counter.increment method

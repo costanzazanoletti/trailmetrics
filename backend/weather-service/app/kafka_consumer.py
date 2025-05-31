@@ -7,7 +7,11 @@ import time
 from datetime import datetime, timezone
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
-from app.weather_service import get_weather_info, get_weather_data_from_api
+from app.weather_service import (
+    get_weather_info, 
+    get_forecast_weather_info,
+    get_weather_data_from_api
+    )
 
 # Load environment variables
 load_dotenv()
@@ -76,6 +80,8 @@ def process_message(message):
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
 
         activity_id = data.get("activityId")
+        is_planned = data.get("isPlanned")
+        duration = data.get("duration")
         start_date = data.get("startDate")
         status = data.get("status")
         compressed_segments = data.get("compressedSegments")
@@ -88,11 +94,15 @@ def process_message(message):
         if isinstance(compressed_segments, str):
             compressed_segments = base64.b64decode(compressed_segments)
 
-        logger.info(f"Processing weather info for Activity ID: {activity_id}")
-
-        # Fetch weather info, prepare and send Kafka message
-        get_weather_info(start_date, compressed_segments, activity_id)
-        
+        if is_planned:
+            # Fetch forecasted weather info, prepare and send kafka message
+            logger.info(f"Processing weather info for planned Activity ID: {activity_id}")
+            get_forecast_weather_info(start_date, duration, compressed_segments, activity_id)
+        else:
+            # Fetch historical weather info, prepare and send Kafka message
+            get_weather_info(start_date, compressed_segments, activity_id)
+            logger.info(f"Processing weather info for Activity ID: {activity_id}")
+            
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")

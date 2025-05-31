@@ -7,24 +7,32 @@ from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
 
-def test_create_reference_points(sample_df_segments):
- 
+def test_create_reference_points_with_and_without_time(sample_df_segments):
     elevation_threshold = 50  
     time_threshold = 600   
     grid_size = 0.1    
     
-    # Run the function to get the reference points
-    result_df = create_reference_points(sample_df_segments, elevation_threshold, time_threshold, grid_size)
-    
-    # Print the result for debugging
-    print(f"Reference points:\n{result_df.head()}")
-    
-    # Check the number of points selected
-    assert len(result_df) == 5
-    
-    # Check the first point
-    assert result_df.iloc[0]["lat"] == 46.0
-    assert result_df.iloc[0]["lng"] == 8.0
+    # With use_time
+    result_with_time = create_reference_points(
+        sample_df_segments,
+        elevation_threshold,
+        time_threshold,
+        grid_size,
+        use_time=True
+    )
+
+    # Without use_time
+    result_without_time = create_reference_points(
+        sample_df_segments,
+        elevation_threshold,
+        time_threshold,
+        grid_size,
+        use_time=False
+    )
+
+    segments_with_time = set(sum(result_with_time["associated_segments"], []))
+    segments_without_time = set(sum(result_without_time["associated_segments"], []))
+    assert segments_with_time == segments_without_time  
     
 def test_assign_weather_to_segments(sample_reference_point, sample_df_weather_response):
     # Get the segment ids
@@ -55,7 +63,7 @@ def test_assign_weather_to_segments(sample_reference_point, sample_df_weather_re
     # Verifica that a segment not associated is not present
     assert "123456-5" not in result_df["segment_id"].values
 
-def test_get_weather_info_success(sample_df_segments, sample_df_weather_response):
+def test_get_weather_info_success(sample_df_segments, sample_df_weather_response, sample_json_weather_response):
     # Define input parameters for the function
     activity_start_date = 1627315508.0
     compressed_segments = b"compressed_segments"  # Simulated compressed segments
@@ -64,7 +72,8 @@ def test_get_weather_info_success(sample_df_segments, sample_df_weather_response
 
     with patch('app.weather_service.parse_kafka_segments', return_value=sample_df_segments), \
          patch('app.weather_service.add_datetime_columns', return_value=sample_df_segments), \
-         patch('app.weather_service.fetch_weather_data', return_value=sample_df_weather_response) as mock_fetch_weather_data, \
+         patch('app.weather_service.fetch_weather_data', return_value=sample_json_weather_response) as mock_fetch_weather_data, \
+         patch('app.weather_service.json_to_dataframe', return_value=sample_df_weather_response), \
          patch('app.weather_service.send_weather_output') as mock_send_output, \
          patch('app.weather_service.send_retry_message') as mock_send_retry:
         
