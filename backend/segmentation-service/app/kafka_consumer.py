@@ -72,7 +72,7 @@ def process_message(message):
         if is_planned:
             logger.info(f"Processing segmentation for Planned Activity ID: {activity_id}, processed at: {processed_at}")
             # Perform segmentation
-            segments_df = segment_planned_activity(activity_id, compressed_stream)
+            segments_df = segment_planned_activity(activity_id, compressed_stream, duration)
         else:    
             logger.info(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
             # Perform segmentation

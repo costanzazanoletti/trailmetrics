@@ -274,11 +274,26 @@ def create_planned_segments(df, activity_id, config):
 
     return pd.DataFrame(segments) if segments else pd.DataFrame()
 
-def segment_planned_activity(activity_id, compressed_stream):
-    """Segments a planned activity using latlng and altitude only."""
+def segment_planned_activity(activity_id, compressed_stream, duration):
+    """Segments a planned activity using latlng and altitude only, and estimates time per segment."""
     logger.info(f"Processing Planned Activity {activity_id}")
     config = load_config()
     df = parse_planned_activity(compressed_stream, activity_id)
     if df.empty:
         return df
-    return create_planned_segments(df, activity_id, config)
+
+    segments_df = create_planned_segments(df, activity_id, config)
+    if segments_df.empty:
+        return segments_df
+
+    # Estimates duration of each segment proportional to total length
+    total_length = segments_df["segment_length"].sum()
+    if total_length == 0:
+        logger.warning(f"Total segment length is zero for planned activity {activity_id}")
+        return pd.DataFrame()
+
+    segments_df["duration"] = segments_df["segment_length"] / total_length * duration
+    segments_df["start_time"] = segments_df["duration"].cumsum().shift(fill_value=0)
+    segments_df["end_time"] = segments_df["start_time"] + segments_df["duration"]
+
+    return segments_df
