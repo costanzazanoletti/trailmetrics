@@ -2,12 +2,15 @@ import json
 import os
 import base64
 import logging
+import logging_setup
 import pandas as pd
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
-from app.segmentation_service import segment_activity
+from app.segmentation_service import segment_activity, segment_planned_activity
 from app.kafka_producer import send_segmentation_output
 
+# Setup logging
+logger = logging.getLogger("app")
 # Load environment variables
 load_dotenv()
 
@@ -44,6 +47,7 @@ def process_message(message):
             data = message.value  
 
         activity_id = data.get("activityId")
+        isPlanned = data.get("isPlanned")
         user_id = data.get("userId")
         start_date = data.get("startDate")
         processed_at = data.get("processedAt")
@@ -61,11 +65,17 @@ def process_message(message):
         # Decode the base64 value if it's a string
         if isinstance(compressed_stream, str):
             compressed_stream = base64.b64decode(compressed_stream)
-
-        logger.info(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
         
-        # Perform segmentation
-        segments_df = segment_activity(activity_id, compressed_stream)
+        # Check if it's a planned or historical activity
+        segments_df = pd.DataFrame()    
+        if isPlanned:
+            logger.info(f"Processing segmentation for Planned Activity ID: {activity_id}, processed at: {processed_at}")
+            # Perform segmentation
+            segments_df = segment_planned_activity(activity_id, compressed_stream)
+        else:    
+            logger.info(f"Processing segmentation for Activity ID: {activity_id}, processed at: {processed_at}")
+            # Perform segmentation
+            segments_df = segment_activity(activity_id, compressed_stream)
 
         if not segments_df.empty:
             segment_count = len(segments_df)

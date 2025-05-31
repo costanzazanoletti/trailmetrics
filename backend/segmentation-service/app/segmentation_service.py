@@ -2,8 +2,10 @@ import os
 import json
 import gzip
 import logging
+import logging_setup
 import numpy as np
 import pandas as pd
+from haversine import haversine, Unit
 from dotenv import load_dotenv
 
 # Setup logging
@@ -52,7 +54,6 @@ def parse_kafka_stream(compressed_stream, activity_id):
     except Exception as e:
         logger.error(f"Error parsing Kafka stream for Activity {activity_id}: {e}")
         return pd.DataFrame()
-
 
 def preprocess_streams(df, activity_id):
     """Preprocesses DataFrame: cleans, interpolates, and fixes missing lat/lng values."""
@@ -139,7 +140,6 @@ def preprocess_streams(df, activity_id):
     
     return df.reset_index(drop=True)
 
-
 def create_segments(df, activity_id, config):
     """Segments an activity based on gradient and cadence changes."""
     df.sort_values("distance", inplace=True)
@@ -201,3 +201,84 @@ def segment_activity(activity_id, compressed_stream):
         return pd.DataFrame()
     
     return create_segments(df, activity_id, config)
+
+def parse_planned_activity(compressed_stream, activity_id):
+    """Parses a minimal planned activity stream (latlng, altitude) and computes distance and grade."""
+    stream_list = decompress_stream(compressed_stream)
+    if not stream_list:
+        return pd.DataFrame()
+
+    try:
+        stream_dict = {entry["type"]: entry["data"] for entry in stream_list}
+        latlng = stream_dict.get("latlng", [])
+        altitude = stream_dict.get("altitude", [])
+
+        if not latlng or not altitude or len(latlng) != len(altitude):
+            logger.error(f"Inconsistent latlng/altitude data for Activity {activity_id}")
+            return pd.DataFrame()
+
+    
+        distances = [0.0]
+        grades = [0.0]
+        for i in range(1, len(latlng)):
+            dist = haversine(latlng[i-1], latlng[i], unit=Unit.METERS)
+            distances.append(distances[-1] + dist)
+            elev_diff = altitude[i] - altitude[i - 1]
+            grade = elev_diff / dist if dist > 0 else 0.0
+            grades.append(grade)
+
+        df = pd.DataFrame({
+            "latlng": latlng,
+            "altitude": altitude,
+            "distance": distances,
+            "grade": grades,
+            "activity_id": activity_id
+        })
+        # Split lat and lon
+        df[["lat", "lon"]] = pd.DataFrame(df["latlng"].tolist(), index=df.index)
+        return df
+    except Exception as e:
+        logger.error(f"Error parsing planned activity stream for Activity {activity_id}: {e}")
+        return pd.DataFrame()
+
+def create_planned_segments(df, activity_id, config):
+    """Segments a planned activity"""
+
+    if config["rolling_window_size"] > 1:
+        df["grade"] = df["grade"].rolling(window=config["rolling_window_size"], center=True, min_periods=1).mean()
+
+    segments, start_index = [], 0
+    for i in range(1, len(df)):
+        segment_length = df["distance"].iloc[i] - df["distance"].iloc[start_index]
+        grade_change = abs(df["grade"].iloc[i] - df["grade"].iloc[i - 1])
+
+        if (grade_change > config["gradient_tolerance"] and segment_length >= config["min_segment_length"]) or segment_length > config["max_segment_length"]:
+            avg_grade = np.mean(df["grade"].iloc[start_index:i])
+            segment = {
+                "activity_id": activity_id,
+                "start_distance": df["distance"].iloc[start_index],
+                "end_distance": df["distance"].iloc[i - 1],
+                "segment_length": segment_length,
+                "avg_gradient": avg_grade,
+                "type": "uphill" if avg_grade > 0 else "downhill" if avg_grade < 0 else "flat",
+                "grade_category": round(avg_grade / config["classification_tolerance"]) * config["classification_tolerance"],
+                "start_lat": df["lat"].iloc[start_index],
+                "start_lng": df["lon"].iloc[start_index],
+                "end_lat": df["lat"].iloc[i - 1],
+                "end_lng": df["lon"].iloc[i - 1],
+                "start_altitude": df["altitude"].iloc[start_index],
+                "end_altitude": df["altitude"].iloc[i - 1]
+            }
+            segments.append(segment)
+            start_index = i
+
+    return pd.DataFrame(segments) if segments else pd.DataFrame()
+
+def segment_planned_activity(activity_id, compressed_stream):
+    """Segments a planned activity using latlng and altitude only."""
+    logger.info(f"Processing Planned Activity {activity_id}")
+    config = load_config()
+    df = parse_planned_activity(compressed_stream, activity_id)
+    if df.empty:
+        return df
+    return create_planned_segments(df, activity_id, config)

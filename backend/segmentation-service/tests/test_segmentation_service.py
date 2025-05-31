@@ -14,7 +14,6 @@ def test_parse_kafka_stream(sample_compressed_stream):
     assert "latlng" in df.columns, "Missing 'latlng' column"
     assert "distance" in df.columns, "Missing 'distance' column"
 
-
 def test_segment_activity(sample_compressed_stream):
     """
     Tests segment_activity by providing a sample compressed stream and validating the result.

@@ -20,6 +20,20 @@ def load_test_message():
     return mock_message
 
 @pytest.fixture
+def load_planned_test_message():
+    """Loads a real Kafka message from a JSON file."""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir,"mock_planned_message.json")
+    with open(file_path, "r") as file:
+        message_data = json.load(file)
+    
+    mock_message = Mock()
+    mock_message.key = message_data["key"].encode("utf-8")
+    mock_message.value = json.dumps(message_data["value"]).encode("utf-8")
+
+    return mock_message
+
+@pytest.fixture
 def sample_segments_df():
     """Create a test DataFrame"""
     data = {
