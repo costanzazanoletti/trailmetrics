@@ -12,11 +12,10 @@ def test_process_message_success(mock_send_output, load_test_message):
     process_message(load_test_message)
     mock_send_output.assert_called_once()
     args, kwargs = mock_send_output.call_args
-    print(args)
     assert args[0] == 6846977895  # activity_id
     assert args[1] == "6846977895"      # user_id
     assert isinstance(args[2], pd.DataFrame) and not args[2].empty  # segments_df
-    assert kwargs["status"] == "success"
+    assert args[5] == "success"
 
 @patch("app.kafka_consumer.send_segmentation_output")
 @patch("app.kafka_consumer.segment_activity")
@@ -34,7 +33,7 @@ def test_process_message_failure(mock_segment_activity, mock_send_output, load_t
     assert args[0] == 6846977895  # activity_id
     assert args[1] == "6846977895"      # user_id
     assert isinstance(args[2], pd.DataFrame) and args[2].empty  # segments_df
-    assert kwargs["status"] == "failure"
+    assert args[5] == "failure"
 
 @patch("app.kafka_consumer.send_segmentation_output")
 def test_process_planned_message_success(mock_send_output, load_planned_test_message):
@@ -42,8 +41,7 @@ def test_process_planned_message_success(mock_send_output, load_planned_test_mes
     process_message(load_planned_test_message)
     mock_send_output.assert_called_once()
     args, kwargs = mock_send_output.call_args
-    print(args)
     assert args[0] == -1748617807957  # activity_id
     assert args[1] == "28658549"      # user_id
     assert isinstance(args[2], pd.DataFrame) and not args[2].empty  # segments_df
-    assert kwargs["status"] == "success"
+    assert args[5] == "success"

@@ -47,7 +47,8 @@ def process_message(message):
             data = message.value  
 
         activity_id = data.get("activityId")
-        isPlanned = data.get("isPlanned")
+        is_planned = data.get("isPlanned")
+        duration = data.get("duration")
         user_id = data.get("userId")
         start_date = data.get("startDate")
         processed_at = data.get("processedAt")
@@ -59,7 +60,7 @@ def process_message(message):
         if not compressed_stream:
             logger.warning("Received message without compressed stream")
              # Produce Kafka message of segmentation output failure
-            send_segmentation_output(activity_id, user_id, pd.DataFrame(), processed_at, start_date, status='failure')
+            send_segmentation_output(activity_id, user_id, pd.DataFrame(), processed_at, start_date, 'failure', is_planned, duration)
             return
         
         # Decode the base64 value if it's a string
@@ -68,7 +69,7 @@ def process_message(message):
         
         # Check if it's a planned or historical activity
         segments_df = pd.DataFrame()    
-        if isPlanned:
+        if is_planned:
             logger.info(f"Processing segmentation for Planned Activity ID: {activity_id}, processed at: {processed_at}")
             # Perform segmentation
             segments_df = segment_planned_activity(activity_id, compressed_stream)
@@ -82,11 +83,11 @@ def process_message(message):
             logger.info(f"Segmentation completed for Activity ID: {activity_id}, {segment_count} segments created.")
             
             # Produce Kafka message of segmentation output success
-            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, status='success')
+            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, 'success', is_planned, duration)
         else:
             logger.warning(f"Empty segments for Activity ID: {activity_id}")
              # Produce Kafka message of segmentation output failure
-            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, status='failure')
+            send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, 'failure', is_planned, duration)
     
     except Exception as e:
         logger.error(f"Error processing message: {e}")

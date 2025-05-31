@@ -22,12 +22,11 @@ producer = KafkaProducer(
     key_serializer=lambda k: str(k).encode("utf-8")
 )
 
-def prepare_segmentation_message(activity_id, user_id, segments_df, processed_at, start_date, status):
+def prepare_segmentation_message(activity_id, segments_df):
     """Prepare the output message with compressed segments"""
     segments_df = segments_df.assign(
         segment_id=segments_df.index.to_series().add(1).astype(str).radd(f"{activity_id}-")
     )
-
     # Convert the dataframe into a dictionary of lists of dictionaries
     segments = segments_df.to_dict(orient="records")
 
@@ -35,22 +34,23 @@ def prepare_segmentation_message(activity_id, user_id, segments_df, processed_at
     json_segments = json.dumps(segments).encode("utf-8")
     compressed_segments = gzip.compress(json_segments)
     encoded_segments = base64.b64encode(compressed_segments).decode("utf-8")
-
-    # Return message
-    return {
+    
+    return encoded_segments
+    
+def send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, status, is_planned, duration):
+    """Send segmentation output message to Kafka."""
+    # Prepare message with compressed segments
+    encoded_segments = prepare_segmentation_message(activity_id, segments_df)
+    kafka_message = {
         "activityId": activity_id,
+        "isPlanned": is_planned,
+        "duration": duration,
         "userId": user_id,
         "startDate": start_date,
         "processedAt": processed_at,
         "status": status,
         "compressedSegments": encoded_segments
     }
-
-def send_segmentation_output(activity_id, user_id, segments_df, processed_at, start_date, status):
-    """Send segmentation output message to Kafka."""
-    # Prepare message with compressed segments
-    kafka_message = prepare_segmentation_message(activity_id, user_id, segments_df, processed_at, start_date, status)
-
     # Send message to Kafka
     producer.send(KAFKA_TOPIC_OUTPUT, key=str(activity_id), value=kafka_message)
 
