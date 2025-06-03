@@ -42,13 +42,14 @@ def test_send_retry_message():
     request_params = {"lat": 47.1, "lon": 8.6, "appid": "fake_api_key"}
     group_id = "1_4"
     retries = 2
+    api_type = "history"
 
     # Mock the producer
     with patch('app.kafka_producer.producer.send') as mock_producer_send, \
         patch('app.kafka_producer.producer.flush') as mock_producer_flush:
     
         # Call the function you want to test
-        send_retry_message(activity_id, segment_ids, group_id, request_params, retries)
+        send_retry_message(api_type, activity_id, segment_ids, group_id, request_params, retries)
 
         # Compute expected retry timestamp
         retry_time_seconds = (int(KAFKA_RETRY_MAX_POLL_INTERVAL_MS) / 1000) - 1
@@ -62,7 +63,8 @@ def test_send_retry_message():
             "segmentIds": segment_ids,
             "groupId": group_id,
             "retryTimestamp": retry_timestamp,
-            "retries": retries + 1
+            "retries": retries + 1,
+            "apiType": "history"
         }
 
         # Check that producer.send was called with the correct parameters

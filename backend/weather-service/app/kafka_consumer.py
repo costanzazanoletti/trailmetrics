@@ -7,9 +7,8 @@ import time
 from datetime import datetime, timezone
 from kafka import KafkaConsumer
 from dotenv import load_dotenv
-from app.weather_service import (
+from app.weather.weather_pipeline import (
     get_weather_info, 
-    get_forecast_weather_info,
     get_weather_data_from_api
     )
 
@@ -94,15 +93,8 @@ def process_message(message):
         if isinstance(compressed_segments, str):
             compressed_segments = base64.b64decode(compressed_segments)
 
-        if is_planned:
-            # Fetch forecasted weather info, prepare and send kafka message
-            logger.info(f"Processing weather info for planned Activity ID: {activity_id}")
-            get_forecast_weather_info(start_date, duration, compressed_segments, activity_id)
-        else:
-            # Fetch historical weather info, prepare and send Kafka message
-            get_weather_info(start_date, compressed_segments, activity_id)
-            logger.info(f"Processing weather info for Activity ID: {activity_id}")
-            
+            logger.info(f"Processing weather info for{' planned' if is_planned else ''} Activity ID: {activity_id}")
+            get_weather_info(start_date, duration, compressed_segments, activity_id, is_planned)
 
     except Exception as e:
         logger.error(f"Error processing message: {e}")
@@ -117,6 +109,7 @@ def process_retry_message(message):
         group_id = data.get("groupId")
         retry_timestamp = data.get("retryTimestamp")
         retries = data.get("retries")
+        api_type = data.get("apiType")
 
         if not activity_id or not retry_timestamp:
             logger.warning("Received retry message without 'activityId' or 'retryTimestamp'")
@@ -133,7 +126,7 @@ def process_retry_message(message):
       
         logger.info(f"Retry time reached for activity ID {activity_id} group {group_id}. Processing message.")
         # Process the retry message
-        get_weather_data_from_api(activity_id, segment_ids, request_params, group_id, retries)
+        get_weather_data_from_api(api_type, activity_id, segment_ids, request_params, group_id, retries)
 
     except Exception as e:
         logger.error(f"Error processing retry message {e}")

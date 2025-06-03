@@ -5,7 +5,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 import time
-from app.counter_manager import RequestCounter
+from app.api.counter_manager import RequestCounter
 from app.exceptions import WeatherAPIException
 
 logger = logging.getLogger("app")
@@ -56,8 +56,13 @@ def generate_weather_variables_mapping():
     return weather_mapping, weather_variables
 
 def generate_request_parameters(reference_point, api_type="history"):
+    """
+    Generate OpenWeather API request params for the requested API
+    with the reference_point data.
+    """
     timestamp = int(reference_point["timestamp"].timestamp())
     coordinates = {"lat": reference_point["lat"], "lon": reference_point["lng"]}
+    logger.info(f"Generating request params for API {api_type} with timestamp {timestamp} and coordinates {coordinates}")
 
     if api_type == "history":
         return {
@@ -71,14 +76,16 @@ def generate_request_parameters(reference_point, api_type="history"):
             "lat": coordinates["lat"],
             "lon": coordinates["lon"],
             "exclude": "current,minutely,daily,alerts",
-            "units": "metric"
+            "units": "metric",
+            "dt": timestamp
         }
     elif api_type == "daily":
         return {
             "lat": coordinates["lat"],
             "lon": coordinates["lon"],
             "exclude": "current,minutely,hourly,alerts",
-            "units": "metric"
+            "units": "metric",
+            "dt": timestamp
         }
     elif api_type == "summary":
         date_str = reference_point["timestamp"].strftime("%Y-%m-%d")
@@ -90,55 +97,6 @@ def generate_request_parameters(reference_point, api_type="history"):
         }
     else:
         raise ValueError("Unsupported API type")
-
-def json_to_dataframe(response):
-    # Flatten the data
-    data = response['data'][0]
-    
-    # Extract the weather information and flatten it
-    weather = data.get('weather', [{}])[0]
-    
-    # Get the wind values
-    wind_speed = data.get('wind_speed', None)
-    wind_gust = data.get('wind_gust', None)
-    
-    # Compute the aggregated wind value
-    alpha = 0.7  # Adjust alpha to reflect the desired weighting
-    if wind_speed is not None and wind_gust is not None:
-        # If both wind_speed and wind_gust are available, calculate the weighted average
-        aggregated_wind = (alpha * wind_speed) + ((1 - alpha) * wind_gust)
-    elif wind_speed is not None:
-        # If only wind_speed is available, use it directly
-        aggregated_wind = wind_speed
-    elif wind_gust is not None:
-        # If only wind_gust is available, use it directly
-        aggregated_wind = wind_gust
-    else:
-        # If both are None, set aggregated_wind to None
-        aggregated_wind = None
-    # Limit the aggregated wind to 2 decimal places
-    if aggregated_wind is not None:
-        aggregated_wind = round(aggregated_wind, 2)
-
-
-    # Create a dictionary for the DataFrame columns with only necessary data
-    data_dict = {
-        'lat': response['lat'],
-        'lon': response['lon'],
-        'dt': data['dt'],
-        'temp': data.get('temp', None),
-        'feels_like': data.get('feels_like', None),
-        'humidity': data.get('humidity', None),
-        'wind': aggregated_wind,  
-        'weather_id': weather.get('id', None),
-        'weather_main': weather.get('main', None),
-        'weather_description': weather.get('description', None)
-    }
-
-    # Convert to DataFrame
-    df = pd.DataFrame([data_dict])
-    
-    return df
 
 def fetch_weather_data(params, api_type="history"):
     global request_counter
@@ -180,5 +138,4 @@ def fetch_weather_data(params, api_type="history"):
     except requests.exceptions.RequestException as err:
         logger.error(f"Request error: {err}")
         raise WeatherAPIException(f"Request failed: {err}")
-
 

@@ -2,9 +2,10 @@ import pytest
 import pandas as pd
 import random
 import requests
+from datetime import datetime
 import logging.config
 from unittest.mock import patch, MagicMock
-from app.openweather_api_service import generate_request_parameters, fetch_weather_data, json_to_dataframe
+from app.api.openweather_api_service import generate_request_parameters, fetch_weather_data
 from app.exceptions import WeatherAPIException
 
 logging.config.fileConfig("./logging.conf")
@@ -28,32 +29,7 @@ def test_generate_request_parameters(create_sample_dataframe):
         assert result["dt"] == expected_timestamp
         assert result["units"] == expected_units
 
-def test_json_to_dataframe():
-    # Mock a success response (status 200) of the API, with the OpenWeather example structure
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.json.return_value = {"lat":45.8844,"lon":8.2886,"timezone":"Europe/Rome","timezone_offset":7200,"data":[{"dt":1743397200,"sunrise":1743397716,"sunset":1743443585,"temp":-0.03,"feels_like":-3.97,"pressure":1014,"humidity":64,"dew_point":-5.34,"uvi":0,"clouds":0,"visibility":10000,"wind_speed":3.52,"wind_deg":328,"wind_gust":4.52,"weather":[{"id":800,"main":"Clear","description":"clear sky","icon":"01n"}]}]}
-    
-    result = json_to_dataframe(mock_response.json())
-
-    # Verify data are as expected
-    expected_length = 1
-    expected_dt = 1743397200  
-    expected_lat = 45.8844
-    expected_lon = 8.2886
-    expected_temp = -0.03
-    expected_wind =  3.82 # 3.52*0.7 + 4.52*0.3
-    expected_weather_description = "clear sky"
-       
-    assert len(result) == expected_length
-    assert result.iloc[0]["lat"] == expected_lat
-    assert result.iloc[0]["lon"] == expected_lon
-    assert result.iloc[0]["dt"] == expected_dt
-    assert result.iloc[0]["temp"] == expected_temp
-    assert result.iloc[0]["wind"] == expected_wind
-    assert result.iloc[0]["weather_description"] == expected_weather_description
- 
-def test_fetch_weather_data_success(create_sample_params):
+def test_fetch_history_weather_data_success(create_sample_params):
     # Mock a success response (status 200) of the API, with the OpenWeather example structure
     mock_response = MagicMock()
     mock_response.status_code = 200
@@ -91,9 +67,9 @@ def test_fetch_weather_data_success(create_sample_params):
 }
     
     # Mock of the function requests.get to return mock_response
-    with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.time.sleep', return_value=None), \
-         patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
+    with patch('app.api.openweather_api_service.requests.get', return_value=mock_response), \
+         patch('app.api.openweather_api_service.time.sleep', return_value=None), \
+         patch('app.api.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
         
         # Call fetch_weather_data
         result = fetch_weather_data(create_sample_params)
@@ -109,8 +85,8 @@ def test_fetch_weather_data_request_counter_limit(create_sample_params):
     mock_request_counter.increment.side_effect = Exception("Daily request limit reached")
 
     # Mock the rest of the function calls
-    with patch('app.openweather_api_service.RequestCounter', return_value=mock_request_counter), \
-         patch('app.openweather_api_service.time.sleep', return_value=None):
+    with patch('app.api.openweather_api_service.RequestCounter', return_value=mock_request_counter), \
+         patch('app.api.openweather_api_service.time.sleep', return_value=None):
         
         # Call fetch_weather_data
         try:
@@ -133,9 +109,9 @@ def test_fetch_weather_data_429(create_sample_params):
     mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("Too many requests")
   
     # Mock of the function requests.get to return mock_response
-    with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.time.sleep', return_value=None), \
-         patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
+    with patch('app.api.openweather_api_service.requests.get', return_value=mock_response), \
+         patch('app.api.openweather_api_service.time.sleep', return_value=None), \
+         patch('app.api.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
       
         # Call fetch_weather_data
         try:
@@ -164,9 +140,9 @@ def test_fetch_weather_data_error(create_sample_params):
     mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("Bad Request")
 
     # Mock of the function requests.get to return mock_response
-    with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.time.sleep', return_value=None), \
-         patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
+    with patch('app.api.openweather_api_service.requests.get', return_value=mock_response), \
+         patch('app.api.openweather_api_service.time.sleep', return_value=None), \
+         patch('app.api.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
    
         # Call fetch_weather_data
         try:
@@ -194,9 +170,9 @@ def test_fetch_weather_data_generic_error(create_sample_params):
     mock_response.raise_for_status.side_effect = requests.exceptions.ConnectTimeout("Connection timed out")
 
     # Mock of the function requests.get to return mock_response
-    with patch('app.openweather_api_service.requests.get', return_value=mock_response), \
-         patch('app.openweather_api_service.time.sleep', return_value=None), \
-         patch('app.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
+    with patch('app.api.openweather_api_service.requests.get', return_value=mock_response), \
+         patch('app.api.openweather_api_service.time.sleep', return_value=None), \
+         patch('app.api.counter_manager.RequestCounter.increment', autospec=True) as mock_increment:
    
         # Call fetch_weather_data
         try:
@@ -204,3 +180,66 @@ def test_fetch_weather_data_generic_error(create_sample_params):
         except  WeatherAPIException as e:
             assert str(e) == "Request failed: Connection timed out"
             assert e.status_code is None
+
+@pytest.fixture
+def reference_point():
+    return {
+        "lat": 46.0,
+        "lng": 8.0,
+        "timestamp": datetime(2024, 3, 30, 15, 8, 0)
+    }
+
+@pytest.mark.parametrize("api_type, expected_key", [
+    ("hourly", "hourly"),
+    ("daily", "daily"),
+    ("summary", "temperature")
+])
+def test_fetch_weather_data_success_for_each_api(reference_point, api_type, expected_key):
+    mock_json = {
+        "lat": reference_point["lat"],
+        "lon": reference_point["lng"]
+    }
+
+    if api_type == "summary":
+        mock_json.update({
+            "date": "2024-03-30",
+            "temperature": {
+                "morning": 275,
+                "afternoon": 280,
+                "evening": 278,
+                "night": 273
+            },
+            "humidity": {"afternoon": 80},
+            "pressure": {"afternoon": 1021},
+            "wind": {"max": {"speed": 4.2}}
+        })
+    else:
+        mock_json[expected_key] = [
+            {
+                "dt": 1709510400,
+                "temp": 280,
+                "humidity": 80,
+                "wind_speed": 2.5,
+                "wind_gust": 3.5,
+                "weather": [{
+                    "id": 800,
+                    "main": "Clear",
+                    "description": "clear sky"
+                }]
+            }
+        ]
+
+    with patch("app.api.openweather_api_service.requests.get") as mock_get, \
+         patch("app.api.openweather_api_service.time.sleep", return_value=None), \
+         patch("app.api.counter_manager.RequestCounter.increment", autospec=True):
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = mock_json
+        mock_get.return_value = mock_response
+
+        params = generate_request_parameters(reference_point, api_type=api_type)
+        result = fetch_weather_data(params, api_type=api_type)
+
+        assert result["lat"] == reference_point["lat"]
+        assert result["lon"] == reference_point["lng"]

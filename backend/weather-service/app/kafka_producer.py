@@ -8,7 +8,6 @@ import logging_setup
 from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 from kafka import KafkaProducer
-from app.openweather_api_service import generate_weather_variables_mapping
 
 # Load environment variables
 load_dotenv()
@@ -62,7 +61,7 @@ def send_weather_output(activity_id, weather_df, reference_point_id):
     except Exception as e:
         logger.error(f"Error sending weather info for Activity ID {activity_id}: {e} group {reference_point_id}")
 
-def send_retry_message(activity_id, segment_ids, group_id, request_params, retries):
+def send_retry_message(api_type,activity_id, segment_ids, group_id, request_params, retries):
     """Prepare the retry message with the reference point and request params and the retry timestamp"""
     # Compute the retry time based on Kafka max poll interval
     retry_time_seconds = int(KAFKA_RETRY_MAX_POLL_INTERVAL_MS)/1000 - 1
@@ -77,7 +76,8 @@ def send_retry_message(activity_id, segment_ids, group_id, request_params, retri
         "segmentIds": segment_ids,
         "groupId": group_id,
         "retryTimestamp": retry_timestamp,
-        "retries" : retries
+        "retries" : retries,
+        "apiType": api_type
     }
 
     # Send the message to Kafka

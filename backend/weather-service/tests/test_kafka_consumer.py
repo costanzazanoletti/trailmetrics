@@ -63,6 +63,7 @@ def test_retry_message_processing_with_delay(mock_sleep, mock_get_weather_data):
     segment_ids = ["2463829980-1", "2463829980-2"]
     group_id = "1_8"
     retries = 3
+    api_type = "history"
 
     message = {
         "activityId": activity_id,
@@ -70,7 +71,8 @@ def test_retry_message_processing_with_delay(mock_sleep, mock_get_weather_data):
         "segmentIds": segment_ids,
         "groupId": group_id,
         "retryTimestamp": retry_timestamp,
-        "retries": retries
+        "retries": retries,
+        "apiType": "history"
     }
 
     kafka_message = MagicMock()
@@ -82,7 +84,7 @@ def test_retry_message_processing_with_delay(mock_sleep, mock_get_weather_data):
 
     # Assertions
     mock_sleep.assert_called_once_with(retry_timestamp - int(datetime.now(timezone.utc).timestamp()))
-    mock_get_weather_data.assert_called_once_with(activity_id, segment_ids, request_params, group_id, retries)
+    mock_get_weather_data.assert_called_once_with(api_type,activity_id, segment_ids, request_params, group_id, retries)
 
 @patch('app.kafka_consumer.get_weather_data_from_api')
 @patch('time.sleep')
@@ -102,6 +104,7 @@ def test_retry_message_processing_immediately(mock_sleep, mock_get_weather_data)
     segment_ids = ["2463829980-1", "2463829980-2"]
     group_id = "1_8"
     retries = 3
+    api_type = "history"
 
     message = {
         "activityId": activity_id,
@@ -109,7 +112,8 @@ def test_retry_message_processing_immediately(mock_sleep, mock_get_weather_data)
         "segmentIds": segment_ids,
         "groupId": group_id,
         "retryTimestamp": retry_timestamp,
-        "retries": retries
+        "retries": retries,
+        "apiType": "history"
     }
 
     kafka_message = MagicMock()
@@ -121,4 +125,4 @@ def test_retry_message_processing_immediately(mock_sleep, mock_get_weather_data)
 
     # Assertions
     mock_sleep.assert_not_called()
-    mock_get_weather_data.assert_called_once_with(activity_id, segment_ids, request_params, group_id, retries)
+    mock_get_weather_data.assert_called_once_with(api_type,activity_id, segment_ids, request_params, group_id, retries)
