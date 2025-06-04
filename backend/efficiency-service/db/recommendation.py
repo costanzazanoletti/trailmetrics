@@ -3,7 +3,10 @@ from exceptions.exceptions import DatabaseException
 from sqlalchemy.exc import SQLAlchemyError
 
 def fetch_user_zone_segments(user_id, engine):
-    """Fetches user's segments with efficiency zone info"""
+    """
+    Fetches user's segments of historic activities
+    with efficiency zone info
+    """
     query = """
             select  
             s.segment_id ,
@@ -29,9 +32,10 @@ def fetch_user_zone_segments(user_id, engine):
             s.efficiency_score,
             sez.zone_among_similars, sez.zone_among_grade_category 
             FROM segments s 
-            JOIN segment_efficiency_zone sez 
+            JOIN segment_efficiency_zone sez
+            JOIN activities a ON s.activity_id = a.id 
             ON s.segment_id = sez.segment_id 
-            WHERE user_id = :user_id;
+            WHERE user_id = :user_id AND a.id > 0;
             """
     
     try:

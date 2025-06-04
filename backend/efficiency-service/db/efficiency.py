@@ -19,6 +19,7 @@ def fetch_efficiency_zone_input_df(connection, segment_ids=None, limit: int=None
         ) ss ON s.segment_id = ss.segment_id
         LEFT JOIN segment_efficiency_zone z ON s.segment_id = z.segment_id
         WHERE z.segment_id IS NULL OR ss.similarity_calculated_at > z.calculated_at
+        AND a.id > 0
     """
     params = {}
     if segment_ids:

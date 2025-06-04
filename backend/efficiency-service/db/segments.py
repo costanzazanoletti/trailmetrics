@@ -195,29 +195,33 @@ def weather_batch_insert_and_update_status(weather_df, activity_id, group_id, to
 
 def get_user_segments(connection, user_id):
     """
-    Retrieves all segments associated with a given user ID from the database and returns a Pandas DataFrame.
+    Retrieves all segments of historical activities
+    associated with a given user ID 
+    from the database and returns a Pandas DataFrame.
     """
     query = """
                 SELECT 
-                    segment_id, 
-                    activity_id, 
-                    grade_category,
-                    segment_length,        
-                    start_distance,       
-                    start_time,           
-                    start_altitude,       
-                    elevation_gain,       
-                    avg_gradient,    
-                    road_type,       
-                    surface_type,      
-                    temperature,         
-                    humidity,             
-                    wind,              
-                    weather_id, 
-                    cumulative_ascent,
-                    cumulative_descent
-                FROM segments
-                WHERE user_id = :user_id
+                s.segment_id, 
+                s.activity_id, 
+                s.grade_category,
+                s.segment_length,        
+                s.start_distance,       
+                s.start_time,           
+                s.start_altitude,       
+                s.elevation_gain,       
+                s.avg_gradient,    
+                s.road_type,       
+                s.surface_type,      
+                s.temperature,         
+                s.humidity,             
+                s.wind,              
+                s.weather_id, 
+                s.cumulative_ascent,
+                s.cumulative_descent
+            FROM segments s
+            JOIN activities a ON s.activity_id = a.id
+            WHERE s.user_id = :user_id
+            AND a.id > 0
             """
     return fetch_all_sql_df(connection, query, {"user_id": user_id})
     

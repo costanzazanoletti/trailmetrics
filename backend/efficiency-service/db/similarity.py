@@ -66,7 +66,10 @@ def delete_user_similarity_data(connection, user_id):
     logger.info(f"Deleted similarity data: {result.rowcount} rows affected.")
 
 def get_activity_status_fingerprint(connection, user_id):
-    """Get activities and activitys status for a given user, with fingerprint."""
+    """
+    Get activities (not planned) and activity status for a given user, 
+    with fingerprint.
+    """
     query = """
                 SELECT
                     COUNT(*) AS total_activities,
@@ -80,7 +83,7 @@ def get_activity_status_fingerprint(connection, user_id):
                     SELECT DISTINCT a.id AS activity_id, ast.segment_status, ast.terrain_status, ast.weather_status, ast.not_processable
                     FROM activities a
                     LEFT JOIN activity_status_tracker ast ON ast.activity_id = a.id
-                    WHERE a.athlete_id = :user_id
+                    WHERE a.athlete_id = :user_id and a.id > 0
                 ) sub;
             """
     return fetch_one_sql(connection, query, {"user_id": user_id})
@@ -120,7 +123,10 @@ def update_similarity_status_in_progress(engine, user_id, in_progress):
         raise DatabaseException(f"Database error: {e}")
     
 def mark_similarity_processed_for_user(engine, user_id):
-    """Set similarity_processed_at = now() for all valid activities of the user."""
+    """
+    Set similarity_processed_at = now() for all valid activities not planned
+    of the user.
+    """
     query = """
         UPDATE activity_status_tracker
         SET similarity_processed_at = now()
@@ -128,7 +134,9 @@ def mark_similarity_processed_for_user(engine, user_id):
             SELECT ast.activity_id
             FROM activity_status_tracker ast
             JOIN activities a ON ast.activity_id = a.id
-            WHERE a.athlete_id = :user_id AND ast.not_processable = false
+            WHERE a.athlete_id = :user_id 
+            AND ast.not_processable = false
+            AND a.id > 0
         );
     """
     with engine.begin() as connection:

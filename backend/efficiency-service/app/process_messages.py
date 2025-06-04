@@ -39,8 +39,12 @@ def process_segments_message(message):
             logger.info(f"Processing segments for {'planned ' if is_planned else ''}activity {activity_id}")
             process_segments(activity_id, is_planned, user_id, compressed_segments, engine)
         
-        # Check if similarity matrix should be computed
-        should_compute_similarity_for_user(engine, str(user_id))
+        if is_planned:
+            # Look for the latest model and apply recommendation 
+            logger.info("Find recommended speed and cadence from trained model")
+        else: 
+            # Check if similarity matrix should be computed
+            should_compute_similarity_for_user(engine, str(user_id))
 
     except Exception as e:
         logger.error(f"Error processing segments message: {e}")
