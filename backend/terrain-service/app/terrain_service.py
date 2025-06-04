@@ -58,7 +58,7 @@ def parse_kafka_segments(compressed_segments):
     segments_list = decompress_segments(compressed_segments) 
 
     if not segments_list:
-        print("No segments found") 
+        logger.info("No segments found") 
         return pd.DataFrame()
     
     df = pd.DataFrame(segments_list)
