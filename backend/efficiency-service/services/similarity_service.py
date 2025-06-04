@@ -152,7 +152,7 @@ def compute_similarity_matrix_by_grade(df, method, numeric_features, original_ca
                 similarity_matrices[grade_category] = (similarity_matrix, df_grade['segment_id'].tolist())
                 
             else:
-                print(f"No features available for similarity calculation in Grade Category {grade_category}.")
+                logger.warning(f"No features available for similarity calculation in Grade Category {grade_category}.")
 
         else:
             logger.info(f"Grade Category {grade_category} has only one segment and is not processed.")

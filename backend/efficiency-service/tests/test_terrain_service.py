@@ -19,7 +19,7 @@ def set_up(autouse=True):
         connection.commit()
 
 @pytest.fixture
-def load_sample_segments():
+def load_sample_terrain_segments():
     """Loads a real segments from a JSON file."""
     base_dir = os.path.dirname(os.path.abspath(__file__))
     file_path = os.path.join(base_dir, 'mock_terrain.json')
@@ -35,13 +35,13 @@ def load_sample_segments():
 
     return activity_id, compressed_terrain_info
 
-def test_process_terrain_info(load_sample_segments, set_up):
+def test_process_terrain_info(load_sample_terrain_segments, set_up):
     """
     Tests process_terrain_info with a real Kafka message.
     Stores data into the test Database.
     """
     # Load sample data
-    activity_id, compressed_terrain_info = load_sample_segments
+    activity_id, compressed_terrain_info = load_sample_terrain_segments
 
     # Use SQLAlchemy connection
     with engine.connect() as connection:
@@ -72,10 +72,10 @@ def test_process_terrain_info(load_sample_segments, set_up):
         assert terrain_status is True
 
 @patch('services.terrain_service.terrain_batch_insert_and_update_status')
-def test_process_terrain_info_with_database_exception(mock_store_segments, load_sample_segments, set_up):
+def test_process_terrain_info_with_database_exception(mock_store_segments, load_sample_terrain_segments, set_up):
     """Tests that process_terrain_info doesn't store any data when it handles a DatabaseException."""
     # Load sample data
-    activity_id, compressed_terrain_info = load_sample_segments
+    activity_id, compressed_terrain_info = load_sample_terrain_segments
 
     # Configure mock to raise a DatabaseException
     mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting terrain info.")

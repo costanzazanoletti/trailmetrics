@@ -10,13 +10,14 @@ from exceptions.exceptions import DatabaseException
 from db.setup import engine
 from db.core import execute_sql, fetch_one_sql
 
+@pytest.mark.parametrize("load_sample_segments", ["mock_segmentation.json"], indirect=True)
 def test_process_segments(load_sample_segments, set_up):
     """
     Tests process_segments_message.
     Stores data into the test Database.
     """
     # Load sample data
-    activity_id, user_id, compressed_segments = load_sample_segments
+    activity_id, user_id, compressed_segments, is_planned = load_sample_segments
 
     # Use SQLAlchemy connection
     with engine.connect() as connection:
@@ -27,7 +28,7 @@ def test_process_segments(load_sample_segments, set_up):
         ).scalar_one()
 
         # Call process_segments (assuming it now uses the engine)
-        process_segments(activity_id, user_id, compressed_segments, engine=engine)
+        process_segments(activity_id, is_planned, user_id, compressed_segments, engine=engine)
 
         # Check the number of segments after execution
         final_count = connection.execute(
@@ -46,11 +47,12 @@ def test_process_segments(load_sample_segments, set_up):
         assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
         assert segment_status is True
 
+@pytest.mark.parametrize("load_sample_segments", ["mock_segmentation.json"], indirect=True)
 @patch('services.segments_service.segments_batch_insert_and_update_status')
 def test_process_segments_with_database_exception(mock_store_segments, load_sample_segments, set_up):
     """Tests that process_segments_message doesn't store any data when it handles a DatabaseException."""
     # Load sample data
-    activity_id, user_id, compressed_segments = load_sample_segments
+    activity_id, user_id, compressed_segments, is_planned = load_sample_segments
 
     # Configure mock to raise a DatabaseException
     mock_store_segments.side_effect = DatabaseException("Database error occurred while inserting segments.")
@@ -62,7 +64,7 @@ def test_process_segments_with_database_exception(mock_store_segments, load_samp
             {"activity_id": activity_id}
         ).scalar_one()
 
-        process_segments(activity_id, user_id, compressed_segments, engine=engine)
+        process_segments(activity_id, is_planned, user_id, compressed_segments, engine=engine)
 
         final_count = connection.execute(
             text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
@@ -71,17 +73,18 @@ def test_process_segments_with_database_exception(mock_store_segments, load_samp
 
         assert final_count == initial_count, "Segments were inserted into the database"
 
+@pytest.mark.parametrize("load_sample_segments", ["mock_segmentation.json"], indirect=True)
 def test_process_segments_for_existing_activity(load_sample_segments, set_up):
     """
     Tests process_segments_message when the activity has already been processed.
     """
     # Load sample data
-    activity_id, user_id, compressed_segments = load_sample_segments
+    activity_id, user_id, compressed_segments, is_planned = load_sample_segments
 
     # Use SQLAlchemy connection
     with engine.connect() as connection:
         # Call process_segments (first time)
-        process_segments(activity_id, user_id, compressed_segments, engine=engine)
+        process_segments(activity_id, is_planned, user_id, compressed_segments, engine=engine)
 
         # Check the number of segments before the second call
         initial_count = connection.execute(
@@ -90,7 +93,7 @@ def test_process_segments_for_existing_activity(load_sample_segments, set_up):
         ).scalar_one()
 
         # Call process_segments a second time
-        process_segments(activity_id, user_id, compressed_segments, engine=engine)
+        process_segments(activity_id, is_planned, user_id, compressed_segments, engine=engine)
 
         # Check the number of segments after the second call
         final_count = connection.execute(
@@ -102,8 +105,8 @@ def test_process_segments_for_existing_activity(load_sample_segments, set_up):
         assert final_count == initial_count, "Segments were inserted into the database on the second call"
 
 def test_calculate_metrics():
-    # Sample data
-    segment = {
+    # Case 1: all values present
+    segment_full = {
         "segment_length": 100,
         "start_time": 0,
         "end_time": 45,
@@ -112,18 +115,14 @@ def test_calculate_metrics():
         "start_heartrate": 120,
         "end_heartrate": 130
     }
-    segment_df = pd.DataFrame([segment])
+    df_full = pd.DataFrame([segment_full])
+    result_full = calculate_metrics(df_full.iloc[0])
 
-    # Call function
-    result_segment = calculate_metrics(segment_df.iloc[0])
-
-    # Assertions
-    expected_avg_speed = 100/45
-    assert np.isclose(result_segment["avg_speed"], expected_avg_speed), f"Expected {expected_avg_speed}, got {result_segment['avg_speed']}"
-    expected_elevation_gain = 10
-    assert np.isclose(result_segment["elevation_gain"], expected_elevation_gain), f"Expected {expected_elevation_gain}, got {result_segment['elevation_gain']}"
-    expected_hr_drift = (130  - 120)
-    assert np.isclose(result_segment["hr_drift"], expected_hr_drift), f"Expected {expected_hr_drift}, got {result_segment['hr_drift']}"
+    assert np.isclose(result_full["avg_speed"], 100 / 45)
+    assert np.isclose(result_full["elevation_gain"], 10)
+    assert np.isclose(result_full["hr_drift"], 10)
+    assert np.isclose(result_full["avg_elev_speed"], 10 / 45)
+    assert result_full["time"] == 45
 
 def test_compute_efficiency_score():
     # Sample data
@@ -195,4 +194,45 @@ def test_success_process_deleted_activities(set_up):
             assert similarity_count[0] == 0
             assert status_count[0] == 0
             assert weather_progress_count[0] == 0
+
+@pytest.mark.parametrize("load_sample_segments", ["mock_planned_message.json"], indirect=True)
+def test_process_planned_segments(load_sample_segments, set_up):
+    """
+    Tests process_segments_message for planned activity.
+    Stores data into the test Database.
+    """
+    # Load sample data
+    activity_id, user_id, compressed_segments, is_planned = load_sample_segments
+    initial_count = 0
+    final_count = 0
     
+    # Check database initial status
+    with engine.begin() as connection:
+        # Check the number of segments before execution
+        initial_count = connection.execute(
+            text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
+            {"activity_id": activity_id}
+        ).scalar_one()
+        print(f"INITIAL COUNT {initial_count}")
+
+    # Call process_segments (assuming it now uses the engine)
+    process_segments(activity_id, is_planned, user_id, compressed_segments, engine=engine)
+    
+    # Check database final status
+    with engine.begin() as connection:
+        # Check the number of segments after execution
+        final_count = connection.execute(
+            text("SELECT COUNT(*) FROM segments WHERE activity_id = :activity_id"),
+            {"activity_id": activity_id}
+        ).scalar_one()
+
+        # Check that activity_status_tracker has been updated
+        segment_status = connection.execute(
+            text("SELECT segment_status FROM activity_status_tracker WHERE activity_id = :activity_id"),
+            {"activity_id": activity_id}
+        ).scalar_one()
+
+    # Assertion
+    expected_rows = 43 # segments in mock file
+    assert (final_count - initial_count) == expected_rows, "No segments were inserted into the database"
+    assert segment_status is True    

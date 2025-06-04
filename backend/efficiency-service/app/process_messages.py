@@ -18,6 +18,7 @@ def process_segments_message(message):
     try:
         data = message.value if isinstance(message.value, dict) else json.loads(message.value)
         activity_id = data.get("activityId")
+        is_planned = data.get("isPlanned")
         user_id = str(data.get("userId"))
         status = data.get("status")
         compressed_segments = data.get("compressedSegments")
@@ -35,8 +36,8 @@ def process_segments_message(message):
             logger.info(f"Saved activity status not processable for activity {activity_id}")
         else:
             # Process segments
-            logger.info(f"Processing segments for activity {activity_id}")
-            process_segments(activity_id, user_id, compressed_segments, engine)
+            logger.info(f"Processing segments for {'planned ' if is_planned else ''}activity {activity_id}")
+            process_segments(activity_id, is_planned, user_id, compressed_segments, engine)
         
         # Check if similarity matrix should be computed
         should_compute_similarity_for_user(engine, str(user_id))

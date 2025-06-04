@@ -23,7 +23,7 @@ def test_process_segments_terrain_weather(set_up, create_sample_data):
         ).scalar_one()
 
         # Call all services
-        process_segments(activity_id, user_id, compressed_segments_info, engine=engine)
+        process_segments(activity_id, False, user_id, compressed_segments_info, engine=engine)
         process_terrain_info(activity_id, compressed_terrain_info, engine=engine)  
         process_weather_info(activity_id, group_id[0], compressed_weather_info[0], engine=engine)  
         process_weather_info(activity_id, group_id[1], compressed_weather_info[1], engine=engine)  
@@ -66,7 +66,7 @@ def test_process_weather_segments_terrain_weather(set_up, create_sample_data):
 
         # Call all services in a different order
         process_weather_info(activity_id, group_id[0], compressed_weather_info[0], engine=engine) 
-        process_segments(activity_id, user_id, compressed_segments_info, engine=engine)
+        process_segments(activity_id, False, user_id, compressed_segments_info, engine=engine)
         process_terrain_info(activity_id, compressed_terrain_info, engine=engine)
         process_weather_info(activity_id, group_id[1], compressed_weather_info[1], engine=engine) 
 

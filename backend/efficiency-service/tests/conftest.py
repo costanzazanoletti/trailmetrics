@@ -155,10 +155,11 @@ def load_test_message(request):
     return mock_message
 
 @pytest.fixture
-def load_sample_segments():
+def load_sample_segments(request):
     """Loads a real segments from a JSON file."""
+    filename = request.param
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_dir, 'mock_segmentation.json')
+    file_path = os.path.join(base_dir, filename)
     with open(file_path, "r") as file:
         message_data = json.load(file)
 
@@ -168,9 +169,10 @@ def load_sample_segments():
     data = mock_message.value if isinstance(mock_message.value, dict) else json.loads(mock_message.value)
     activity_id = data.get("activityId")
     user_id = data.get("userId")
+    is_planned = data.get("isPlanned")
     compressed_segments = data.get("compressedSegments")
 
-    return activity_id, user_id, compressed_segments
+    return activity_id, user_id, compressed_segments, is_planned
 
 @pytest.fixture
 def mock_engine():

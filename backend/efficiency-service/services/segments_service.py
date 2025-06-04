@@ -2,6 +2,7 @@ import logging
 import logging_setup
 import os
 import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
 from exceptions.exceptions import DatabaseException
 from db.segments import segments_batch_insert_and_update_status, delete_all_data_by_activity_ids
@@ -15,7 +16,7 @@ EFFICIENCY_FACTOR_SCALE=float(os.getenv("EFFICIENCY_FACTOR_SCALE", "10.0"))
 EFFICIENCY_ELEVATION_WEIGHT=float(os.getenv("EFFICIENCY_FACTOR_SCALE", "1.0"))
 EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT=float(os.getenv("EFFICIENCY_FACTOR_SCALE", "1.0"))
 
-def process_segments(activity_id, user_id, compressed_segments, engine):
+def process_segments(activity_id, is_planned, user_id, compressed_segments, engine):
     """Processes segments and compute efficiency metrics and score"""
     try:
         # Extract segments DataFrame from Kafka message
@@ -23,10 +24,15 @@ def process_segments(activity_id, user_id, compressed_segments, engine):
         # Move column 'segment_id' in first position in the DataFrame
         cols = ['segment_id'] + [col for col in segments_df.columns if col != 'segment_id']
         segments_df = segments_df[cols]
-
-        # Add efficiency_score columng
-        segments_df = compute_efficiency_score(segments_df, EFFICIENCY_FACTOR_SCALE, EFFICIENCY_ELEVATION_WEIGHT, EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT)
-
+        
+        # Add efficiency_score column
+        if not is_planned:
+            segments_df = compute_efficiency_score(segments_df, EFFICIENCY_FACTOR_SCALE, EFFICIENCY_ELEVATION_WEIGHT, EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT)
+        else:
+            #print(f"\nINPUT SEGMENTS\n{segments_df.info()}")
+            segments_df = segments_df.apply(calculate_metrics_planned, axis=1) 
+            segments_df['efficiency_score'] = np.nan
+                
         # Add user_id column
         segments_df['user_id'] = user_id
 
@@ -67,6 +73,21 @@ def calculate_metrics(segment):
     segment["time"] = (segment["end_time"] - segment["start_time"])
     # Average vertical speed
     segment["avg_elev_speed"] = (abs(segment["elevation_gain"]) / segment["time"])
+
+    return segment
+
+def calculate_metrics_planned(segment):
+    """Adds columns with metrics"""
+    # Average speed
+    segment["avg_speed"] = None
+    # Elevation gain
+    segment["elevation_gain"] = segment["end_altitude"] - segment["start_altitude"]
+    # Heartrate drift
+    segment["hr_drift"] = None
+    # Time
+    segment["time"] = None
+    # Average vertical speed
+    segment["avg_elev_speed"] = None
 
     return segment
 
