@@ -7,7 +7,7 @@ from services.terrain_service import process_terrain_info
 from services.weather_service import process_weather_info
 from services.similarity_service import should_compute_similarity_for_user
 from services.efficiency_zone_service import calculate_efficiency_zones_for_segments
-from services.recommendation_service import train_model_for_user
+from services.recommendation_service import train_model_for_user, should_run_regression_for_planned_activity
 from db.activities import get_user_id_from_activity, insert_not_processable_activity_status
 
 # Setup logging
@@ -40,8 +40,8 @@ def process_segments_message(message):
             process_segments(activity_id, is_planned, user_id, compressed_segments, engine)
         
         if is_planned:
-            # Look for the latest model and apply recommendation 
-            logger.info("Find recommended speed and cadence from trained model")
+            # Check if activity is ready for recommedation
+            should_run_regression_for_planned_activity(user_id, activity_id, engine)
         else: 
             # Check if similarity matrix should be computed
             should_compute_similarity_for_user(engine, str(user_id))
@@ -63,8 +63,13 @@ def process_terrain_message(message):
 
         logger.info(f"Processing terrain info for activity {activity_id}")
         process_terrain_info(activity_id, compressed_terrain_info, engine)
-        # Check if similarity matrix should be computed
-        should_compute_similarity_for_user(engine, user_id)
+        
+        if activity_id < 0: # planned activity
+            # Check if activity is ready for recommedation
+            should_run_regression_for_planned_activity(user_id, activity_id, engine)
+        else:
+            # Check if similarity matrix should be computed
+            should_compute_similarity_for_user(engine, user_id)
 
     except Exception as e:
         logger.error(f"Error processing terrain message: {e}")
@@ -84,8 +89,14 @@ def process_weather_message(message):
 
         logger.info(f"Processing weather info for activity {activity_id}")
         process_weather_info(activity_id, group_id, compressed_weather_info, engine)
-        # Check if similarity matrix should be computed
-        should_compute_similarity_for_user(engine, user_id)
+        
+        if activity_id < 0: # planned activity
+            # Check if activity is ready for recommedation
+            should_run_regression_for_planned_activity(user_id, activity_id, engine)
+        else:
+            # Check if similarity matrix should be computed
+            should_compute_similarity_for_user(engine, user_id)
+
     except Exception as e:
         logger.error(f"Error processing weather message: {e}")
 
@@ -102,6 +113,7 @@ def process_deleted_activities_message(message):
             
         logger.info(f"Processing {len(deleted_activity_ids)} deleted activities for user {user_id}")
         process_deleted_activities(user_id, deleted_activity_ids)
+ 
         # Check if similarity matrix should be computed
         should_compute_similarity_for_user(engine, user_id)
 

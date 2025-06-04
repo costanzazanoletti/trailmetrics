@@ -90,6 +90,7 @@ CREATE TABLE activity_status_tracker (
     weather_status BOOLEAN DEFAULT FALSE,
     not_processable BOOLEAN DEFAULT FALSE,
     similarity_processed_at TIMESTAMPTZ,
+    prediction_executed_at TIMESTAMPTZ,
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

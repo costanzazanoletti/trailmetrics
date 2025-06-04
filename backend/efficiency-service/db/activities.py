@@ -3,7 +3,7 @@ import logging_setup
 from exceptions.exceptions import DatabaseException
 from sqlalchemy.exc import SQLAlchemyError
 from db.setup import engine
-from db.core import execute_sql, fetch_one_sql
+from db.core import execute_sql, fetch_one_sql, fetch_all_sql_df
 
 logger = logging.getLogger("app")
 
@@ -34,3 +34,7 @@ def get_user_id_from_activity(engine, activity_id):
     except SQLAlchemyError as e:
         raise DatabaseException(f"Database error: {e}")
     
+def fetch_all_user_ids(engine):
+    query = "SELECT DISTINCT athlete_id FROM activities"
+    with engine.begin() as connection:
+        return [row["athlete_id"] for row in fetch_all_sql_df(connection, query)]

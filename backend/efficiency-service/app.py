@@ -6,6 +6,7 @@ import os
 import signal
 from apscheduler.schedulers.background import BackgroundScheduler
 from services.efficiency_zone_service import run_efficiency_zone_batch
+from services.recommendation_service import run_batch_prediction_all_users
 from app.kafka_consumer import (
     start_kafka_segments_consumer, 
     start_kafka_terrain_consumer, 
@@ -48,8 +49,11 @@ def start_consumers():
     # Schedule batch efficiency zone calculation every 10 minutes
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_efficiency_zone_batch, 'interval', minutes=ZONE_COMPUTATION_SCHEDULE)
+    scheduler.add_job(run_batch_prediction_all_users, 'interval', minutes=ZONE_COMPUTATION_SCHEDULE)
+
     scheduler.start()
     logger.info(f"Scheduled batch efficiency zone calculation every {ZONE_COMPUTATION_SCHEDULE} minutes")
+    logger.info(f"Scheduled batch planned prediction every {ZONE_COMPUTATION_SCHEDULE} minutes")
 
     # Wait for all threads to finish
     try:
