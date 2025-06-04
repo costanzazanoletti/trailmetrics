@@ -54,5 +54,4 @@ def send_segmentation_output(activity_id, user_id, segments_df, processed_at, st
     # Send message to Kafka
     producer.send(KAFKA_TOPIC_OUTPUT, key=str(activity_id), value=kafka_message)
 
-    print(f"Sent segmentation message for activity {activity_id} with {len(segments_df)} segments.")
     logger.info(f"Sent segmentation message for activity {activity_id} with {len(segments_df)} segments.")

@@ -73,3 +73,25 @@ def sample_compressed_stream():
     
     return compressed_data
     
+@pytest.fixture
+def sample_planned_compressed_stream():
+    """
+    Creates a sample compressed JSON stream for planned activity (altitude + latlng only),
+    with distances and elevation changes large enough to trigger segmentation.
+    """
+    sample_stream = [
+        {"type": "altitude", "data": [100, 150, 100, 130, 90]},  # forti salite/discese
+        {"type": "latlng", "data": [
+            [46.142800, 8.469500],
+            [46.143800, 8.470500],  # ~140m
+            [46.144800, 8.471500],  # ~140m
+            [46.145800, 8.472500],  # ~140m
+            [46.146800, 8.473500]   # ~140m
+        ]}
+    ]
+    
+    json_data = json.dumps(sample_stream)
+    compressed_data = gzip.compress(json_data.encode("utf-8"))
+    
+    return compressed_data
+

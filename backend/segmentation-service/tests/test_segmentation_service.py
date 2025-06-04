@@ -1,7 +1,13 @@
 import pytest
 import pandas as pd
 import numpy as np
-from app.segmentation_service import preprocess_streams, create_segments, segment_activity, parse_kafka_stream
+from app.segmentation_service import (
+    preprocess_streams, 
+    create_segments, 
+    segment_activity, 
+    parse_kafka_stream,
+    segment_planned_activity
+    )
 
 def test_parse_kafka_stream(sample_compressed_stream):
     """
@@ -23,13 +29,18 @@ def test_segment_activity(sample_compressed_stream):
 
     assert isinstance(segments_df, pd.DataFrame), "Output should be a pandas DataFrame"
     assert not segments_df.empty, "Segmentation should produce at least one segment"
-    expected_columns = {"activity_id", "start_distance", "end_distance", "segment_length", 
-                        "avg_gradient", "avg_cadence", "movement_type", "type", "grade_category",
-                        "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude","end_altitude",
-                        "start_time", "end_time", "start_heartrate", "end_heartrate", "avg_heartrate"}
 
-    assert expected_columns.issubset(set(segments_df.columns)), f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
-    
+    expected_columns = {
+        "activity_id", "start_distance", "end_distance", "segment_length", 
+        "avg_gradient", "avg_cadence", "movement_type", "type", "grade_category",
+        "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude", "end_altitude",
+        "start_time", "end_time", "start_heartrate", "end_heartrate", "avg_heartrate",
+        "cumulative_ascent", "cumulative_descent"
+    }
+
+    assert expected_columns.issubset(set(segments_df.columns)), \
+        f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
+
     print("Segments created by segment_activity:")
     print(segments_df.head())
 
@@ -88,3 +99,27 @@ def test_create_segments():
     print("Segments created:")
     print(segments_df.head())
    
+def test_segment_planned_activity(sample_planned_compressed_stream):
+    """
+    Tests segment_planned_activity on a minimal planned stream with only latlng and altitude.
+    """
+    activity_id = -67890
+    duration = 3600
+    segments_df = segment_planned_activity(activity_id, sample_planned_compressed_stream, duration)
+
+    assert isinstance(segments_df, pd.DataFrame), "Output should be a pandas DataFrame"
+    assert not segments_df.empty, "Segmentation should produce at least one segment"
+
+    expected_columns = {
+        "activity_id", "start_distance", "end_distance", "segment_length", 
+        "avg_gradient", "avg_cadence", "movement_type", "type", "grade_category",
+        "start_lat", "start_lng", "end_lat", "end_lng", "start_altitude", "end_altitude",
+        "start_time", "end_time", "start_heartrate", "end_heartrate", "avg_heartrate",
+        "cumulative_ascent", "cumulative_descent"
+    }
+
+    assert expected_columns.issubset(set(segments_df.columns)), \
+        f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
+
+    print("Segments created by segment_planned_activity:")
+    print(segments_df.head())

@@ -236,6 +236,12 @@ def parse_planned_activity(compressed_stream, activity_id):
         })
         # Split lat and lon
         df[["lat", "lon"]] = pd.DataFrame(df["latlng"].tolist(), index=df.index)
+
+        # Compute cumulated ascent and descent
+        altitude_diff = df["altitude"].diff().fillna(0)
+        df["ascent_so_far"] = altitude_diff.clip(lower=0).cumsum()
+        df["descent_so_far"] = -altitude_diff.clip(upper=0).cumsum()
+        
         return df
     except Exception as e:
         logger.error(f"Error parsing planned activity stream for Activity {activity_id}: {e}")
@@ -254,12 +260,20 @@ def create_planned_segments(df, activity_id, config):
 
         if (grade_change > config["gradient_tolerance"] and segment_length >= config["min_segment_length"]) or segment_length > config["max_segment_length"]:
             avg_grade = np.mean(df["grade"].iloc[start_index:i])
+            avg_cadence = None
+            movement_type = None
+            avg_heartrate = None
+            start_heartrate = None
+            end_heartrate = None
+
             segment = {
                 "activity_id": activity_id,
                 "start_distance": df["distance"].iloc[start_index],
                 "end_distance": df["distance"].iloc[i - 1],
                 "segment_length": segment_length,
                 "avg_gradient": avg_grade,
+                "avg_cadence": avg_cadence,
+                "movement_type": movement_type,
                 "type": "uphill" if avg_grade > 0 else "downhill" if avg_grade < 0 else "flat",
                 "grade_category": round(avg_grade / config["classification_tolerance"]) * config["classification_tolerance"],
                 "start_lat": df["lat"].iloc[start_index],
@@ -267,11 +281,18 @@ def create_planned_segments(df, activity_id, config):
                 "end_lat": df["lat"].iloc[i - 1],
                 "end_lng": df["lon"].iloc[i - 1],
                 "start_altitude": df["altitude"].iloc[start_index],
-                "end_altitude": df["altitude"].iloc[i - 1]
+                "end_altitude": df["altitude"].iloc[i - 1],
+                "start_time": None,
+                "end_time": None,
+                "start_heartrate": start_heartrate,
+                "end_heartrate": end_heartrate,
+                "avg_heartrate": avg_heartrate,
+                "cumulative_ascent": df["ascent_so_far"].iloc[start_index],
+                "cumulative_descent": df["descent_so_far"].iloc[start_index],
             }
             segments.append(segment)
             start_index = i
-
+    
     return pd.DataFrame(segments) if segments else pd.DataFrame()
 
 def segment_planned_activity(activity_id, compressed_stream, duration):
