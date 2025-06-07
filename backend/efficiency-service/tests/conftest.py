@@ -5,9 +5,17 @@ import base64
 import pandas as pd
 import numpy as np
 import os
+import joblib
+from sklearn.dummy import DummyRegressor
+from sklearn.pipeline import Pipeline
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
 from unittest.mock import Mock, MagicMock
 from sqlalchemy import text
 from db.setup import engine
+from utils.models import get_model_paths
+
 
 def dataframe_to_compressed_json(df):
     """Helper function to convert a dataframe into compressed json"""
@@ -227,3 +235,48 @@ def sample_df_for_similarity_matrix():
         'weather_id': [100, 200, 100, 300]
     })
 
+# Recommendation
+@pytest.fixture
+def mock_df_from_csv():
+    return pd.read_csv("tests/mock_segments_with_zones.csv")
+
+
+@pytest.fixture
+def dummy_model_files():
+    user_id = 28658549
+
+    numeric = ['segment_length', 'avg_gradient', 'start_distance', 'start_altitude',
+               'temperature', 'humidity', 'wind', 'cumulative_ascent', 'cumulative_descent']
+    categorical = ['grouped_highway', 'grouped_surface']
+
+    preprocessor = ColumnTransformer([
+        ("num", Pipeline([
+            ("imputer", SimpleImputer(strategy="mean")),
+            ("scaler", StandardScaler())
+        ]), numeric),
+        ("cat", Pipeline([
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore"))
+        ]), categorical)
+    ])
+
+    pipeline = Pipeline([
+        ("preprocessor", preprocessor),
+        ("model", DummyRegressor(strategy="mean"))
+    ])
+
+    # Fit con dati dummy coerenti
+    X_dummy = pd.DataFrame({**{col: [0] for col in numeric}, **{col: ["a"] for col in categorical}})
+    y_dummy = [0]
+    pipeline.fit(X_dummy, y_dummy)
+
+    model_cad_path, model_spd_path = get_model_paths(user_id)
+    os.makedirs(os.path.dirname(model_cad_path), exist_ok=True)
+    joblib.dump(pipeline, model_cad_path)
+    joblib.dump(pipeline, model_spd_path)
+
+    yield user_id
+
+    for p in [model_cad_path, model_spd_path]:
+        if os.path.exists(p):
+            os.remove(p)

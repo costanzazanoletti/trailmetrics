@@ -57,7 +57,8 @@ def fetch_activity_status(activity_id, engine):
         """
     try:
         with engine.connect() as connection:
-            return fetch_one_sql(connection, query, {"activity_id": activity_id})
+            result = fetch_one_sql(connection, query, {"activity_id": activity_id})
+            return dict(result._mapping) if result else None
     except SQLAlchemyError as e:
         raise DatabaseException(f"An error occurred: {e}")
     

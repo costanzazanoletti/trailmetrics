@@ -126,6 +126,20 @@ def predict_for_planned_activity(user_id, activity_id, engine):
     df["estimated_time"] = df["segment_length"] / df["avg_speed"].replace(0, np.nan)
     df["start_time"] = np.cumsum([0] + df["estimated_time"].iloc[:-1].tolist())
     df["end_time"] = df["start_time"] + df["estimated_time"]
+    
+    # Check for invalid predictions
+    df["estimated_time"] = df["segment_length"] / df["avg_speed"].replace(0, np.nan)
+    invalid = df["estimated_time"].isna() | ~np.isfinite(df["estimated_time"])
+    if invalid.any():
+        logger.warning("Some predicted speeds are invalid or zero — setting estimated_time, start_time, end_time to None for those segments.")
+        df.loc[invalid, ["estimated_time", "start_time", "end_time"]] = None
+    else:
+        df["start_time"] = np.cumsum([0] + df["estimated_time"].iloc[:-1].tolist())
+        df["end_time"] = df["start_time"] + df["estimated_time"]
+    # Ensure NaNs are converted to None for safe DB insert
+    for col in ["avg_speed", "avg_cadence", "start_time", "end_time"]:
+        df[col] = df[col].apply(lambda x: None if pd.isna(x) or not np.isfinite(x) else x)
+
 
     # Insert in segments only the updated columns
     update_cols = ["segment_id", "avg_speed", "avg_cadence", "start_time", "end_time"]
