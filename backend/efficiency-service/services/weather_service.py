@@ -16,7 +16,7 @@ def process_weather_info(activity_id, group_id, compressed_weather_info, engine)
         weather_df = weather_df[columns_to_keep]
 
         # Add 'activity_id' column
-        weather_df['activity_id'] = weather_df['segment_id'].str.split('-').str[0].astype(int)
+        weather_df['activity_id'] = weather_df['segment_id'].apply(lambda s: int(s.rsplit('-', 1)[0]))
         
         # Get number of groups
         total_groups = int(group_id.split("_")[1])
