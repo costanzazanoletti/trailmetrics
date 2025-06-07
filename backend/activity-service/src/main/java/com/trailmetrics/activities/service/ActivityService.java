@@ -46,7 +46,7 @@ public class ActivityService {
   public Page<Activity> fetchUserPlannedActivities(Long userId, Pageable pageable) {
     Page<Activity> page = activityRepository.findByAthleteIdAndIsPlannedIsTrue(userId, pageable);
     page.forEach(activity ->
-        activity.setStatus(computePlanningStatus(activity))
+        activity.setStatus(computePlanningStatus(activity.getStatusTracker()))
     );
     return page;
   }
@@ -84,9 +84,18 @@ public class ActivityService {
     return ActivityStatus.CREATED;
   }
 
-  public ActivityStatus computePlanningStatus(Activity activity) {
-    // TO DO
-    // Check if activity is planned and if it has been processed
+  public ActivityStatus computePlanningStatus(ActivityStatusTracker tracker) {
+    if (tracker != null) {
+      if (tracker.isNotProcessable()) {
+        return ActivityStatus.NOT_PROCESSABLE;
+      }
+      if (tracker.getPredictionExecutedAt() != null) {
+        return ActivityStatus.PREDICTION_READY;
+      }
+      if (tracker.isTerrainStatus() && tracker.isWeatherStatus() && tracker.isSegmentStatus()) {
+        return ActivityStatus.DATA_READY;
+      }
+    }
     return ActivityStatus.CREATED;
   }
 

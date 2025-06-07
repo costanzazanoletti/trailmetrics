@@ -35,6 +35,9 @@ public class ActivityStatusTracker {
   @Column(name = "similarity_processed_at")
   private Instant similarityProcessedAt;
 
+  @Column(name = "prediction_executed_at")
+  private Instant predictionExecutedAt;
+
   @Column(name = "last_updated")
   private Instant lastUpdated;
 }
