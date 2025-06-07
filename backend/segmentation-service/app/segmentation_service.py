@@ -224,7 +224,7 @@ def parse_planned_activity(compressed_stream, activity_id):
             dist = haversine(latlng[i-1], latlng[i], unit=Unit.METERS)
             distances.append(distances[-1] + dist)
             elev_diff = altitude[i] - altitude[i - 1]
-            grade = elev_diff / dist if dist > 0 else 0.0
+            grade = (elev_diff / dist * 100) if dist > 0 else 0.0
             grades.append(grade)
 
         df = pd.DataFrame({
