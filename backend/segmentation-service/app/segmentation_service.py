@@ -260,7 +260,7 @@ def create_planned_segments(df, activity_id, config):
 
         if (grade_change > config["gradient_tolerance"] and segment_length >= config["min_segment_length"]) or segment_length > config["max_segment_length"]:
             elev_diff = df["altitude"].iloc[i - 1] - df["altitude"].iloc[start_index]
-            avg_grade = elev_diff / segment_length if segment_length > 0 else 0
+            avg_grade = (elev_diff / segment_length * 100) if segment_length > 0 else 0
             avg_cadence = None
             movement_type = None
             avg_heartrate = None

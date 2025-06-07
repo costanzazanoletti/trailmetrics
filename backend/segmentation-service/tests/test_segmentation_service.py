@@ -1,13 +1,23 @@
 import pytest
 import pandas as pd
 import numpy as np
+import logging
+import logging_setup
+from haversine import haversine, Unit
+import json
+import base64
+import gzip
 from app.segmentation_service import (
     preprocess_streams, 
     create_segments, 
     segment_activity, 
     parse_kafka_stream,
-    segment_planned_activity
+    segment_planned_activity,
+    parse_planned_activity
     )
+
+# Setup logging
+logger = logging.getLogger("app")
 
 def test_parse_kafka_stream(sample_compressed_stream):
     """
@@ -121,5 +131,49 @@ def test_segment_planned_activity(sample_planned_compressed_stream):
     assert expected_columns.issubset(set(segments_df.columns)), \
         f"Missing expected columns: {expected_columns - set(segments_df.columns)}"
 
-    print("Segments created by segment_planned_activity:")
-    print(segments_df.head())
+    logger.info(f"Segments created by segment_planned_activity:\n{segments_df.head()}")
+    logger.info(f"GRADIENTS:\n{segments_df[["avg_gradient"]].describe()}")
+
+def compress_stream(data):
+    raw = json.dumps(data).encode("utf-8")
+    return base64.b64encode(gzip.compress(raw)).decode("utf-8")
+
+def test_parse_planned_activity_gradient():
+    # Costruisci una traccia semplice con lat/lon distanti 1 km e 500 m (approssimato)
+    latlng = [
+        [46.0, 8.0],         # 0 m
+        [46.009, 8.0],       # ~1 km nord
+        [46.0135, 8.0],      # ~500 m nord
+        [46.0135, 8.0]       # fermo
+    ]
+    altitude = [
+        100.0,  # punto iniziale
+        200.0,  # +100 m => ~10% su 1 km
+        150.0,  # -50 m => ~-10% su 500 m
+        150.0   # piano
+    ]
+
+    stream_data = [
+        {"type": "latlng", "data": latlng},
+        {"type": "altitude", "data": altitude}
+    ]
+
+    compressed = compress_stream(stream_data)
+    compressed_stream = base64.b64decode(compressed)
+    df = parse_planned_activity(compressed_stream, activity_id=123)
+    logger.info(f"PARSED SEGMENTS\n{df}")
+    # Verifica lunghezza
+    assert len(df) == 4
+
+    # Verifica gradienti approssimati
+    assert pytest.approx(df["grade"].iloc[1], 0.5) == 10.0
+    assert pytest.approx(df["grade"].iloc[2], 0.5) == -10.0
+    assert pytest.approx(df["grade"].iloc[3], 0.1) == 0.0
+
+    # Verifica distanza cumulata
+    d1 = haversine(latlng[0], latlng[1], unit=Unit.METERS)
+    d2 = haversine(latlng[1], latlng[2], unit=Unit.METERS)
+    d3 = 0.0
+    assert pytest.approx(df["distance"].iloc[1], 1) == d1
+    assert pytest.approx(df["distance"].iloc[2], 1) == d1 + d2
+    assert pytest.approx(df["distance"].iloc[3], 1) == d1 + d2 + d3
