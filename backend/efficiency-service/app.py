@@ -7,6 +7,7 @@ import signal
 from apscheduler.schedulers.background import BackgroundScheduler
 from services.efficiency_zone_service import run_efficiency_zone_batch
 from services.recommendation_service import run_batch_prediction_all_users
+from db.setup import engine
 from app.kafka_consumer import (
     start_kafka_segments_consumer, 
     start_kafka_terrain_consumer, 
@@ -45,11 +46,14 @@ def start_consumers():
     # Run one efficiency zone calculation batch immediately
     logger.info("Running initial batch efficiency zone calculation...")
     run_efficiency_zone_batch()
+    # Run batch prediction immediately
+    logger.info("Running initial batch prediction...")
+    run_batch_prediction_all_users(engine)
     
     # Schedule batch efficiency zone calculation every 10 minutes
     scheduler = BackgroundScheduler()
     scheduler.add_job(run_efficiency_zone_batch, 'interval', minutes=ZONE_COMPUTATION_SCHEDULE)
-    scheduler.add_job(run_batch_prediction_all_users, 'interval', minutes=ZONE_COMPUTATION_SCHEDULE)
+    scheduler.add_job(run_batch_prediction_all_users, 'interval', minutes=ZONE_COMPUTATION_SCHEDULE, args=[engine])
 
     scheduler.start()
     logger.info(f"Scheduled batch efficiency zone calculation every {ZONE_COMPUTATION_SCHEDULE} minutes")

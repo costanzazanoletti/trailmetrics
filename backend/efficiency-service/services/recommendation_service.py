@@ -4,7 +4,7 @@ import joblib
 import os
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -24,17 +24,21 @@ logger = logging.getLogger("app")
 
 def train_model_for_user(user_id, engine):
     df = fetch_user_zone_segments(user_id, engine)
+    # Keep only segments with efficiency medium, high or very high
+    df = df[df["zone_among_similars"].isin(["medium", "high", "very_high"])]
+    
+    # Remove missing targets
+    df = df.dropna(subset=["avg_speed", "avg_cadence"])
     
     if len(df) < 50:
         logger.warning(f"Unable to train model for user {user_id}: {len(df)} segments are not enough.")
         return
     
-    logger.info(f"Training model for user {user_id}")
-
+    logger.info(f"Training model for user {user_id} with {len(df)} segments")
 
     # Preprocessing
-    df['grouped_highway'] = df['road_type'].apply(group_highway_for_analysis)
-    df['grouped_surface'] = df.apply(lambda row: group_surface_for_analysis(row['surface_type'], row['road_type']), axis=1)
+    df["grouped_highway"] = df["road_type"].apply(group_highway_for_analysis)
+    df["grouped_surface"] = df.apply(lambda row: group_surface_for_analysis(row["surface_type"], row["road_type"]), axis=1)
     
     numeric_features = ['segment_length', 'avg_gradient', 'start_distance', 'start_altitude',
                     'temperature', 'humidity', 'wind', 'cumulative_ascent', 'cumulative_descent']
@@ -44,35 +48,47 @@ def train_model_for_user(user_id, engine):
     y_cad = df["avg_cadence"]
     y_spd = df["avg_speed"]
 
-    preprocessor = ColumnTransformer([
-        ("num", Pipeline([
-            ("imputer", SimpleImputer(strategy="mean")),
-            ("scaler", StandardScaler())
-        ]), numeric_features),
-        ("cat", Pipeline([
-            ("imputer", SimpleImputer(strategy="most_frequent")),
-            ("onehot", OneHotEncoder(handle_unknown="ignore"))
-        ]), categorical_features)
-    ])
+    # Preprocessing pipeline
+    def make_preprocessor():
+        return ColumnTransformer([
+            ("num", Pipeline([
+                ("imputer", SimpleImputer(strategy="mean")),
+                ("scaler", StandardScaler())
+            ]), numeric_features),
+            ("cat", Pipeline([
+                ("imputer", SimpleImputer(strategy="most_frequent")),
+                ("onehot", OneHotEncoder(handle_unknown="ignore"))
+            ]), categorical_features)
+        ])
 
-    # Complete pipeline
     pipeline_cad = Pipeline([
-        ("preprocessor", preprocessor),
-        ("model", GradientBoostingRegressor(random_state=42))
+        ("preprocessor", make_preprocessor()),
+        ("model",RandomForestRegressor(
+            n_estimators=200,
+            min_samples_split=10,
+            min_samples_leaf=2,
+            max_features='sqrt',
+            max_depth=30,
+            random_state=42
+        ))
     ])
 
     pipeline_spd = Pipeline([
-        ("preprocessor", preprocessor),
-        ("model", GradientBoostingRegressor( random_state=42))
+        ("preprocessor", make_preprocessor()),
+        ("model", RandomForestRegressor(
+            n_estimators=300,
+            min_samples_split=5,
+            min_samples_leaf=1,
+            max_features='log2',
+            max_depth=None,
+            random_state=42
+        ))
     ])
 
-    # Train model
     pipeline_cad.fit(X, y_cad)
     pipeline_spd.fit(X, y_spd)
 
-    # Get model paths
     model_cad_path, model_spd_path = get_model_paths(user_id)
-    # Save the models
     joblib.dump(pipeline_cad, model_cad_path)
     joblib.dump(pipeline_spd, model_spd_path)
     logger.info(f"Saved models for user {user_id} in {model_spd_path.parent}")
@@ -203,7 +219,18 @@ def run_batch_prediction_for_user(user_id, engine):
     if not activity_ids:
         logger.info(f"No planned activities to predict for user {user_id}")
         return
+    
+    model_cad_path, model_spd_path = get_model_paths(user_id)
 
+    if not model_spd_path.exists() or not model_cad_path.exists():
+        logger.warning(f"No saved models for user {user_id} — checking if training is possible")
+        train_model_for_user(user_id, engine)
+
+        # Recheck
+        if not model_spd_path.exists() or not model_cad_path.exists():
+            logger.error(f"Training failed — models still not found for user {user_id}")
+            return
+        
     predicted = 0
     for activity_id in activity_ids:
         try:

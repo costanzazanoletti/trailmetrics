@@ -32,10 +32,9 @@ def fetch_user_zone_segments(user_id, engine):
             s.efficiency_score,
             sez.zone_among_similars, sez.zone_among_grade_category 
             FROM segments s 
-            JOIN segment_efficiency_zone sez
+            JOIN segment_efficiency_zone sez ON s.segment_id = sez.segment_id
             JOIN activities a ON s.activity_id = a.id 
-            ON s.segment_id = sez.segment_id 
-            WHERE user_id = :user_id AND a.id > 0;
+            WHERE a.athlete_id = :user_id AND a.id > 0;
             """
     
     try:
@@ -62,7 +61,6 @@ def fetch_activity_status(activity_id, engine):
     except SQLAlchemyError as e:
         raise DatabaseException(f"An error occurred: {e}")
     
-
 def fetch_planned_segments_for_prediction(activity_id, engine):
     """
     Fetches planned segments for a given activity_id, returning feature columns for prediction.
@@ -136,5 +134,9 @@ def fetch_candidate_planned_activities(user_id, engine):
           AND ast.prediction_executed_at IS NULL
           AND (ast.not_processable IS FALSE OR ast.not_processable IS NULL)
     """
-    with engine.begin() as connection:
-        return [row["activity_id"] for row in fetch_all_sql_df(connection, query, {"user_id": user_id})]
+    try:
+        with engine.begin() as connection:
+            df = fetch_all_sql_df(connection, query, {"user_id": user_id})
+            return df["activity_id"].tolist()
+    except SQLAlchemyError as e:
+        raise DatabaseException(f"An error occurred: {e}")

@@ -35,6 +35,10 @@ def get_user_id_from_activity(engine, activity_id):
         raise DatabaseException(f"Database error: {e}")
     
 def fetch_all_user_ids(engine):
-    query = "SELECT DISTINCT athlete_id FROM activities"
-    with engine.begin() as connection:
-        return [row["athlete_id"] for row in fetch_all_sql_df(connection, query)]
+    query = "SELECT DISTINCT athlete_id FROM activities WHERE id > 0"
+    try:
+        with engine.begin() as connection:
+            df = fetch_all_sql_df(connection, query)
+            return df["athlete_id"].tolist()
+    except SQLAlchemyError as e:
+        raise DatabaseException(f"An error occurred: {e}")
