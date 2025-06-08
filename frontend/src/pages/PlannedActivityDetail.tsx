@@ -14,7 +14,6 @@ import { ActivityHeader } from '../components/ActivityHeader';
 import { SegmentList } from '../components/SegmentList';
 import { CombinedChart } from '../components/CombinedChart';
 import { MapWithTrack } from '../components/MapWithTrack';
-import { computeDistanceFromLatLng } from '../utils/geospatialUtils';
 
 const PlannedActivityDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +22,9 @@ const PlannedActivityDetail = () => {
   const [segments, setSegments] = useState<Segment[]>([]);
   const [selectedSegment, setSelectedSegment] = useState<Segment | null>(null);
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
+  const [segmentWindow, setSegmentWindow] = useState<[number, number] | null>(
+    null
+  );
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -46,12 +48,48 @@ const PlannedActivityDetail = () => {
       .catch((err) => console.error('Error loading planned activity:', err));
   }, [id]);
 
-  const computedDistance = useMemo(() => {
-    if (!streams?.latlng) return [];
-    return computeDistanceFromLatLng(streams.latlng);
-  }, [streams?.latlng]);
+  useEffect(() => {
+    if (selectedSegment && streams?.distance) {
+      const startIdx = streams.distance.findIndex(
+        (d) => d >= selectedSegment.startDistance
+      );
+      const endIdx = streams.distance.findIndex(
+        (d) => d >= selectedSegment.endDistance
+      );
+      setHighlightIndex(startIdx);
+      setSegmentWindow([startIdx, endIdx]);
+    } else {
+      setSegmentWindow(null);
+    }
+  }, [selectedSegment, streams?.distance]);
 
-  if (!activity) {
+  useEffect(() => {
+    if (selectedSegment) {
+      const ref = segmentRefs.current.get(selectedSegment.segmentId);
+      if (ref) {
+        ref.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [selectedSegment]);
+
+  const interpolatedTime = useMemo(() => {
+    if (!streams?.distance || segments.length === 0) return [];
+
+    return streams.distance.map((d) => {
+      const seg = segments.find(
+        (s) => s.startDistance <= d && s.endDistance >= d
+      );
+      if (!seg?.startTime || !seg?.endTime) return 0;
+
+      const progress =
+        (d - seg.startDistance) / (seg.endDistance - seg.startDistance);
+      const interpolated =
+        seg.startTime + progress * (seg.endTime - seg.startTime);
+      return Math.round(interpolated);
+    });
+  }, [streams?.distance, segments]);
+
+  if (!activity || !streams) {
     return <p className="p-4 text-sm text-gray-500">Loading...</p>;
   }
 
@@ -73,30 +111,28 @@ const PlannedActivityDetail = () => {
         />
 
         <div className="flex-1 min-w-0 flex flex-col gap-6">
-          {streams && (
-            <>
-              <div className="h-[400px]">
-                <MapWithTrack
-                  latlng={streams.latlng}
-                  segments={segments}
-                  selectedSegmentId={selectedSegment?.segmentId}
-                  onSelectSegment={setSelectedSegment}
-                  highlightIndex={highlightIndex}
-                />
-              </div>
-              <CombinedChart
-                time={[]} // not available
-                altitude={streams.altitude}
-                distance={computedDistance}
-                segments={segments}
-                selectedSegmentId={selectedSegment?.segmentId}
-                onSegmentClick={setSelectedSegment}
-                onHoverIndexChange={setHighlightIndex}
-                highlightIndex={highlightIndex}
-                variant="altimetryOnly"
-              />
-            </>
-          )}
+          <div className="h-[400px]">
+            <MapWithTrack
+              latlng={streams.latlng}
+              segments={segments}
+              selectedSegmentId={selectedSegment?.segmentId}
+              onSelectSegment={setSelectedSegment}
+              highlightIndex={highlightIndex}
+            />
+          </div>
+          <CombinedChart
+            time={interpolatedTime}
+            altitude={streams.altitude}
+            distance={streams.distance}
+            grade={streams.grade}
+            segments={segments}
+            selectedSegmentId={selectedSegment?.segmentId}
+            onSegmentClick={setSelectedSegment}
+            onHoverIndexChange={setHighlightIndex}
+            highlightIndex={highlightIndex}
+            segmentWindow={segmentWindow}
+            variant="altimetryOnly"
+          />
         </div>
       </div>
 

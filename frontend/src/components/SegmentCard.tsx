@@ -10,6 +10,7 @@ import { getShortSegmentId } from '../utils/formatUtils';
 import { Segment } from '../types/activity';
 import { formatPace } from '../utils/formatUtils';
 import { EfficiencyIcon } from './EfficiencyIcon';
+import { formatTime } from '../utils/formatUtils';
 
 type SegmentCardVariant = 'full' | 'compact' | 'planned';
 
@@ -50,6 +51,7 @@ export function SegmentCard({
 
   const roadType = segment.roadType ?? 'N/A';
   const surfaceType = segment.surfaceType ?? 'N/A';
+  const startTime = segment.startTime ?? 'N/A';
 
   const weatherIconClass = segment.weatherIcon
     ? `wi ${segment.weatherIcon}`
@@ -86,9 +88,11 @@ export function SegmentCard({
           <span className="text-xs text-gray-500 mb-2">
             #{isSameActivity ? shortId : segment.segmentId}
           </span>
+          <span className="text-xs text-gray-400">{formatTime(startTime)}</span>
           <span>{avgGradient}% grade</span>
           <span>{avgCadence} spm cadence</span>
         </div>
+
         {showEfficiency && onShowSimilar ? (
           <div
             className="relative group cursor-pointer"
