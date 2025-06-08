@@ -41,7 +41,7 @@ def test_process_planned_message_success(mock_send_output, load_planned_test_mes
     process_message(load_planned_test_message)
     mock_send_output.assert_called_once()
     args, kwargs = mock_send_output.call_args
-    assert args[0] == -1748617807957  # activity_id
+    assert args[0] == -1749396756808  # activity_id
     assert args[1] == "28658549"      # user_id
     assert isinstance(args[2], pd.DataFrame) and not args[2].empty  # segments_df
     assert args[5] == "success"

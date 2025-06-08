@@ -203,7 +203,10 @@ def segment_activity(activity_id, compressed_stream):
     return create_segments(df, activity_id, config)
 
 def parse_planned_activity(compressed_stream, activity_id):
-    """Parses a minimal planned activity stream (latlng, altitude) and computes distance and grade."""
+    """
+    Parses a planned activity stream and returns a DataFrame with latlng, altitude, distance, grade, ascent and descent.
+    Assumes distance and grade are already present in the stream.
+    """
     stream_list = decompress_stream(compressed_stream)
     if not stream_list:
         return pd.DataFrame()
@@ -212,37 +215,34 @@ def parse_planned_activity(compressed_stream, activity_id):
         stream_dict = {entry["type"]: entry["data"] for entry in stream_list}
         latlng = stream_dict.get("latlng", [])
         altitude = stream_dict.get("altitude", [])
+        distance = stream_dict.get("distance", [])
+        grade = stream_dict.get("grade", [])
 
-        if not latlng or not altitude or len(latlng) != len(altitude):
-            logger.error(f"Inconsistent latlng/altitude data for Activity {activity_id}")
+        if not (latlng and altitude and distance and grade):
+            logger.error(f"Incomplete stream data for Activity {activity_id}")
             return pd.DataFrame()
 
-    
-        distances = [0.0]
-        grades = [0.0]
-        for i in range(1, len(latlng)):
-            dist = haversine(latlng[i-1], latlng[i], unit=Unit.METERS)
-            distances.append(distances[-1] + dist)
-            elev_diff = altitude[i] - altitude[i - 1]
-            grade = (elev_diff / dist * 100) if dist > 0 else 0.0
-            grades.append(grade)
+        if not (len(latlng) == len(altitude) == len(distance) == len(grade)):
+            logger.error(f"Stream length mismatch for Activity {activity_id}")
+            return pd.DataFrame()
 
         df = pd.DataFrame({
             "latlng": latlng,
             "altitude": altitude,
-            "distance": distances,
-            "grade": grades,
+            "distance": distance,
+            "grade": grade,
             "activity_id": activity_id
         })
-        # Split lat and lon
+
         df[["lat", "lon"]] = pd.DataFrame(df["latlng"].tolist(), index=df.index)
 
         # Compute cumulated ascent and descent
         altitude_diff = df["altitude"].diff().fillna(0)
         df["ascent_so_far"] = altitude_diff.clip(lower=0).cumsum()
         df["descent_so_far"] = -altitude_diff.clip(upper=0).cumsum()
-        
+
         return df
+
     except Exception as e:
         logger.error(f"Error parsing planned activity stream for Activity {activity_id}: {e}")
         return pd.DataFrame()
