@@ -24,7 +24,7 @@ def process_segments(activity_id, is_planned, user_id, compressed_segments, engi
         # Move column 'segment_id' in first position in the DataFrame
         cols = ['segment_id'] + [col for col in segments_df.columns if col != 'segment_id']
         segments_df = segments_df[cols]
-        
+
         # Add efficiency_score column
         if not is_planned:
             segments_df = compute_efficiency_score(segments_df, EFFICIENCY_FACTOR_SCALE, EFFICIENCY_ELEVATION_WEIGHT, EFFICIENCY_FACTOR_HR_DRIFT_WEIGHT)

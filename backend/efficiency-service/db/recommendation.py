@@ -63,7 +63,7 @@ def fetch_activity_status(activity_id, engine):
     
 def fetch_planned_segments_for_prediction(activity_id, engine):
     """
-    Fetches planned segments for a given activity_id, returning feature columns for prediction.
+    Fetches planned segments for a given activity_id, returning columns required for prediction.
     """
     query = """
         SELECT 
@@ -71,6 +71,7 @@ def fetch_planned_segments_for_prediction(activity_id, engine):
             user_id,
             segment_length,
             start_distance,
+            end_distance,
             avg_gradient,
             start_altitude,
             elevation_gain,
@@ -91,10 +92,12 @@ def fetch_planned_segments_for_prediction(activity_id, engine):
     except Exception as e:
         raise DatabaseException(f"Failed to fetch planned segments: {e}")
 
-def update_segment_predictions(activity_id, segments_df, engine):
+def update_prediction_and_activity_info(engine, activity_id, segments_data):
     """
-    Updates segments table with predicted speed, cadence, and estimated timing.
+    Updates predicted values in segments and overall activity info (moving_time, distance, total_elevation_gain)
+    using the last segment's values. Executes all updates in a single transaction.
     """
+
     update_segments_query = """
         UPDATE segments
         SET 
@@ -105,18 +108,44 @@ def update_segment_predictions(activity_id, segments_df, engine):
             last_updated = CURRENT_TIMESTAMP
         WHERE segment_id = :segment_id
     """
+
+    update_activity_query = """
+        UPDATE activities
+        SET 
+            moving_time = :moving_time,
+            distance = :distance,
+            total_elevation_gain = :gain
+        WHERE id = :activity_id
+    """
+
     update_status_query = """
         UPDATE activity_status_tracker
         SET prediction_executed_at = CURRENT_TIMESTAMP
         WHERE activity_id = :activity_id
     """
+
+    # Find the last valid segment
+    valid_segments = [s for s in segments_data if s.get("end_time") is not None]
+    if not valid_segments:
+        raise DatabaseException("No valid segments found for prediction update.")
+
+    last_segment = max(valid_segments, key=lambda s: s["end_time"])
+    moving_time = last_segment["end_time"]
+    distance = last_segment["end_distance"]
+    gain = last_segment.get("cumulative_ascent", 0)
+
     try:
         with engine.begin() as connection:
-            data = segments_df.to_dict(orient="records")
-            execute_sql_batch(connection, update_segments_query, data)
+            execute_sql_batch(connection, update_segments_query, segments_data)
+            execute_sql(connection, update_activity_query, {
+                "activity_id": activity_id,
+                "moving_time": moving_time,
+                "distance": distance,
+                "gain": gain
+            })
             execute_sql(connection, update_status_query, {"activity_id": activity_id})
     except Exception as e:
-        raise DatabaseException(f"Failed to update segment predictions: {e}")
+        raise DatabaseException(f"Prediction update failed for activity {activity_id}: {e}")
 
 def fetch_candidate_planned_activities(user_id, engine):
     """

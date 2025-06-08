@@ -14,7 +14,7 @@ from utils.models import get_model_paths
 from db.recommendation import (
     fetch_user_zone_segments, 
     fetch_activity_status, 
-    update_segment_predictions,
+    update_prediction_and_activity_info,
     fetch_planned_segments_for_prediction,
     fetch_candidate_planned_activities
     )
@@ -126,41 +126,38 @@ def predict_for_planned_activity(user_id, activity_id, engine):
         logger.info(f"No saved models for user {user_id}")
         return
 
-    X = preprocess_segments_for_prediction(df)
+    df_features = df.copy()
+    X = preprocess_segments_for_prediction(df_features)
 
-    if "speed_model" in models:
-        df["avg_speed"] = models["speed_model"].predict(X)
-    else:
-        df["avg_speed"] = np.nan
+    df["avg_speed"] = models.get("speed_model").predict(X) if "speed_model" in models else np.nan
+    df["avg_cadence"] = models.get("cadence_model").predict(X) if "cadence_model" in models else np.nan
 
-    if "cadence_model" in models:
-        df["avg_cadence"] = models["cadence_model"].predict(X)
-    else:
-        df["avg_cadence"] = np.nan
-
-    # Compute the estimated time and update start_time / end_time
+    # Compute duration, start_time and end_time
     df["estimated_time"] = df["segment_length"] / df["avg_speed"].replace(0, np.nan)
     df["start_time"] = np.cumsum([0] + df["estimated_time"].iloc[:-1].tolist())
     df["end_time"] = df["start_time"] + df["estimated_time"]
-    
-    # Check for invalid predictions
-    df["estimated_time"] = df["segment_length"] / df["avg_speed"].replace(0, np.nan)
+
+    # Clean invalid values
     invalid = df["estimated_time"].isna() | ~np.isfinite(df["estimated_time"])
     if invalid.any():
-        logger.warning("Some predicted speeds are invalid or zero — setting estimated_time, start_time, end_time to None for those segments.")
+        logger.warning("Invalid or zero speeds found — nullifying time fields for affected segments.")
         df.loc[invalid, ["estimated_time", "start_time", "end_time"]] = None
-    else:
-        df["start_time"] = np.cumsum([0] + df["estimated_time"].iloc[:-1].tolist())
-        df["end_time"] = df["start_time"] + df["estimated_time"]
-    # Ensure NaNs are converted to None for safe DB insert
+
+    # Convert values for db insert
     for col in ["avg_speed", "avg_cadence", "start_time", "end_time"]:
         df[col] = df[col].apply(lambda x: None if pd.isna(x) or not np.isfinite(x) else x)
 
+    # Prepare data
+    update_cols = ["segment_id", "avg_speed", "avg_cadence", "start_time", "end_time", "segment_length", "end_distance", "cumulative_ascent"]
+    segments_data = df[update_cols].to_dict("records")
+    
+    
+    
+    # Execute update
+    update_prediction_and_activity_info(engine, activity_id, segments_data)
 
-    # Insert in segments only the updated columns
-    update_cols = ["segment_id", "avg_speed", "avg_cadence", "start_time", "end_time"]
-    update_segment_predictions(activity_id, df[update_cols], engine)
     logger.info(f"Completed prediction for activity {activity_id}")
+
 
 def load_saved_models(user_id, engine=None):
     """

@@ -243,7 +243,7 @@ def mock_df_from_csv():
 
 @pytest.fixture
 def dummy_model_files():
-    user_id = 28658549
+    user_id = 999
 
     numeric = ['segment_length', 'avg_gradient', 'start_distance', 'start_altitude',
                'temperature', 'humidity', 'wind', 'cumulative_ascent', 'cumulative_descent']
@@ -260,23 +260,29 @@ def dummy_model_files():
         ]), categorical)
     ])
 
-    pipeline = Pipeline([
+    # Dummy pipeline for speed (e.g. 3.5 m/s ≈ 4:45 min/km)
+    pipeline_spd = Pipeline([
         ("preprocessor", preprocessor),
-        ("model", DummyRegressor(strategy="mean"))
+        ("model", DummyRegressor(strategy="constant", constant=3.5))
+    ])
+    # Dummy pipeline for cadence (e.g. 85 spm)
+    pipeline_cad = Pipeline([
+        ("preprocessor", preprocessor),
+        ("model", DummyRegressor(strategy="constant", constant=85))
     ])
 
-    # Fit con dati dummy coerenti
     X_dummy = pd.DataFrame({**{col: [0] for col in numeric}, **{col: ["a"] for col in categorical}})
-    y_dummy = [0]
-    pipeline.fit(X_dummy, y_dummy)
+    pipeline_spd.fit(X_dummy, [3.5])
+    pipeline_cad.fit(X_dummy, [85])
 
     model_cad_path, model_spd_path = get_model_paths(user_id)
     os.makedirs(os.path.dirname(model_cad_path), exist_ok=True)
-    joblib.dump(pipeline, model_cad_path)
-    joblib.dump(pipeline, model_spd_path)
+    joblib.dump(pipeline_cad, model_cad_path)
+    joblib.dump(pipeline_spd, model_spd_path)
 
     yield user_id
 
     for p in [model_cad_path, model_spd_path]:
         if os.path.exists(p):
             os.remove(p)
+
