@@ -129,8 +129,8 @@ def update_prediction_and_activity_info(engine, activity_id, segments_data):
     if not valid_segments:
         raise DatabaseException("No valid segments found for prediction update.")
 
-    last_segment = max(valid_segments, key=lambda s: s["end_time"])
-    moving_time = last_segment["end_time"]
+    last_segment = max(valid_segments, key=lambda s: s["end_distance"])
+    moving_time = last_segment.get("end_time", 0)
     distance = last_segment["end_distance"]
     gain = last_segment.get("cumulative_ascent", 0)
 
