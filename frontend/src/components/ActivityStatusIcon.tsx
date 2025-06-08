@@ -6,7 +6,10 @@ interface ActivityStatusIconProps {
 }
 
 export function ActivityStatusIcon({ status }: ActivityStatusIconProps) {
-  if (status === ActivityStatus.SIMILARITY_READY) {
+  if (
+    status === ActivityStatus.SIMILARITY_READY ||
+    status === ActivityStatus.PREDICTION_READY
+  ) {
     return (
       <span title="Ready">
         <CheckCircle className="text-green-500 inline" />

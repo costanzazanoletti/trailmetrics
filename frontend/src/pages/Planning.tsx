@@ -19,14 +19,33 @@ const Planning = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    setIsLoading(true);
-    fetchPlannedActivities(page, 10)
-      .then((res) => {
-        setActivities(res.content.map(mapActivityFromApi));
-        setTotalPages(res.totalPages);
-      })
-      .catch((err) => console.error('Fetch error:', err))
-      .finally(() => setIsLoading(false));
+    let interval: ReturnType<typeof setInterval>;
+
+    const loadPlannedActivities = () => {
+      setIsLoading(true);
+      fetchPlannedActivities(page, 10)
+        .then((res) => {
+          setActivities(res.content.map(mapActivityFromApi));
+          setTotalPages(res.totalPages);
+
+          const allReady = res.content.every(
+            (a) => a.status === ActivityStatus.PREDICTION_READY
+          );
+          if (res.content.length > 0 && allReady) {
+            clearInterval(interval);
+          }
+        })
+        .catch((err) => console.error('Fetch error:', err))
+        .finally(() => setIsLoading(false));
+    };
+
+    loadPlannedActivities(); // initial
+
+    interval = setInterval(() => {
+      loadPlannedActivities();
+    }, 10000);
+
+    return () => clearInterval(interval);
   }, [page]);
 
   const goToNextPage = () => {
