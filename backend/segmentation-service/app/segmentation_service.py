@@ -216,7 +216,7 @@ def parse_planned_activity(compressed_stream, activity_id):
         latlng = stream_dict.get("latlng", [])
         altitude = stream_dict.get("altitude", [])
         distance = stream_dict.get("distance", [])
-        grade = stream_dict.get("grade", [])
+        grade = stream_dict.get("grade_smooth", [])
 
         if not (latlng and altitude and distance and grade):
             logger.error(f"Incomplete stream data for Activity {activity_id}")
