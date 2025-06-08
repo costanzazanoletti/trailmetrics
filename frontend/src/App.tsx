@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard';
 import Planning from './pages/Planning';
 import ActivityDetail from './pages/ActivityDetail';
 import PlanActivity from './pages/PlanActivity';
+import PlannedActivityDetail from './pages/PlannedActivityDetail';
 
 function App() {
   return (
@@ -22,14 +23,8 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/planning/create" element={<PlanActivity />} />
-          <Route
-            path="/activities/:id"
-            element={
-              <ProtectedRoute>
-                <ActivityDetail />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/planning/:id" element={<PlannedActivityDetail />} />
+          <Route path="/activities/:id" element={<ActivityDetail />} />
         </Route>
 
         {/* Public routes (login) */}

@@ -3,9 +3,13 @@ import { CamelCaseActivity } from '../mappers/activityMapper';
 
 interface ActivityHeaderProps {
   activity: CamelCaseActivity;
+  planned?: boolean;
 }
 
-export function ActivityHeader({ activity }: ActivityHeaderProps) {
+export function ActivityHeader({
+  activity,
+  planned = false,
+}: ActivityHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
       <div>
@@ -22,7 +26,8 @@ export function ActivityHeader({ activity }: ActivityHeaderProps) {
           <strong>Distance:</strong> {(activity.distance / 1000).toFixed(2)} km
         </div>
         <div>
-          <strong>Duration:</strong> {formatTime(activity.movingTime)}
+          <strong>{planned ? 'Planned duration' : 'Duration'}:</strong>{' '}
+          {formatTime(activity.movingTime)}
         </div>
         <div>
           <strong>Elevation:</strong> {activity.totalElevationGain} m

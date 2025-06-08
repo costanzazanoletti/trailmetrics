@@ -6,6 +6,7 @@ import {
   CamelCaseActivity,
 } from '../mappers/activityMapper';
 import { formatDuration } from '../utils/formatUtils';
+import { ActivityStatus } from '../types/activity';
 import { ActivityStatusIcon } from '../components/ActivityStatusIcon';
 import { PlusCircle } from 'lucide-react';
 
@@ -66,7 +67,7 @@ const Planning = () => {
                   <th className="px-4 py-2">Date</th>
                   <th className="px-4 py-2">Name</th>
                   <th className="px-4 py-2">Distance (km)</th>
-                  <th className="px-4 py-2">Time</th>
+                  <th className="px-4 py-2">Planned Time</th>
                   <th className="px-4 py-2">Elevation (m)</th>
                   <th className="px-4 py-2 text-center">Status</th>
                 </tr>
@@ -81,7 +82,24 @@ const Planning = () => {
                     <td className="px-4 py-2">
                       {new Date(activity.startDate).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-2">{activity.name}</td>
+                    <td className="px-4 py-2">
+                      {activity.status == ActivityStatus.PREDICTION_READY ? (
+                        <Link
+                          to={`/planning/${activity.id}`}
+                          state={{ fromPage: page }}
+                          className="text-brand-sage hover:underline"
+                        >
+                          {activity.name}
+                        </Link>
+                      ) : (
+                        <span
+                          className="text-gray-500 cursor-not-allowed"
+                          title="Activity not ready"
+                        >
+                          {activity.name}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-2">
                       {(activity.distance / 1000).toFixed(2)}
                     </td>

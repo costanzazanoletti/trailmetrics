@@ -33,8 +33,10 @@ export function formatPace(speed: number | undefined) {
   return `${paceMin}:${paceSec.toString().padStart(2, '0')}/km`;
 }
 
-export const getShortSegmentId = (segmentId: string) =>
-  segmentId.includes('-') ? segmentId.split('-')[1] : segmentId;
+export const getShortSegmentId = (segmentId: string) => {
+  const parts = segmentId.split('-');
+  return parts[parts.length - 1];
+};
 
 export function getGradeCategoryRange(gradeCategory: number): [number, number] {
   const halfWidth = 1.25; // 2.5 / 2

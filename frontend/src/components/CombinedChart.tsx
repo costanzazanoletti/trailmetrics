@@ -17,44 +17,46 @@ import { Segment } from '../types/activity';
 interface CombinedChartProps {
   time: number[];
   altitude: number[];
-  heartrate: number[];
-  cadence: number[];
-  speed: number[];
+  heartrate?: number[];
+  cadence?: number[];
+  speed?: number[];
   distance: number[];
-  grade: number[];
-  onHoverIndexChange?: (index: number) => void;
-  highlightIndex?: number | null;
+  grade?: number[];
   segments?: Segment[];
   selectedSegmentId?: string;
   onSegmentClick?: (segment: Segment) => void;
+  onHoverIndexChange?: (index: number) => void;
+  highlightIndex?: number | null;
+  variant?: 'full' | 'altimetryOnly';
 }
 
 export function CombinedChart({
   time,
   altitude,
-  heartrate,
-  cadence,
-  speed,
+  heartrate = [],
+  cadence = [],
+  speed = [],
   distance,
-  grade,
-  onHoverIndexChange,
-  highlightIndex,
+  grade = [],
   segments = [],
   selectedSegmentId,
   onSegmentClick,
+  onHoverIndexChange,
+  highlightIndex,
+  variant = 'full',
 }: CombinedChartProps) {
-  const [showHeartRate, setShowHeartRate] = useState(true);
+  const [showHeartRate, setShowHeartRate] = useState(variant === 'full');
   const [showCadence, setShowCadence] = useState(false);
   const [showPace, setShowPace] = useState(false);
 
-  if (altitude.length === 0) return <p>No data</p>;
+  if (!altitude?.length || !distance?.length) {
+    return <p className="text-sm text-gray-500">Incomplete stream data</p>;
+  }
 
   const data = altitude.map((alt, index) => {
-    const currentSpeed = speed[index];
-    let pace = undefined;
-
-    if (currentSpeed && currentSpeed > 0) {
-      const speedKmH = currentSpeed * 3.6;
+    let pace;
+    if (speed?.[index] && speed[index] > 0) {
+      const speedKmH = speed[index] * 3.6;
       const paceSecPerKm = 3600 / speedKmH;
       pace = paceSecPerKm / 60;
     }
@@ -62,65 +64,58 @@ export function CombinedChart({
     return {
       x: distance[index] / 1000,
       altitude: alt,
-      heartrate: heartrate[index],
-      cadence: cadence[index],
-      speed: currentSpeed,
+      heartrate: heartrate?.[index],
+      cadence: cadence?.[index],
+      speed: speed?.[index],
       pace,
-      time: time[index],
-      grade: grade[index],
+      time: time?.[index],
+      grade: grade?.[index],
     };
   });
 
   const minAltitude = Math.min(...altitude);
   const maxAltitude = Math.max(...altitude);
-
-  const SCALING_FACTOR = 100;
   const totalKm = distance?.[distance.length - 1]
     ? distance[distance.length - 1] / 1000
     : 1;
-  const chartWidthPx = Math.max(totalKm * SCALING_FACTOR, 600);
+  const chartWidthPx = Math.max(totalKm * 100, 600);
 
   return (
     <div className="w-full">
-      {/* Toggles */}
-      <div className="flex gap-4 mb-4">
-        <label className="text-sm">
-          <input
-            type="checkbox"
-            checked={showHeartRate}
-            onChange={() => setShowHeartRate((prev) => !prev)}
-            className="mr-1"
-          />
-          Heart Rate
-        </label>
-        <label className="text-sm">
-          <input
-            type="checkbox"
-            checked={showCadence}
-            onChange={() => setShowCadence((prev) => !prev)}
-            className="mr-1"
-          />
-          Cadence
-        </label>
-        <label className="text-sm">
-          <input
-            type="checkbox"
-            checked={showPace}
-            onChange={() => setShowPace((prev) => !prev)}
-            className="mr-1"
-          />
-          Pace
-        </label>
-      </div>
+      {variant === 'full' && (
+        <div className="flex gap-4 mb-4">
+          <label className="text-sm">
+            <input
+              type="checkbox"
+              checked={showHeartRate}
+              onChange={() => setShowHeartRate((prev) => !prev)}
+              className="mr-1"
+            />
+            Heart Rate
+          </label>
+          <label className="text-sm">
+            <input
+              type="checkbox"
+              checked={showCadence}
+              onChange={() => setShowCadence((prev) => !prev)}
+              className="mr-1"
+            />
+            Cadence
+          </label>
+          <label className="text-sm">
+            <input
+              type="checkbox"
+              checked={showPace}
+              onChange={() => setShowPace((prev) => !prev)}
+              className="mr-1"
+            />
+            Pace
+          </label>
+        </div>
+      )}
 
-      {/* Chart */}
       <div style={{ overflowX: 'auto' }}>
-        <div
-          style={{
-            minWidth: `${chartWidthPx}px`,
-            height: 400,
-          }}
-        >
+        <div style={{ minWidth: `${chartWidthPx}px`, height: 400 }}>
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={data}
@@ -132,7 +127,6 @@ export function CombinedChart({
               onClick={(state) => {
                 if (!state || typeof state.activeLabel !== 'number') return;
                 const clickedKm = state.activeLabel;
-
                 const found = segments.find(
                   (seg) =>
                     seg.startDistance / 1000 <= clickedKm &&
@@ -159,7 +153,6 @@ export function CombinedChart({
                 horizontal
                 vertical={false}
               />
-
               <XAxis
                 dataKey="x"
                 type="number"
@@ -176,20 +169,22 @@ export function CombinedChart({
                   position: 'insideLeft',
                 }}
               />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tickFormatter={(value) => `${value}`}
-                label={{
-                  value: 'HR / Cadence / Pace',
-                  angle: 90,
-                  position: 'insideRight',
-                }}
-              />
+
+              {variant === 'full' && (
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tickFormatter={(value) => `${value}`}
+                  label={{
+                    value: 'HR / Cadence / Pace',
+                    angle: 90,
+                    position: 'insideRight',
+                  }}
+                />
+              )}
 
               <Tooltip content={<CustomTooltip />} />
 
-              {/* Highlighted areas for segments */}
               {segments.map((segment) => {
                 const x1 = segment.startDistance / 1000;
                 const x2 = segment.endDistance / 1000;
@@ -210,7 +205,6 @@ export function CombinedChart({
                 );
               })}
 
-              {/* Main altitude area */}
               <Area
                 type="monotone"
                 dataKey="altitude"
@@ -220,8 +214,7 @@ export function CombinedChart({
                 fillOpacity={0.5}
               />
 
-              {/* Optional overlays */}
-              {showHeartRate && (
+              {variant === 'full' && showHeartRate && (
                 <Line
                   type="monotone"
                   dataKey="heartrate"
@@ -231,7 +224,7 @@ export function CombinedChart({
                   yAxisId="right"
                 />
               )}
-              {showCadence && (
+              {variant === 'full' && showCadence && (
                 <Line
                   type="monotone"
                   dataKey="cadence"
@@ -241,7 +234,7 @@ export function CombinedChart({
                   yAxisId="right"
                 />
               )}
-              {showPace && (
+              {variant === 'full' && showPace && (
                 <Line
                   type="monotone"
                   dataKey="pace"

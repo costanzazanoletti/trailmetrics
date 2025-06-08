@@ -11,12 +11,14 @@ import { Segment } from '../types/activity';
 import { formatPace } from '../utils/formatUtils';
 import { EfficiencyIcon } from './EfficiencyIcon';
 
+type SegmentCardVariant = 'full' | 'compact' | 'planned';
+
 interface SegmentCardProps {
   segment: Segment;
   isSelected: boolean;
   onSelect: (segment: Segment) => void;
   onShowSimilar?: () => void;
-  variant?: 'full' | 'compact';
+  variant?: SegmentCardVariant;
   currentActivityId?: number;
 }
 
@@ -31,7 +33,6 @@ export function SegmentCard({
   const shortId = getShortSegmentId(segment.segmentId);
   const isSameActivity =
     !currentActivityId || segment.activityId === currentActivityId;
-
   const length =
     segment.endDistance && segment.startDistance
       ? (segment.endDistance - segment.startDistance).toFixed(0)
@@ -54,9 +55,12 @@ export function SegmentCard({
     ? `wi ${segment.weatherIcon}`
     : 'wi wi-na';
 
+  const showEfficiency = variant === 'full';
+  const showHeartrate = variant !== 'planned';
+
   // Handler for clicking the card or efficiency icon
   const handleClick = () => {
-    if (variant === 'compact') {
+    if (variant === 'compact' || variant === 'planned') {
       if (isSameActivity) {
         onSelect(segment);
       } else {
@@ -85,7 +89,7 @@ export function SegmentCard({
           <span>{avgGradient}% grade</span>
           <span>{avgCadence} spm cadence</span>
         </div>
-        {variant === 'full' && onShowSimilar ? (
+        {showEfficiency && onShowSimilar ? (
           <div
             className="relative group cursor-pointer"
             onClick={(e) => {
@@ -130,7 +134,11 @@ export function SegmentCard({
       </div>
 
       <div className="flex items-center gap-3 text-xs text-gray-700">
-        <Heart size={14} className="text-red-500" /> {avgHeartrate} bpm
+        {showHeartrate && (
+          <>
+            <Heart size={14} className="text-red-500" /> {avgHeartrate} bpm
+          </>
+        )}
         <GaugeCircle size={14} className="text-blue-500" /> {avgSpeed}
       </div>
       <div className="flex items-center gap-3 text-xs text-gray-700 mt-2">
@@ -138,7 +146,7 @@ export function SegmentCard({
         <TrendingUp size={14} /> {elevationGain} m D+
       </div>
 
-      {variant === 'full' && (
+      {variant !== 'compact' && (
         <>
           <div className="flex items-center gap-3 text-xs text-gray-600 mt-2">
             <Route size={14} /> {roadType}

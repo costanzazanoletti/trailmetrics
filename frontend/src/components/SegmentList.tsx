@@ -2,12 +2,15 @@ import { Segment } from '../types/activity';
 import { SegmentCard } from './SegmentCard';
 import { RefObject } from 'react';
 
+type SegmentListVariant = 'full' | 'compact' | 'planned';
+
 interface SegmentListProps {
   segments: Segment[];
   selectedSegment: Segment | null;
   onSelect: (segment: Segment) => void;
   onShowSimilar: (segment: Segment) => void;
   segmentRefs: RefObject<Map<string, HTMLLIElement>>;
+  variant?: SegmentListVariant;
 }
 
 export function SegmentList({
@@ -16,6 +19,7 @@ export function SegmentList({
   onSelect,
   onShowSimilar,
   segmentRefs,
+  variant = 'full',
 }: SegmentListProps) {
   return (
     <div className="md:w-1/4 bg-gray-50 rounded-md p-4 h-[870px] overflow-y-auto">
@@ -42,7 +46,7 @@ export function SegmentList({
                   isSelected={selectedSegment?.segmentId === seg.segmentId}
                   onSelect={onSelect}
                   onShowSimilar={() => onShowSimilar(seg)}
-                  variant={'full'}
+                  variant={variant}
                 />
               </li>
             ))}
