@@ -27,6 +27,7 @@ interface CombinedChartProps {
   onSegmentClick?: (segment: Segment) => void;
   onHoverIndexChange?: (index: number) => void;
   highlightIndex?: number | null;
+  segmentWindow?: [number, number] | null;
   variant?: 'full' | 'altimetryOnly';
 }
 
