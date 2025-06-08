@@ -68,7 +68,7 @@ public class GpxStreamExtractorService {
       streams.add(createStream("latlng", latlng, activity));
       streams.add(createStream("altitude", altitude, activity));
       streams.add(createStream("distance", distance, activity));
-      streams.add(createStream("grade", grade, activity));
+      streams.add(createStream("grade_smooth", grade, activity));
 
       return streams;
 

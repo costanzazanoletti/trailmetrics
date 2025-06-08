@@ -42,7 +42,7 @@ class GpxStreamExtractorServiceTest {
     assertNotNull(distanceStream);
     assertEquals(4, distanceStream.getOriginalSize());
 
-    ActivityStream gradeStream = streams.stream().filter(s -> s.getType().equals("grade"))
+    ActivityStream gradeStream = streams.stream().filter(s -> s.getType().equals("grade_smooth"))
         .findFirst().orElse(null);
     assertNotNull(gradeStream);
     assertEquals(4, gradeStream.getOriginalSize());
