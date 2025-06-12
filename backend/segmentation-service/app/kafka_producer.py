@@ -24,9 +24,11 @@ producer = KafkaProducer(
 
 def prepare_segmentation_message(activity_id, segments_df):
     """Prepare the output message with compressed segments"""
+    # Assign a progressive id to each segment, left padded up to 5 digits
     segments_df = segments_df.assign(
-        segment_id=segments_df.index.to_series().add(1).astype(str).radd(f"{activity_id}-")
+        segment_id=segments_df.index.to_series().add(1).astype(str).str.zfill(5).radd(f"{activity_id}-")
     )
+
     # Convert the dataframe into a dictionary of lists of dictionaries
     segments = segments_df.to_dict(orient="records")
 

@@ -125,7 +125,8 @@ def predict_for_planned_activity(user_id, activity_id, engine):
     if not models:
         logger.info(f"No saved models for user {user_id}")
         return
-
+    
+    df = df.sort_values("start_distance").reset_index(drop=True)
     df_features = df.copy()
     X = preprocess_segments_for_prediction(df_features)
 
