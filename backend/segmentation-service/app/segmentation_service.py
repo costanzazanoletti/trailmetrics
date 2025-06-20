@@ -5,7 +5,6 @@ import logging
 import logging_setup
 import numpy as np
 import pandas as pd
-from haversine import haversine, Unit
 from dotenv import load_dotenv
 
 # Setup logging

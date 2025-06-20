@@ -3,7 +3,6 @@ import json
 import os
 import gzip
 import pandas as pd
-from haversine import haversine, Unit
 from unittest.mock import Mock
 
 @pytest.fixture

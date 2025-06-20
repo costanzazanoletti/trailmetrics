@@ -13,7 +13,6 @@ This service handles user authentication via Strava OAuth2 and issues JWT tokens
 ## Dependencies
 
 - Strava API (OAuth2 flow)
-- PostgreSQL (user persistence)
 - Other services (consume JWT and validate API key)
 
 ## Configuration
@@ -25,7 +24,6 @@ This includes:
 - Auth service port and public key exposure
 - API key used for internal authentication
 - JWT cookie configuration
-- Database connection
 - RSA key locations
 
 Spring Boot automatically loads these if the following is included in `application.yml`:

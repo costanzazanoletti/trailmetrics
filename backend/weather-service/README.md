@@ -2,30 +2,37 @@
 
 ## Overview
 
-The **Weather Service** is a Python-based microservice responsible for enriching activity segments with historical weather data. It consumes segment data from Kafka, queries OpenWeather One Call API 3.0, and publishes enriched data downstream.
+The **Weather Service** is a Python-based microservice responsible for enriching activity segments with both historical and forecast weather data. It consumes segments from Kafka, queries various OpenWeather APIs depending on activity timing (past or planned), and publishes the enriched weather data downstream. It also manages API rate limits gracefully via retry queues.
 
 ## Responsibilities
 
-- Consumes segmentation results from `segmentation-output-queue`
-- Uses coordinates, elevation changes and timestamps to fetch historical weather from OpenWeather
-- Handles API rate limits by deferring requests via a retry Kafka topic
-- Publishes weather-enriched data to `weather-output-queue`
+- Consumes segment data from `segmentation-output-queue`
+- Dynamically selects the appropriate OpenWeather API:
+  - **Historical** (for past activities)
+  - **Hourly/Daily Forecast** (for upcoming activities)
+  - **Summary API** (for activities scheduled far in the future)
+- Enriches each segment with relevant weather variables (e.g., temperature, wind, humidity, precipitation)
+- Publishes results to `weather-output-queue` or defers over-limit requests to `weather-retry-queue`
 
-## External API: OpenWeather One Call 3.0
+## External APIs: OpenWeather
 
-This service uses the **OpenWeather One Call API 3.0** ([docs](https://openweathermap.org/api/one-call-3)) to fetch historical weather.
+This service integrates with multiple OpenWeather endpoints, depending on activity type and date:
 
-- Endpoint: `https://api.openweathermap.org/data/3.0/onecall/timemachine`
-- Requires API Key passed via query string (`appid=...`)
-- **Free plan limits:**
+| **API Type** | **Endpoint**                                      | **Use Case**                          |
+| ------------ | ------------------------------------------------- | ------------------------------------- |
+| Historical   | `/timemachine` (One Call 3.0 API)                 | For past activity weather             |
+| Hourly       | `/onecall?exclude=current,minutely,daily,alerts`  | High-resolution forecasts (up to 48h) |
+| Daily        | `/onecall?exclude=current,minutely,hourly,alerts` | Daily forecast (up to 8 days)         |
+| Summary      | `/summary` (Daily Aggregation API)                | Long-range planned activities         |
 
-  - 60 calls/minute
-  - 1000 calls/day (free)
-  - Exceeding daily limit: €0.0014 per call
+Each request includes segment coordinates and a reference timestamp to retrieve the most relevant data.
 
 ## Rate Limit Handling
 
-To respect API usage limits, the service tracks requests and defers over-quota segments via `weather-retry-queue`. These are automatically retried after a configurable delay.
+To comply with OpenWeather's free-tier quota (1000 requests/day), the service maintains an internal request counter (`RequestCounter`). If the quota is exceeded:
+
+- Segments are redirected to the `weather-retry-queue`
+- A retry mechanism with configurable delay ensures deferred processing
 
 ## Setup
 

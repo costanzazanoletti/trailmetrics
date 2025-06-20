@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.web.client.RestTemplate;
 
 
@@ -32,12 +31,4 @@ public class ApplicationConfig {
     return new RestTemplate();
   }
 
-  @Bean
-  public ThreadPoolTaskScheduler threadPoolTaskScheduler() {
-    ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-    scheduler.setPoolSize(5);
-    scheduler.setThreadNamePrefix("TaskScheduler-");
-    scheduler.initialize();
-    return scheduler;
-  }
 }

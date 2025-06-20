@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36" version="26.2.14">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36" version="27.1.5">
   <diagram name="Pagina-1" id="fKY_Gx4-Wao7bdq79K0J">
-    <mxGraphModel dx="1987" dy="2181" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="1992" dy="1881" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -31,11 +31,12 @@
             <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="38NqQ832aSYF8gRKxVFK-37" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;edgeStyle=orthogonalEdgeStyle;exitX=0;exitY=0.75;exitDx=0;exitDy=0;curved=0;" parent="1" source="5" target="38NqQ832aSYF8gRKxVFK-84" edge="1">
+        <mxCell id="38NqQ832aSYF8gRKxVFK-37" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;entryPerimeter=0;edgeStyle=orthogonalEdgeStyle;exitX=0.063;exitY=0.795;exitDx=0;exitDy=0;curved=0;exitPerimeter=0;" parent="1" source="5" target="38NqQ832aSYF8gRKxVFK-84" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="135" y="290" as="sourcePoint" />
             <mxPoint x="-80" y="520" as="targetPoint" />
             <Array as="points">
+              <mxPoint x="170" y="176" />
               <mxPoint x="170" y="280" />
               <mxPoint y="280" />
               <mxPoint y="510" />
@@ -96,7 +97,7 @@
             <mxPoint x="1097.5" y="220" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="38NqQ832aSYF8gRKxVFK-123" value="data persistence/query" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" parent="17" vertex="1" connectable="0">
+        <mxCell id="38NqQ832aSYF8gRKxVFK-123" value="data persistence" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" parent="17" vertex="1" connectable="0">
           <mxGeometry x="0.6297" y="-1" relative="1" as="geometry">
             <mxPoint x="-79" as="offset" />
           </mxGeometry>
@@ -311,7 +312,7 @@
             <mxPoint y="1" as="offset" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="38NqQ832aSYF8gRKxVFK-126" value="&lt;b&gt;WEATHER API&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+        <mxCell id="38NqQ832aSYF8gRKxVFK-126" value="&lt;b&gt;OPENWEATHER API&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
           <mxGeometry x="416" y="-120" width="120" height="60" as="geometry" />
         </mxCell>
         <mxCell id="38NqQ832aSYF8gRKxVFK-129" value="&lt;b&gt;OVERPASS API&lt;/b&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontFamily=Helvetica;fontSize=11;labelBackgroundColor=default;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
@@ -323,8 +324,8 @@
             <mxPoint x="1202" y="-20" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="38NqQ832aSYF8gRKxVFK-138" value="&lt;b&gt;External Services&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" parent="1" vertex="1">
-          <mxGeometry x="480" y="-180" width="120" height="30" as="geometry" />
+        <mxCell id="38NqQ832aSYF8gRKxVFK-138" value="&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;External Services&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" parent="1" vertex="1">
+          <mxGeometry x="455" y="-185" width="170" height="40" as="geometry" />
         </mxCell>
         <mxCell id="38NqQ832aSYF8gRKxVFK-145" style="rounded=1;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;align=center;verticalAlign=middle;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;endArrow=classic;edgeStyle=orthogonalEdgeStyle;entryX=0.404;entryY=0.04;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="38NqQ832aSYF8gRKxVFK-25" target="38NqQ832aSYF8gRKxVFK-20" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -339,6 +340,9 @@
           <mxGeometry x="0.2732" y="-1" relative="1" as="geometry">
             <mxPoint x="38" as="offset" />
           </mxGeometry>
+        </mxCell>
+        <mxCell id="tMTJTcM1YXi72xQx7xLe-17" value="&lt;b&gt;&lt;font style=&quot;font-size: 18px;&quot;&gt;TRAILMETRICS&lt;/font&gt;&lt;/b&gt;" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontFamily=Helvetica;fontSize=11;fontColor=default;labelBackgroundColor=default;" parent="1" vertex="1">
+          <mxGeometry x="850" y="-5" width="160" height="40" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>

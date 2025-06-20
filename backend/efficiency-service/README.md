@@ -9,6 +9,9 @@ The **Efficiency Service** is a Python-based microservice responsible for:
 - Calculating a custom efficiency score for each segment
 - Managing analysis state per activity
 - Computing segment similarity within a user's activities based on grade category and predefined metrics
+- Compute efficiency zones (low, medium, high, very high) within similar segments
+- Train and save regression model with target variables speed and cadency
+- make prediction of speed and cadency for planned segments
 
 This service operates fully asynchronously and reacts to Kafka events published by other services.
 
