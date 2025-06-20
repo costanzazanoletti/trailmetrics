@@ -58,7 +58,7 @@ public interface SegmentRepository extends JpaRepository<Segment, String> {
 
   @Query("""
           SELECT s FROM Segment s
-          WHERE s.gradeCategory = :gradeCategory AND s.segmentId <> :excludeSegmentId
+          WHERE s.gradeCategory = :gradeCategory AND s.segmentId <> :excludeSegmentId AND s.activityId > 0
           ORDER BY s.efficiencyScore DESC NULLS LAST
       """)
   List<Segment> findTopByGradeCategory(@Param("gradeCategory") Double gradeCategory,
