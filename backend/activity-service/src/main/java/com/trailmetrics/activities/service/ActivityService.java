@@ -66,7 +66,7 @@ public class ActivityService {
   }
 
   public List<Segment> getActivitySegments(Long id) {
-    return segmentRepository.findByActivityId(id);
+    return segmentRepository.findByActivityIdOrderBySegmentIdAsc(id);
   }
 
   public ActivityStatus computeStatus(ActivityStatusTracker tracker) {

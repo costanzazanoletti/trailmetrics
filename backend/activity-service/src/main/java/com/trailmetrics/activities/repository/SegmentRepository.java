@@ -11,7 +11,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface SegmentRepository extends JpaRepository<Segment, String> {
 
-  List<Segment> findByActivityId(Long activityId);
+  List<Segment> findByActivityIdOrderBySegmentIdAsc(Long activityId);
+
 
   @Query("""
           SELECT s
@@ -25,17 +26,6 @@ public interface SegmentRepository extends JpaRepository<Segment, String> {
       """)
   List<Segment> findSimilarSegmentIdsOrdered(String segmentId);
 
-  @Query("""
-          SELECT s
-          FROM Segment s
-          WHERE s.gradeCategory IS NOT NULL
-            AND s.gradeCategory = (
-                SELECT gradeCategory
-                FROM Segment
-                WHERE segmentId = :segmentId
-            )
-      """)
-  List<Segment> findSegmentsBySameGradeCategory(String segmentId);
 
   @Query("""
           SELECT MAX(ss.calculatedAt)

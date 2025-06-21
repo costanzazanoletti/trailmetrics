@@ -39,7 +39,7 @@ public class SegmentEfficiencyZoneService {
 
 
   public void recalculateZonesForActivity(Long activityId, String userId) {
-    List<Segment> segments = segmentRepository.findByActivityId(activityId);
+    List<Segment> segments = segmentRepository.findByActivityIdOrderBySegmentIdAsc(activityId);
 
     if (segments.isEmpty()) {
       log.info("No segments found for activity {}", activityId);
