@@ -29,6 +29,9 @@ def train_model_for_user(user_id, engine):
     
     # Remove missing targets
     df = df.dropna(subset=["avg_speed", "avg_cadence"])
+
+    # Remove outliers
+    df = df[(df["avg_speed"] < 10) & (df["avg_cadence"] >= 40)]
     
     if len(df) < 50:
         logger.warning(f"Unable to train model for user {user_id}: {len(df)} segments are not enough.")
