@@ -63,8 +63,6 @@ def compute_efficiency_score(df, SF, EW, DW):
 
 def calculate_metrics(segment):
     """Adds columns with metrics"""
-    # Average speed
-    segment["avg_speed"] = segment["segment_length"] / (segment["end_time"] - segment["start_time"])
     # Elevation gain
     segment["elevation_gain"] = segment["end_altitude"] - segment["start_altitude"]
     # Heartrate drift

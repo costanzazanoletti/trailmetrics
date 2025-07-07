@@ -163,6 +163,7 @@ def create_segments(df, activity_id, config):
                 "segment_length": segment_length,
                 "avg_gradient": np.mean(df["grade"].iloc[start_index:i]),
                 "avg_cadence": np.mean(df["cadence"].iloc[start_index:i]),
+                "avg_speed": np.mean(df["speed"].iloc[start_index:i]),
                 "movement_type": "running" if np.mean(df["cadence"].iloc[start_index:i]) > config["cadence_threshold"] else "walking",
                 "type": "uphill" if np.mean(df["grade"].iloc[start_index:i]) > 0 else "downhill" if np.mean(df["grade"].iloc[start_index:i]) < 0 else "flat",
                 "grade_category": round(np.mean(df["grade"].iloc[start_index:i]) / config["classification_tolerance"]) * config["classification_tolerance"],
