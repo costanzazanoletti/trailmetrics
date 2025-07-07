@@ -48,6 +48,10 @@ cd trailmetrics
 docker compose up -d
 ```
 
+Before starting the services, make sure to create all required .env files in the appropriate service folders. Each microservice expects its own environment variables for proper configuration (e.g., database URLs, Strava tokens, API keys).
+
+Use the provided .env.example files as templates.
+
 Visit `http://localhost:3000` to access the frontend.
 
 ### Using Makefile (optional)
