@@ -3,3 +3,6 @@ venv
 .env.local
 logs/
 models/
+
+## Environment File ##
+.env
